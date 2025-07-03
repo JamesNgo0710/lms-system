@@ -1,0 +1,374 @@
+"use client"
+
+import { useState, useEffect } from "react"
+import { use } from "react"
+import { Card, CardContent } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Progress } from "@/components/ui/progress"
+import { Clock, ChevronLeft, Lock } from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
+import { useTopics, useAssessments, useLessonCompletions, useAssessmentAttempts } from "@/hooks/use-data-store"
+
+export default function TakeAssessmentPage({ params }: { params: Promise<{ id: string }> }) {
+  const { data: session } = useSession()
+  const user = session?.user
+  const { getTopicById } = useTopics()
+  const { getAssessmentByTopicId } = useAssessments()
+  const { getTopicProgress } = useLessonCompletions()
+  const { canTakeAssessment, addAssessmentAttempt } = useAssessmentAttempts()
+  const [currentQuestion, setCurrentQuestion] = useState(0)
+  const [selectedAnswer, setSelectedAnswer] = useState<string | number | null>(null)
+  const [answers, setAnswers] = useState<(string | number)[]>([])
+  const [timeLeft, setTimeLeft] = useState(3600) // Default 1 hour
+  const [isCompleted, setIsCompleted] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
+  const router = useRouter()
+
+  const resolvedParams = use(params)
+  const topicId = Number.parseInt(resolvedParams.id)
+  const topic = getTopicById(topicId)
+  const assessment = getAssessmentByTopicId(topicId)
+
+  // Handle hydration
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
+  // Check if all lessons are completed for students
+  const topicProgress = user && isHydrated ? getTopicProgress(user.id, topicId) : { completed: 0, total: 0, percentage: 0 }
+  const allLessonsCompleted = topicProgress.completed === topicProgress.total && topicProgress.total > 0
+
+  // Check cooldown for assessments
+  const cooldownCheck = user && assessment && isHydrated 
+    ? canTakeAssessment(user.id, assessment.id) 
+    : { canTake: true, message: "" }
+
+  // Set timer based on assessment time limit
+  useEffect(() => {
+    if (assessment?.timeLimit) {
+      const [hours, minutes] = assessment.timeLimit.split(":").map(Number)
+      setTimeLeft(hours * 3600 + minutes * 60)
+    }
+  }, [assessment])
+
+  const questions = assessment?.questions || []
+  const question = questions[currentQuestion]
+  const progress = questions.length > 0 ? ((currentQuestion + 1) / questions.length) * 100 : 0
+
+  // Timer effect
+  useEffect(() => {
+    if (timeLeft > 0 && !isCompleted && questions.length > 0) {
+      const timer = setTimeout(() => setTimeLeft(timeLeft - 1), 1000)
+      return () => clearTimeout(timer)
+    } else if (timeLeft === 0 && questions.length > 0) {
+      handleSubmit()
+    }
+  }, [timeLeft, isCompleted, questions.length])
+
+  const formatTime = (seconds: number) => {
+    const hours = Math.floor(seconds / 3600)
+    const minutes = Math.floor((seconds % 3600) / 60)
+    const secs = seconds % 60
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`
+  }
+
+  const handleNext = () => {
+    if (selectedAnswer !== null) {
+      const newAnswers = [...answers]
+      newAnswers[currentQuestion] = selectedAnswer
+      setAnswers(newAnswers)
+
+      if (currentQuestion < questions.length - 1) {
+        setCurrentQuestion(currentQuestion + 1)
+        setSelectedAnswer(newAnswers[currentQuestion + 1] || null)
+      } else {
+        handleSubmit()
+      }
+    }
+  }
+
+  const handlePrevious = () => {
+    if (currentQuestion > 0) {
+      setCurrentQuestion(currentQuestion - 1)
+      setSelectedAnswer(answers[currentQuestion - 1] || null)
+    }
+  }
+
+  const handleAnswerSelect = (answer: string | number) => {
+    setSelectedAnswer(answer)
+  }
+
+  const handleSubmit = () => {
+    const finalAnswers = [...answers]
+    if (selectedAnswer !== null) {
+      finalAnswers[currentQuestion] = selectedAnswer
+    }
+
+    // Calculate score
+    let correctCount = 0
+    questions.forEach((q, index) => {
+      if (finalAnswers[index] === q.correctAnswer) {
+        correctCount++
+      }
+    })
+
+    const score = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0
+    const timeSpent = assessment?.timeLimit
+      ? Number.parseInt(assessment.timeLimit.split(":")[0]) * 3600 +
+        Number.parseInt(assessment.timeLimit.split(":")[1]) * 60 -
+        timeLeft
+      : 3600 - timeLeft
+
+    // Record the assessment attempt
+    if (user && assessment) {
+      addAssessmentAttempt({
+        userId: user.id,
+        assessmentId: assessment.id,
+        topicId: topicId,
+        score: score,
+        correctAnswers: correctCount,
+        totalQuestions: questions.length,
+        timeSpent: timeSpent,
+        completedAt: new Date().toISOString(),
+        answers: finalAnswers
+      })
+    }
+
+    setIsCompleted(true)
+
+    // Redirect to results page
+    router.push(
+      `/dashboard/assessment/${resolvedParams.id}/results?score=${score}&timeSpent=${timeSpent}&correct=${correctCount}&total=${questions.length}`,
+    )
+  }
+
+  // Loading or no assessment
+  if (!topic || !assessment || questions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-2xl font-bold mb-4">Assessment Not Available</h2>
+            <p className="text-gray-600 mb-4">
+              {!topic
+                ? "Topic not found"
+                : !assessment
+                  ? "No assessment created for this topic"
+                  : "No questions available"}
+            </p>
+            <Link href="/dashboard/topics">
+              <Button>Back to Topics</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Check if student has completed all lessons
+  if (user?.role === "student" && isHydrated && !allLessonsCompleted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-8 text-center">
+            <div className="flex justify-center mb-4">
+              <Lock className="w-16 h-16 text-orange-500" />
+            </div>
+            <h2 className="text-2xl font-bold mb-4 text-orange-600">Assessment Locked</h2>
+            <p className="text-gray-600 mb-4">
+              You must complete all lessons in this topic before taking the assessment.
+            </p>
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+              <div className="flex items-center justify-between text-sm mb-2">
+                <span className="font-medium">Progress</span>
+                <span className="font-bold text-orange-600">{topicProgress.percentage}%</span>
+              </div>
+              <Progress value={topicProgress.percentage} className="h-2 mb-2" />
+              <p className="text-xs text-orange-700">
+                {topicProgress.completed} of {topicProgress.total} lessons completed
+              </p>
+              <p className="text-xs text-orange-600 mt-1 font-medium">
+                {topicProgress.total - topicProgress.completed} lesson(s) remaining
+              </p>
+            </div>
+            <Link href={`/dashboard/topics/${topicId}`}>
+              <Button className="w-full">Continue Learning</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  // Check cooldown period for students
+  if (user?.role === "student" && isHydrated && !cooldownCheck.canTake) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-8 text-center">
+            <div className="flex justify-center mb-4">
+              <Clock className="w-16 h-16 text-red-500" />
+            </div>
+            <h2 className="text-2xl font-bold mb-4 text-red-600">Assessment Cooldown Active</h2>
+            <p className="text-gray-600 mb-4">
+              You must wait before retaking this assessment.
+            </p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+              <p className="text-sm text-red-700 font-medium">
+                {cooldownCheck.message}
+              </p>
+              {cooldownCheck.timeRemaining && (
+                <p className="text-xs text-red-600 mt-2">
+                  Time remaining: {Math.floor(cooldownCheck.timeRemaining / 60)}h {cooldownCheck.timeRemaining % 60}m
+                </p>
+              )}
+            </div>
+            <Link href={`/dashboard/topics/${topicId}`}>
+              <Button className="w-full">Return to Topic</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (isCompleted) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="max-w-md">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-2xl font-bold mb-4">Assessment Submitted!</h2>
+            <p className="text-gray-600">Processing your results...</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white border-b px-6 py-4">
+        <div className="flex items-center justify-between max-w-6xl mx-auto">
+          <div className="flex items-center space-x-4">
+            <Link href="/dashboard/topics">
+              <Button variant="ghost" size="icon">
+                <ChevronLeft className="w-5 h-5" />
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl font-bold">{topic.title} Assessment</h1>
+            </div>
+          </div>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2 text-orange-500">
+              <Clock className="w-5 h-5" />
+              <span className="font-mono text-lg">{formatTime(timeLeft)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Progress */}
+      <div className="bg-white px-6 py-4 border-b">
+        <div className="max-w-6xl mx-auto">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm text-gray-600">
+              Question {currentQuestion + 1} of {questions.length}
+            </span>
+            <span className="text-sm text-gray-600">{Math.round(progress)}% Complete</span>
+          </div>
+          <Progress value={progress} className="h-2" />
+        </div>
+      </div>
+
+      {/* Question Content */}
+      <div className="max-w-6xl mx-auto p-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Question */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardContent className="p-8">
+                <h2 className="text-xl font-semibold mb-6 text-orange-500">Question {currentQuestion + 1}</h2>
+
+                <p className="text-lg mb-8 leading-relaxed">{question.question}</p>
+
+                {/* Answer Options */}
+                <div className="space-y-3">
+                  {question.type === "multiple-choice" && question.options ? (
+                    question.options.map((option, index) => (
+                      <button
+                        key={index}
+                        onClick={() => handleAnswerSelect(index)}
+                        className={`w-full p-4 text-left border-2 rounded-lg transition-colors ${
+                          selectedAnswer === index
+                            ? "border-orange-500 bg-orange-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="flex space-x-4">
+                      <button
+                        onClick={() => handleAnswerSelect("true")}
+                        className={`px-8 py-3 rounded-lg border-2 transition-colors ${
+                          selectedAnswer === "true"
+                            ? "border-orange-500 bg-orange-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        True
+                      </button>
+                      <button
+                        onClick={() => handleAnswerSelect("false")}
+                        className={`px-8 py-3 rounded-lg border-2 transition-colors ${
+                          selectedAnswer === "false"
+                            ? "border-orange-500 bg-orange-50"
+                            : "border-gray-200 hover:border-gray-300"
+                        }`}
+                      >
+                        False
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-8 flex justify-between">
+                  <Button onClick={handlePrevious} disabled={currentQuestion === 0} variant="outline">
+                    Previous
+                  </Button>
+                  <Button
+                    onClick={handleNext}
+                    disabled={selectedAnswer === null}
+                    className="bg-orange-500 hover:bg-orange-600"
+                  >
+                    {currentQuestion === questions.length - 1 ? "Submit Assessment" : "Next Question"}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Image */}
+          <div className="lg:col-span-1">
+            {question.image && (
+              <Card>
+                <CardContent className="p-0">
+                  <img
+                    src={question.image || "/placeholder.svg"}
+                    alt="Question illustration"
+                    className="w-full h-64 object-cover rounded-lg"
+                  />
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
