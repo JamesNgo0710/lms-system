@@ -14,6 +14,7 @@ import { Download, ChevronLeft, FileText, CheckCircle, Play, Clock } from "lucid
 import Link from "next/link"
 import { useTopics, useLessons, useLessonCompletions } from "@/hooks/use-data-store"
 import { useToast } from "@/hooks/use-toast"
+import { RichContentRenderer } from "@/components/rich-content-renderer"
 
 export default function LessonViewPage({ params }: { params: Promise<{ id: string; lessonId: string }> }) {
   const { data: session } = useSession()
@@ -190,9 +191,7 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
                   </div>
                 </div>
                 <p className="text-gray-600 mb-4">{lesson.description}</p>
-                <div className="prose max-w-none">
-                  <p>{lesson.content}</p>
-                </div>
+                <RichContentRenderer content={lesson.content} />
 
                 {/* Social Links */}
                 {(lesson.socialLinks.youtube || lesson.socialLinks.twitter) && (

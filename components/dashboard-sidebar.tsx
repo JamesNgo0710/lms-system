@@ -1,8 +1,9 @@
 "use client"
 
+import type React from "react"
 import { useSession } from "next-auth/react"
 import { cn } from "@/lib/utils"
-import { Sidebar, SidebarBody, SidebarLink } from "@/components/ui/sidebar"
+import { Sidebar, SidebarBody, SidebarProvider, SidebarLink } from "@/components/ui/sidebar"
 import {
   Home,
   BookOpen,
@@ -13,12 +14,15 @@ import {
   User,
   MessageSquare,
   ClipboardList,
+  ChevronRight
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { motion } from "framer-motion"
 import { useState, useEffect } from "react"
 import Image from "next/image"
+import { APP_CONFIG } from "@/lib/constants"
+import { getAvatarUrl } from "@/lib/config"
 
 interface NavItem {
   title: string
@@ -54,8 +58,8 @@ export const Logo = () => {
     >
       <div className="h-48 w-48 flex-shrink-0 relative">
         <Image
-          src="/nft-logo.png"
-          alt="NFT LMS Logo"
+          src={APP_CONFIG.logoUrl}
+          alt={`${APP_CONFIG.name} Logo`}
           fill
           className="object-contain"
           sizes="192px"
@@ -68,10 +72,10 @@ export const Logo = () => {
       >
         <div className="text-lg font-bold">
           <span className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-clip-text text-transparent">
-            Learning Management
+            {APP_CONFIG.name.split(' ').slice(0, -1).join(' ')}
           </span>
           <span className="ml-1 bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 bg-clip-text text-transparent">
-            System
+            {APP_CONFIG.name.split(' ').slice(-1)[0]}
           </span>
         </div>
       </motion.div>
@@ -83,15 +87,15 @@ export const LogoIcon = () => {
   return (
     <Link
       href="/dashboard"
-      className="font-normal flex space-x-2 items-center text-sm text-black py-1 relative z-20 justify-center"
+      className="font-normal flex items-center text-sm text-black py-2 relative z-20 justify-center"
     >
-      <div className="h-8 w-8 flex-shrink-0 relative">
+      <div className="h-12 w-12 flex-shrink-0 relative">
         <Image
-          src="/nft-logo.png"
-          alt="NFT LMS Logo"
+          src={APP_CONFIG.logoUrl}
+          alt={`${APP_CONFIG.name} Logo`}
           fill
           className="object-contain"
-          sizes="32px"
+          sizes="48px"
         />
       </div>
     </Link>
@@ -126,7 +130,7 @@ const UserProfileSection = ({ open }: { open: boolean }) => {
     return () => window.removeEventListener('profileImageUpdate', handleProfileImageUpdate as EventListener)
   }, [user?.id])
 
-  const displayImage = profileImage || user?.image || "/placeholder-user.jpg"
+  const displayImage = profileImage || getAvatarUrl(user?.name || "User")
 
   if (!open) {
     return (
@@ -208,33 +212,54 @@ export function DashboardSidebar() {
     ),
   }))
 
+  
+
   return (
-    <Sidebar open={open} setOpen={setOpen}>
-      <SidebarBody className="justify-between gap-10">
-        <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
-          {/* Logo */}
-          {open ? <Logo /> : <LogoIcon />}
-          
-          {/* User Profile Section */}
-          <div className="mt-2 mb-2">
-            <UserProfileSection open={open} />
+    <SidebarProvider>
+      <Sidebar open={open} setOpen={setOpen}>
+        <SidebarBody className="justify-between gap-10">
+          <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
+            {/* Logo */}
+            {open ? <Logo /> : <LogoIcon />}
+            
+            {/* User Profile Section */}
+            <div className="mt-2 mb-2">
+              <UserProfileSection open={open} />
+            </div>
+            
+            {/* Navigation Links */}
+            <div className="flex flex-col gap-2">
+              {links.map((link, idx) => (
+                <SidebarLink 
+                  key={idx} 
+                  link={link}
+                  className={cn(
+                    "hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-md px-2",
+                    pathname === link.href && "bg-orange-100 dark:bg-orange-900/30"
+                  )}
+                />
+              ))}
+            </div>
           </div>
-          
-          {/* Navigation Links */}
-          <div className="flex flex-col gap-2">
-            {links.map((link, idx) => (
-              <SidebarLink 
-                key={idx} 
-                link={link}
-                className={cn(
-                  "hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded-md px-2",
-                  pathname === link.href && "bg-orange-100 dark:bg-orange-900/30"
-                )}
+          <div>
+                    <SidebarLink
+          link={{
+            label: session?.user?.name || "User",
+            href: "/dashboard/profile",
+            icon: (
+              <Image
+                src={getAvatarUrl(session?.user?.name || "User")}
+                className="h-7 w-7 flex-shrink-0 rounded-full"
+                width={50}
+                height={50}
+                alt="Avatar"
               />
-            ))}
+            ),
+          }}
+        />
           </div>
-        </div>
-      </SidebarBody>
-    </Sidebar>
+        </SidebarBody>
+      </Sidebar>
+    </SidebarProvider>
   )
 }

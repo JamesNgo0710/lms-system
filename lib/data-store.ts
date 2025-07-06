@@ -1,5 +1,8 @@
 "use client"
 
+import { STORAGE_KEYS } from "./constants"
+import { syncManager } from "./sync-manager"
+
 interface Topic {
   id: number
   title: string
@@ -97,6 +100,7 @@ interface User {
   id: string
   username: string
   email: string
+  password: string // Added password field
   role: "admin" | "student"
   firstName: string
   lastName: string
@@ -106,6 +110,7 @@ interface User {
   totalTopics: number
   weeklyHours: number
   thisWeekHours: number
+  profileImage?: string // Added profile image field
 }
 
 interface CommunityPost {
@@ -668,34 +673,39 @@ const generateInitialAssessments = (): Assessment[] => {
 const initialUsers: User[] = [
   {
     id: "1",
-    username: "john.smith",
-    email: "john.smith@gmail.com",
+    username: "admin",
+    email: "admin@lms.com",
+    password: "admin123",
     role: "admin",
-    firstName: "John",
-    lastName: "Smith",
+    firstName: "Admin",
+    lastName: "User",
     joinedDate: "01/01/22",
     completedTopics: 0,
     totalTopics: 0,
     weeklyHours: 0,
     thisWeekHours: 0,
+    profileImage: undefined,
   },
   {
     id: "2",
-    username: "jessica.jones",
-    email: "jessica.jones@gmail.com",
-    role: "admin",
-    firstName: "Jessica",
-    lastName: "Jones",
+    username: "student",
+    email: "student@lms.com",
+    password: "student123",
+    role: "student",
+    firstName: "Student",
+    lastName: "User",
     joinedDate: "02/15/22",
-    completedTopics: 0,
-    totalTopics: 0,
-    weeklyHours: 0,
-    thisWeekHours: 0,
+    completedTopics: 2,
+    totalTopics: 5,
+    weeklyHours: 10,
+    thisWeekHours: 5,
+    profileImage: undefined,
   },
   {
     id: "3",
     username: "ron.burgandi",
     email: "ron.burgandi@gmail.com",
+    password: "password789",
     role: "admin",
     firstName: "Ron",
     lastName: "Burgandi",
@@ -704,11 +714,13 @@ const initialUsers: User[] = [
     totalTopics: 0,
     weeklyHours: 0,
     thisWeekHours: 0,
+    profileImage: "https://example.com/ron-burgandi.jpg",
   },
   {
     id: "4",
     username: "john.john",
     email: "johnjohn@gmail.com",
+    password: "password101",
     role: "admin",
     firstName: "John",
     lastName: "John",
@@ -717,11 +729,13 @@ const initialUsers: User[] = [
     totalTopics: 0,
     weeklyHours: 0,
     thisWeekHours: 0,
+    profileImage: "https://example.com/john-john.jpg",
   },
   {
     id: "5",
     username: "mary.magdaleine",
     email: "mary.m@yahoo.com",
+    password: "password123",
     role: "admin",
     firstName: "Mary",
     lastName: "Magdaleine",
@@ -730,11 +744,13 @@ const initialUsers: User[] = [
     totalTopics: 0,
     weeklyHours: 0,
     thisWeekHours: 0,
+    profileImage: "https://example.com/mary-magdaleine.jpg",
   },
   {
     id: "6",
     username: "sergent.pepper",
     email: "sergentpg@gmail.com",
+    password: "password456",
     role: "student",
     firstName: "Sergent",
     lastName: "Pepper",
@@ -743,12 +759,14 @@ const initialUsers: User[] = [
     totalTopics: 12,
     weeklyHours: 25,
     thisWeekHours: 15,
+    profileImage: "https://example.com/sergent-pepper.jpg",
   },
   // Additional 15 student accounts
   {
     id: "7",
     username: "alice.chen",
     email: "alice.chen@gmail.com",
+    password: "password789",
     role: "student",
     firstName: "Alice",
     lastName: "Chen",
@@ -757,11 +775,13 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 20,
     thisWeekHours: 12,
+    profileImage: "https://example.com/alice-chen.jpg",
   },
   {
     id: "8",
     username: "david.rodriguez",
     email: "david.rodriguez@yahoo.com",
+    password: "password101",
     role: "student",
     firstName: "David",
     lastName: "Rodriguez",
@@ -770,11 +790,13 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 15,
     thisWeekHours: 8,
+    profileImage: "https://example.com/david-rodriguez.jpg",
   },
   {
     id: "9",
     username: "sarah.williams",
     email: "sarah.williams@outlook.com",
+    password: "password123",
     role: "student",
     firstName: "Sarah",
     lastName: "Williams",
@@ -783,11 +805,13 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 18,
     thisWeekHours: 14,
+    profileImage: "https://example.com/sarah-williams.jpg",
   },
   {
     id: "10",
     username: "michael.thompson",
     email: "m.thompson@gmail.com",
+    password: "password456",
     role: "student",
     firstName: "Michael",
     lastName: "Thompson",
@@ -796,11 +820,13 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 12,
     thisWeekHours: 6,
+    profileImage: "https://example.com/michael-thompson.jpg",
   },
   {
     id: "11",
     username: "emma.davis",
     email: "emma.davis@gmail.com",
+    password: "password789",
     role: "student",
     firstName: "Emma",
     lastName: "Davis",
@@ -809,11 +835,13 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 22,
     thisWeekHours: 18,
+    profileImage: "https://example.com/emma-davis.jpg",
   },
   {
     id: "12",
     username: "james.wilson",
     email: "james.wilson@hotmail.com",
+    password: "password101",
     role: "student",
     firstName: "James",
     lastName: "Wilson",
@@ -822,11 +850,13 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 8,
     thisWeekHours: 0,
+    profileImage: "https://example.com/james-wilson.jpg",
   },
   {
     id: "13",
     username: "olivia.taylor",
     email: "olivia.taylor@gmail.com",
+    password: "password123",
     role: "student",
     firstName: "Olivia",
     lastName: "Taylor",
@@ -835,11 +865,13 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 16,
     thisWeekHours: 10,
+    profileImage: "https://example.com/olivia-taylor.jpg",
   },
   {
     id: "14",
     username: "lucas.anderson",
     email: "lucas.anderson@yahoo.com",
+    password: "password456",
     role: "student",
     firstName: "Lucas",
     lastName: "Anderson",
@@ -848,11 +880,13 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 14,
     thisWeekHours: 9,
+    profileImage: "https://example.com/lucas-anderson.jpg",
   },
   {
     id: "15",
     username: "sophia.martinez",
     email: "sophia.martinez@gmail.com",
+    password: "password789",
     role: "student",
     firstName: "Sophia",
     lastName: "Martinez",
@@ -861,11 +895,13 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 25,
     thisWeekHours: 16,
+    profileImage: "https://example.com/sophia-martinez.jpg",
   },
   {
     id: "16",
     username: "noah.garcia",
     email: "noah.garcia@outlook.com",
+    password: "password101",
     role: "student",
     firstName: "Noah",
     lastName: "Garcia",
@@ -874,11 +910,13 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 10,
     thisWeekHours: 4,
+    profileImage: "https://example.com/noah-garcia.jpg",
   },
   {
     id: "17",
     username: "ava.johnson",
     email: "ava.johnson@gmail.com",
+    password: "password123",
     role: "student",
     firstName: "Ava",
     lastName: "Johnson",
@@ -887,11 +925,13 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 19,
     thisWeekHours: 13,
+    profileImage: "https://example.com/ava-johnson.jpg",
   },
   {
     id: "18",
     username: "william.brown",
     email: "william.brown@yahoo.com",
+    password: "password456",
     role: "student",
     firstName: "William",
     lastName: "Brown",
@@ -900,11 +940,13 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 17,
     thisWeekHours: 11,
+    profileImage: "https://example.com/william-brown.jpg",
   },
   {
     id: "19",
     username: "isabella.lee",
     email: "isabella.lee@gmail.com",
+    password: "password789",
     role: "student",
     firstName: "Isabella",
     lastName: "Lee",
@@ -913,11 +955,13 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 28,
     thisWeekHours: 20,
+    profileImage: "https://example.com/isabella-lee.jpg",
   },
   {
     id: "20",
     username: "ethan.white",
     email: "ethan.white@hotmail.com",
+    password: "password101",
     role: "student",
     firstName: "Ethan",
     lastName: "White",
@@ -926,11 +970,13 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 9,
     thisWeekHours: 3,
+    profileImage: "https://example.com/ethan-white.jpg",
   },
   {
     id: "21",
     username: "mia.clark",
     email: "mia.clark@gmail.com",
+    password: "password123",
     role: "student",
     firstName: "Mia",
     lastName: "Clark",
@@ -939,6 +985,7 @@ const initialUsers: User[] = [
     totalTopics: 5,
     weeklyHours: 13,
     thisWeekHours: 7,
+    profileImage: "https://example.com/mia-clark.jpg",
   },
 ]
 
@@ -955,24 +1002,49 @@ class DataStore {
   private communityReplies: CommunityReply[] = []
   private listeners: (() => void)[] = []
   private idCounter: number = 1
+  private currentUserId: string = 'anonymous'
 
   constructor() {
     if (typeof window !== "undefined") {
       this.loadFromStorage()
       this.generateSampleData()
+      this.initializeSync()
     }
   }
 
+  private initializeSync() {
+    // Subscribe to sync updates from other tabs/browsers
+    syncManager.subscribe((syncData) => {
+      this.handleSyncUpdate(syncData)
+    })
+  }
+
+  private handleSyncUpdate(syncData: any) {
+    // Update internal data from sync
+    this.topics = syncData.topics || []
+    this.lessons = syncData.lessons || []
+    this.assessments = syncData.assessments || []
+    this.users = syncData.users || []
+    
+    // Update metadata
+    this.updateTopicsMetadata()
+    
+    // Notify local listeners
+    this.notifyListeners()
+    
+    console.log('📡 Data synchronized from external source')
+  }
+
   private loadFromStorage() {
-    const storedTopics = localStorage.getItem("lms-topics")
-    const storedAssessments = localStorage.getItem("lms-assessments")
-    const storedUsers = localStorage.getItem("lms-users")
-    const storedLessons = localStorage.getItem("lms-lessons")
-    const storedCompletions = localStorage.getItem("lms-lesson-completions")
-    const storedViews = localStorage.getItem("lms-lesson-views")
-    const storedAttempts = localStorage.getItem("lms-assessment-attempts")
-    const storedPosts = localStorage.getItem("lms-community-posts")
-    const storedReplies = localStorage.getItem("lms-community-replies")
+    const storedTopics = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.topics}`)
+    const storedAssessments = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.assessments}`)
+    const storedUsers = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.users}`)
+    const storedLessons = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.lessons}`)
+    const storedCompletions = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.completions}`)
+    const storedViews = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.views}`)
+    const storedAttempts = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.attempts}`)
+    const storedPosts = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.posts}`)
+    const storedReplies = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.replies}`)
 
     this.topics = storedTopics ? JSON.parse(storedTopics) : initialTopics
     this.assessments = storedAssessments ? JSON.parse(storedAssessments) : generateInitialAssessments()
@@ -1168,15 +1240,18 @@ class DataStore {
 
   private saveToStorage() {
     if (typeof window !== "undefined") {
-      localStorage.setItem("lms-topics", JSON.stringify(this.topics))
-      localStorage.setItem("lms-assessments", JSON.stringify(this.assessments))
-      localStorage.setItem("lms-users", JSON.stringify(this.users))
-      localStorage.setItem("lms-lessons", JSON.stringify(this.lessons))
-      localStorage.setItem("lms-lesson-completions", JSON.stringify(this.lessonCompletions))
-      localStorage.setItem("lms-lesson-views", JSON.stringify(this.lessonViews))
-      localStorage.setItem("lms-assessment-attempts", JSON.stringify(this.assessmentAttempts))
-      localStorage.setItem("lms-community-posts", JSON.stringify(this.communityPosts))
-      localStorage.setItem("lms-community-replies", JSON.stringify(this.communityReplies))
+      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.topics}`, JSON.stringify(this.topics))
+      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.assessments}`, JSON.stringify(this.assessments))
+      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.users}`, JSON.stringify(this.users))
+      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.lessons}`, JSON.stringify(this.lessons))
+      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.completions}`, JSON.stringify(this.lessonCompletions))
+      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.views}`, JSON.stringify(this.lessonViews))
+      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.attempts}`, JSON.stringify(this.assessmentAttempts))
+      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.posts}`, JSON.stringify(this.communityPosts))
+      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.replies}`, JSON.stringify(this.communityReplies))
+      
+      // Update sync metadata to notify other tabs/browsers
+      syncManager.updateMetadata(this.currentUserId)
     }
   }
 
@@ -1286,6 +1361,12 @@ class DataStore {
 
   private notifyListeners() {
     this.listeners.forEach((listener) => listener())
+  }
+
+  // Set current user for sync tracking
+  setCurrentUser(userId: string) {
+    this.currentUserId = userId
+    syncManager.initializeUser(userId)
   }
 
   subscribe(listener: () => void) {
@@ -1918,10 +1999,66 @@ class DataStore {
       topContributors
     }
   }
+
+  // Authentication methods
+  authenticateUser(email: string, password: string): User | null {
+    const user = this.users.find((u) => u.email.toLowerCase() === email.toLowerCase() && u.password === password)
+    return user || null
+  }
+
+  getUserByEmail(email: string): User | undefined {
+    return this.users.find((u) => u.email.toLowerCase() === email.toLowerCase())
+  }
+
+  getUserById(id: string): User | undefined {
+    return this.users.find((u) => u.id === id)
+  }
+
+  // Password management
+  changeUserPassword(userId: string, newPassword: string): boolean {
+    const userIndex = this.users.findIndex((u) => u.id === userId)
+    if (userIndex === -1) return false
+
+    this.users[userIndex].password = newPassword
+    this.saveToStorage()
+    this.notifyListeners()
+    if (this.currentUserId) {
+      syncManager.updateMetadata(this.currentUserId)
+    }
+    return true
+  }
+
+  // Profile image management
+  updateUserProfileImage(userId: string, imageData: string): boolean {
+    const userIndex = this.users.findIndex((u) => u.id === userId)
+    if (userIndex === -1) return false
+
+    this.users[userIndex].profileImage = imageData
+    this.saveToStorage()
+    this.notifyListeners()
+    if (this.currentUserId) {
+      syncManager.updateMetadata(this.currentUserId)
+    }
+    
+    // Also save to localStorage for immediate availability
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`profileImage_${userId}`, imageData)
+      
+      // Dispatch custom event for UI updates
+      window.dispatchEvent(new CustomEvent('profileImageUpdate', {
+        detail: { userId, imageData }
+      }))
+    }
+    
+    return true
+  }
 }
 
 // Create singleton instance
 export const dataStore = new DataStore()
+
+// Export types for use in components
+export type { Topic, Lesson, Assessment, User, LessonCompletion, LessonView, AssessmentAttempt }
 
 // Export types
 export type { 
@@ -2125,16 +2262,16 @@ export const logCurrentMetrics = () => {
 // Function to reset all data (for development/testing)
 export const resetLMSData = () => {
   if (typeof window !== "undefined") {
-    localStorage.removeItem("lms-topics")
-    localStorage.removeItem("lms-assessments") 
-    localStorage.removeItem("lms-users")
-    localStorage.removeItem("lms-lessons")
-    localStorage.removeItem("lms-lesson-completions")
-    localStorage.removeItem("lms-lesson-views")
-    localStorage.removeItem("lms-assessment-attempts")
-    localStorage.removeItem("lms-community-posts")
-    localStorage.removeItem("lms-community-replies")
-    console.log('🔄 LMS data reset! Please refresh the page to load new data.')
+    localStorage.removeItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.topics}`)
+    localStorage.removeItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.assessments}`) 
+    localStorage.removeItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.users}`)
+    localStorage.removeItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.lessons}`)
+    localStorage.removeItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.completions}`)
+    localStorage.removeItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.views}`)
+    localStorage.removeItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.attempts}`)
+    localStorage.removeItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.posts}`)
+    localStorage.removeItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.replies}`)
+    // LMS data reset! Please refresh the page to load new data.
     window.location.reload()
   }
 }

@@ -1,38 +1,9 @@
 import NextAuth, { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
+import { serverDataStore } from "@/lib/server-data-store"
+import { config } from "@/lib/config"
 
-// Demo accounts for the LMS system
-const demoUsers = [
-  {
-    id: "1",
-    email: "admin@lms.com",
-    password: "admin123",
-    name: "Admin User",
-    firstName: "Admin",
-    lastName: "User",
-    role: "admin"
-  },
-  {
-    id: "2", 
-    email: "student@lms.com",
-    password: "student123",
-    name: "Student User",
-    firstName: "Student",
-    lastName: "User", 
-    role: "student"
-  },
-  {
-    id: "3",
-    email: "jimmy@lms.com", 
-    password: "jimmy123",
-    name: "Jimmy Smith",
-    firstName: "Jimmy",
-    lastName: "Smith",
-    role: "student"
-  }
-]
-
-const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "credentials",
@@ -45,19 +16,18 @@ const authOptions: NextAuthOptions = {
           return null
         }
 
-        // Find user in demo accounts
-        const user = demoUsers.find(
-          (u) => u.email === credentials.email && u.password === credentials.password
-        )
+        // Authenticate user from server data store
+        const user = serverDataStore.authenticateUser(credentials.email, credentials.password)
 
         if (user) {
           return {
             id: user.id,
             email: user.email,
-            name: user.name,
+            name: `${user.firstName} ${user.lastName}`,
             firstName: user.firstName,
             lastName: user.lastName,
             role: user.role,
+            image: user.profileImage,
           }
         }
 
@@ -71,6 +41,7 @@ const authOptions: NextAuthOptions = {
         token.role = user.role
         token.firstName = user.firstName
         token.lastName = user.lastName
+        token.image = user.image
       }
       return token
     },
@@ -80,6 +51,9 @@ const authOptions: NextAuthOptions = {
         session.user.firstName = token.firstName as string
         session.user.lastName = token.lastName as string
         session.user.id = token.sub as string
+        if (token.image) {
+          session.user.image = token.image as string
+        }
       }
       return session
     },
@@ -90,8 +64,8 @@ const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env.NEXTAUTH_SECRET || "your-secret-key-for-development",
-  debug: process.env.NODE_ENV === "development",
+  secret: config.nextAuthSecret,
+  debug: config.enableDebug,
 }
 
 const handler = NextAuth(authOptions)

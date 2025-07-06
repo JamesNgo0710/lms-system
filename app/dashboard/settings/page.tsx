@@ -189,12 +189,7 @@ export default function SettingsPage() {
 
     try {
       // Save profile changes (in a real app, this would call an API)
-      console.log("Saving profile data:", {
-        firstName: profileData.firstName.trim(),
-        lastName: profileData.lastName.trim(),
-        userId: user?.id,
-        hasImageUpdate: !!imageFile
-      })
+      // Profile data validation and saving process
 
       // Use debounced storage update for better performance
       if (profileImage && user?.id) {
@@ -279,7 +274,7 @@ export default function SettingsPage() {
     try {
       // Save password changes (in a real app, this would call an API)
       // Here you would typically make an API call to verify current password and update to new password
-      console.log("Updating password for user:", user?.id)
+      // Updating password for user
 
       // Simulate API call delay
       await new Promise(resolve => setTimeout(resolve, 1500))

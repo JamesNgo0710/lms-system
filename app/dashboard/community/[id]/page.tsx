@@ -10,9 +10,11 @@ import { ArrowLeft, ThumbsUp, Eye, MessageCircle, Clock, Pin } from "lucide-reac
 import { dataStore, type CommunityPost } from "@/lib/data-store"
 import { useSession } from "next-auth/react"
 import { ThreadedReplies } from "@/components/threaded-replies"
+import { useToast } from "@/hooks/use-toast"
 
 export default function CommunityPostPage() {
   const { data: session } = useSession()
+  const { toast } = useToast()
   const params = useParams()
   const router = useRouter()
   const postId = params.id as string
@@ -44,10 +46,39 @@ export default function CommunityPostPage() {
 
   const handleLikePost = () => {
     if (!session?.user?.id) {
-      alert("Please log in to like posts")
+      toast({
+        title: "Authentication required",
+        description: "Please log in to like posts",
+        variant: "destructive",
+      })
       return
     }
     dataStore.togglePostLike(postId, session.user.id)
+  }
+
+  const handleTogglePin = () => {
+    if (session?.user?.role !== 'admin') {
+      toast({
+        title: "Permission denied",
+        description: "Only administrators can pin posts",
+        variant: "destructive",
+      })
+      return
+    }
+    dataStore.updateCommunityPost(postId, { isPinned: !post?.isPinned })
+  }
+
+  const handleToggleClose = () => {
+    if (session?.user?.role !== 'admin') {
+      toast({
+        title: "Permission denied",
+        description: "Only administrators can close posts",
+        variant: "destructive",
+      })
+      return
+    }
+    const newStatus = post?.status === 'closed' ? 'active' : 'closed'
+    dataStore.updateCommunityPost(postId, { status: newStatus })
   }
 
   const formatTimeAgo = (dateString: string) => {
@@ -192,14 +223,24 @@ export default function CommunityPostPage() {
               </div>
             </div>
 
-            {/* Admin actions could go here */}
+            {/* Admin actions */}
             {session?.user?.role === 'admin' && (
               <div className="flex items-center space-x-2">
-                <Button variant="outline" size="sm">
-                  Pin Post
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleTogglePin}
+                  className={post.isPinned ? 'border-orange-500 text-orange-500' : ''}
+                >
+                  {post.isPinned ? 'Unpin Post' : 'Pin Post'}
                 </Button>
-                <Button variant="outline" size="sm">
-                  Close Post
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleToggleClose}
+                  className={post.status === 'closed' ? 'border-red-500 text-red-500' : ''}
+                >
+                  {post.status === 'closed' ? 'Reopen Post' : 'Close Post'}
                 </Button>
               </div>
             )}
@@ -218,6 +259,7 @@ export default function CommunityPostPage() {
           <ThreadedReplies 
             postId={postId} 
             isPostAuthor={isPostAuthor}
+            post={post}
             onReplyAdded={() => {
               // Refresh the post to update reply count
               loadPost()

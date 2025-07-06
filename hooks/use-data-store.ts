@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { dataStore, type Topic, type Assessment, type AssessmentAttempt, type User, type Lesson, type LessonCompletion, type LessonView } from "@/lib/data-store"
+import { syncManager } from "@/lib/sync-manager"
 
 export function useTopics() {
   const [topics, setTopics] = useState<Topic[]>([])
@@ -161,5 +162,24 @@ export function useAssessmentAttempts() {
     getLastAssessmentAttempt: dataStore.getLastAssessmentAttempt.bind(dataStore),
     canTakeAssessment: dataStore.canTakeAssessment.bind(dataStore),
     addAssessmentAttempt: dataStore.addAssessmentAttempt.bind(dataStore),
+  }
+}
+
+// Hook for sync management
+export function useSync() {
+  const [syncStatus, setSyncStatus] = useState(syncManager.getSyncStatus())
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setSyncStatus(syncManager.getSyncStatus())
+    }, 1000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  return {
+    syncStatus,
+    setCurrentUser: dataStore.setCurrentUser.bind(dataStore),
+    getSyncStatus: syncManager.getSyncStatus.bind(syncManager),
   }
 }

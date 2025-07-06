@@ -10,9 +10,11 @@ import { dataStore, type CommunityPost, type CommunityStats } from "@/lib/data-s
 import { useSession } from "next-auth/react"
 import { PostCreationModal } from "@/components/post-creation-modal"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 
 export default function CommunityPage() {
   const { data: session } = useSession()
+  const { toast } = useToast()
   const router = useRouter()
   const [posts, setPosts] = useState<CommunityPost[]>([])
   const [stats, setStats] = useState<CommunityStats | null>(null)
@@ -51,7 +53,11 @@ export default function CommunityPage() {
   const handleLikePost = (postId: string, event: React.MouseEvent) => {
     event.stopPropagation() // Prevent navigation when clicking like
     if (!session?.user?.id) {
-      alert("Please log in to like posts")
+      toast({
+        title: "Authentication required",
+        description: "Please log in to like posts",
+        variant: "destructive",
+      })
       return
     }
     dataStore.togglePostLike(postId, session.user.id)

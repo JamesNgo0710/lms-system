@@ -6,12 +6,14 @@ import { Textarea } from "@/components/ui/textarea"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ThumbsUp, MessageCircle, Check, ChevronDown, ChevronUp } from "lucide-react"
-import { dataStore, type CommunityReply } from "@/lib/data-store"
+import { dataStore, type CommunityReply, type CommunityPost } from "@/lib/data-store"
 import { useSession } from "next-auth/react"
+import { useToast } from "@/hooks/use-toast"
 
 interface ThreadedRepliesProps {
   postId: string
   isPostAuthor?: boolean
+  post?: CommunityPost
   onReplyAdded?: () => void
 }
 
@@ -19,8 +21,9 @@ interface ReplyWithChildren extends CommunityReply {
   children: ReplyWithChildren[]
 }
 
-export function ThreadedReplies({ postId, isPostAuthor = false, onReplyAdded }: ThreadedRepliesProps) {
+export function ThreadedReplies({ postId, isPostAuthor = false, post, onReplyAdded }: ThreadedRepliesProps) {
   const { data: session } = useSession()
+  const { toast } = useToast()
   const [replies, setReplies] = useState<ReplyWithChildren[]>([])
   const [newReply, setNewReply] = useState("")
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
@@ -72,6 +75,16 @@ export function ThreadedReplies({ postId, isPostAuthor = false, onReplyAdded }: 
   const handleSubmitReply = async (parentReplyId?: string) => {
     if (!session?.user || !newReply.trim()) return
 
+    // Check if post is closed
+    if (post?.status === 'closed') {
+      toast({
+        title: "Post is closed",
+        description: "This post is closed and no longer accepting replies",
+        variant: "destructive",
+      })
+      return
+    }
+
     setIsSubmitting(true)
     
     try {
@@ -89,7 +102,11 @@ export function ThreadedReplies({ postId, isPostAuthor = false, onReplyAdded }: 
       onReplyAdded?.()
     } catch (error) {
       console.error("Error adding reply:", error)
-      alert("Failed to add reply. Please try again.")
+      toast({
+        title: "Error",
+        description: "Failed to add reply. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsSubmitting(false)
     }
@@ -97,7 +114,11 @@ export function ThreadedReplies({ postId, isPostAuthor = false, onReplyAdded }: 
 
   const handleLikeReply = (replyId: string) => {
     if (!session?.user?.id) {
-      alert("Please log in to like replies")
+      toast({
+        title: "Authentication required",
+        description: "Please log in to like replies",
+        variant: "destructive",
+      })
       return
     }
     dataStore.toggleReplyLike(replyId, session.user.id)
@@ -180,6 +201,7 @@ export function ThreadedReplies({ postId, isPostAuthor = false, onReplyAdded }: 
                 variant="ghost"
                 size="sm"
                 onClick={() => setReplyingTo(replyingTo === reply.id ? null : reply.id)}
+                disabled={post?.status === 'closed'}
                 className="flex items-center space-x-1 text-gray-500"
               >
                 <MessageCircle className="w-4 h-4" />
@@ -263,22 +285,30 @@ export function ThreadedReplies({ postId, isPostAuthor = false, onReplyAdded }: 
       {/* Main reply form */}
       <div className="bg-white rounded-lg border p-4">
         <h3 className="font-semibold mb-3">Add your reply</h3>
-        <Textarea
-          value={newReply}
-          onChange={(e) => setNewReply(e.target.value)}
-          placeholder="Share your thoughts or answer the question..."
-          rows={4}
-          className="mb-3"
-        />
-        <div className="flex justify-end">
-          <Button
-            onClick={() => handleSubmitReply()}
-            disabled={isSubmitting || !newReply.trim() || !session?.user}
-            className="bg-orange-500 hover:bg-orange-600"
-          >
-            {!session?.user ? "Login to Reply" : isSubmitting ? "Posting..." : "Post Reply"}
-          </Button>
-        </div>
+        {post?.status === 'closed' ? (
+          <div className="text-center py-4 text-gray-500">
+            <p>This post is closed and no longer accepting replies.</p>
+          </div>
+        ) : (
+          <>
+            <Textarea
+              value={newReply}
+              onChange={(e) => setNewReply(e.target.value)}
+              placeholder="Share your thoughts or answer the question..."
+              rows={4}
+              className="mb-3"
+            />
+            <div className="flex justify-end">
+              <Button
+                onClick={() => handleSubmitReply()}
+                disabled={isSubmitting || !newReply.trim() || !session?.user}
+                className="bg-orange-500 hover:bg-orange-600"
+              >
+                {!session?.user ? "Login to Reply" : isSubmitting ? "Posting..." : "Post Reply"}
+              </Button>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Replies list */}

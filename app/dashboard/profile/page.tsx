@@ -33,15 +33,18 @@ import {
   ArrowLeft,
   Download,
   Settings,
-  Archive
+  Archive,
+  Camera
 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useTopics, useLessons, useLessonCompletions } from "@/hooks/use-data-store"
+import { useTopics, useLessons, useLessonCompletions, useAssessmentAttempts } from "@/hooks/use-data-store"
 import { useToast } from "@/hooks/use-toast"
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
+import { DEFAULT_VALUES } from "@/lib/constants"
+import { generateAvatarUrl, getExternalCoursesTemplate } from "@/lib/demo-data"
 
 const externalCourses = [
   {
@@ -86,11 +89,13 @@ export default function ProfilePage() {
   const [isExporting, setIsExporting] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
   const [isArchiving, setIsArchiving] = useState(false)
+  const [isUploadingImage, setIsUploadingImage] = useState(false)
   
   // Data store hooks
   const { getTopicById } = useTopics()
   const { getLessonById } = useLessons()
   const { getUserLessonCompletions } = useLessonCompletions()
+  const { getTopicAssessmentAttempts } = useAssessmentAttempts()
 
   // Handle hydration
   useEffect(() => {
@@ -142,9 +147,18 @@ export default function ProfilePage() {
       }
     })
 
-    // Convert to array of completed courses
+    // Convert to array of completed courses with assessment scores
     return Object.entries(topicCompletions).map(([topicId, data]) => {
       const topic = getTopicById(Number(topicId))
+      const assessmentAttempts = getTopicAssessmentAttempts(user.id, Number(topicId))
+      
+      // Get the best assessment score for this topic
+      const bestAttempt = assessmentAttempts.length > 0 
+        ? assessmentAttempts.reduce((best, current) => 
+            current.score > best.score ? current : best
+          )
+        : null
+      
       return {
         course: topic?.title || `Topic ${topicId}`,
         completedDate: new Date(data.completedAt).toLocaleDateString('en-US', {
@@ -152,7 +166,9 @@ export default function ProfilePage() {
           month: 'long',
           day: 'numeric'
         }),
-        lessonsCompleted: data.lessons
+        lessonsCompleted: data.lessons,
+        assessmentScore: bestAttempt ? `${bestAttempt.score}%` : 'Not taken',
+        assessmentPassed: bestAttempt ? bestAttempt.score >= 70 : false
       }
     })
   }
@@ -252,14 +268,76 @@ export default function ProfilePage() {
     }
   }
 
+  // Handle profile image upload
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file || !user) return
+
+    // Check file size (2MB limit)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "Image size must be less than 2MB",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setIsUploadingImage(true)
+
+    try {
+      // Convert to base64
+      const reader = new FileReader()
+      reader.onloadend = async () => {
+        const base64 = reader.result as string
+
+        // Update via API
+        const response = await fetch(`/api/users/${user.id}/profile-image`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ imageData: base64 }),
+        })
+
+        if (!response.ok) {
+          throw new Error("Failed to update profile image")
+        }
+
+        // Save to localStorage for immediate display
+        localStorage.setItem(`profileImage_${user.id}`, base64)
+        setProfileImage(base64)
+
+        // Dispatch custom event for other components
+        window.dispatchEvent(new CustomEvent('profileImageUpdate', {
+          detail: { userId: user.id, imageData: base64 }
+        }))
+
+        toast({
+          title: "Success",
+          description: "Profile image updated successfully",
+        })
+      }
+      reader.readAsDataURL(file)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update profile image",
+        variant: "destructive",
+      })
+    } finally {
+      setIsUploadingImage(false)
+    }
+  }
+
   // Mock user data - In real app, this would come from your database
   const userData = {
     id: "1",
     name: user?.name || "John Doe",
     email: user?.email || "john.doe@example.com",
     role: user?.role || "student",
-    phone: "+1 (555) 123-4567",
-    location: "San Francisco, CA",
+    phone: DEFAULT_VALUES.user.phone,
+    location: DEFAULT_VALUES.user.location,
     bio: "Passionate learner with a keen interest in technology and innovation. Always excited to explore new concepts and apply them in real-world scenarios.",
     website: "https://johndoe.dev",
     linkedin: "linkedin.com/in/johndoe",
@@ -269,7 +347,7 @@ export default function ProfilePage() {
   }
 
   // Determine profile image source
-  const displayImage = profileImage || user?.image || "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-OkLjRyHfzlc5jMC7mGGZgURubqqQQA.png"
+  const displayImage = profileImage || generateAvatarUrl(user?.name || DEFAULT_VALUES.user.firstName + " " + DEFAULT_VALUES.user.lastName)
 
   if (!user) return null
 
@@ -316,16 +394,33 @@ export default function ProfilePage() {
               {/* Profile Info */}
               <div className="lg:col-span-1">
                 <div className="text-center">
-                  <Avatar className="w-32 h-32 mx-auto mb-4">
-                    <AvatarImage
-                      src={displayImage}
-                      alt={`${user.firstName} ${user.lastName}`}
+                  <div className="relative inline-block">
+                    <Avatar className="w-32 h-32 mx-auto mb-4">
+                      <AvatarImage
+                        src={displayImage}
+                        alt={`${user.firstName} ${user.lastName}`}
+                      />
+                      <AvatarFallback className="text-2xl">
+                        {user.firstName[0]}
+                        {user.lastName[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <Button
+                      size="icon"
+                      className="absolute -bottom-2 -right-2 w-10 h-10 bg-orange-500 hover:bg-orange-600 rounded-full"
+                      onClick={() => document.getElementById('profile-image-upload')?.click()}
+                      disabled={isUploadingImage}
+                    >
+                      <Camera className="w-5 h-5" />
+                    </Button>
+                    <input
+                      id="profile-image-upload"
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
                     />
-                    <AvatarFallback className="text-2xl">
-                      {user.firstName[0]}
-                      {user.lastName[0]}
-                    </AvatarFallback>
-                  </Avatar>
+                  </div>
                   <h2 className="text-xl font-bold">
                     {user.firstName} {user.lastName}
                   </h2>
@@ -434,6 +529,7 @@ export default function ProfilePage() {
                   <TableHead className="text-white">Course</TableHead>
                   <TableHead className="text-white">Completed Date</TableHead>
                   <TableHead className="text-white">Lessons Completed</TableHead>
+                  <TableHead className="text-white">Assessment Score</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -443,11 +539,30 @@ export default function ProfilePage() {
                       <TableCell className="font-medium">{course.course}</TableCell>
                       <TableCell>{course.completedDate}</TableCell>
                       <TableCell>{course.lessonsCompleted}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center space-x-2">
+                          <span className={`font-medium ${
+                            course.assessmentScore === 'Not taken' 
+                              ? 'text-gray-500' 
+                              : course.assessmentPassed 
+                                ? 'text-green-600' 
+                                : 'text-red-600'
+                          }`}>
+                            {course.assessmentScore}
+                          </span>
+                          {course.assessmentPassed && (
+                            <Badge variant="outline" className="text-green-600 border-green-600">
+                              <Award className="w-3 h-3 mr-1" />
+                              Passed
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={4} className="text-center py-8 text-gray-500">
                       {isHydrated ? "No courses completed yet" : "Loading..."}
                     </TableCell>
                   </TableRow>

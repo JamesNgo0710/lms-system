@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { Plus, X } from "lucide-react"
 import { dataStore } from "@/lib/data-store"
 import { useSession } from "next-auth/react"
+import { useToast } from "@/hooks/use-toast"
 
 interface PostCreationModalProps {
   children: React.ReactNode
@@ -30,6 +31,7 @@ const categories = [
 
 export function PostCreationModal({ children, onPostCreated }: PostCreationModalProps) {
   const { data: session } = useSession()
+  const { toast } = useToast()
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
@@ -79,7 +81,11 @@ export function PostCreationModal({ children, onPostCreated }: PostCreationModal
     e.preventDefault()
     
     if (!session?.user) {
-      alert("You must be logged in to create a post")
+      toast({
+        title: "Authentication required",
+        description: "You must be logged in to create a post",
+        variant: "destructive",
+      })
       return
     }
 
@@ -114,7 +120,11 @@ export function PostCreationModal({ children, onPostCreated }: PostCreationModal
       onPostCreated?.()
     } catch (error) {
       console.error("Error creating post:", error)
-      alert("Failed to create post. Please try again.")
+      toast({
+        title: "Error",
+        description: "Failed to create post. Please try again.",
+        variant: "destructive",
+      })
     } finally {
       setIsSubmitting(false)
     }

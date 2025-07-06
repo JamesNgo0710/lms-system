@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,10 +8,11 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Edit, Trash2, Camera, Copy, RefreshCw } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Edit, Trash2, Camera, Copy, RefreshCw, Key } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { useUsers } from "@/hooks/use-data-store"
+import { useSession } from "next-auth/react"
 
 interface UserFormData {
   id?: string
@@ -20,12 +21,17 @@ interface UserFormData {
   email: string
   role: "admin" | "student" | "creator"
   password?: string
+  profileImage?: string
 }
 
 export default function UserManagementPage() {
   const { users, addUser, updateUser, deleteUser } = useUsers()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserFormData | null>(null)
+  const [passwordUserId, setPasswordUserId] = useState<string | null>(null)
+  const [newPassword, setNewPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [formData, setFormData] = useState<UserFormData>({
     firstName: "",
     lastName: "",
@@ -33,7 +39,9 @@ export default function UserManagementPage() {
     role: "student",
     password: "",
   })
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
+  const { data: session } = useSession()
 
   const handleAddUser = () => {
     setEditingUser(null)
@@ -55,15 +63,102 @@ export default function UserManagementPage() {
       lastName: user.lastName,
       email: user.email,
       role: user.role,
+      profileImage: user.profileImage,
     })
     setIsDialogOpen(true)
   }
 
-  const handleSaveUser = () => {
+  const handleChangePassword = (userId: string) => {
+    setPasswordUserId(userId)
+    setNewPassword("")
+    setConfirmPassword("")
+    setIsPasswordDialogOpen(true)
+  }
+
+  const handleSavePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast({
+        title: "Error",
+        description: "Passwords do not match",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/users/${passwordUserId}/password`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ newPassword }),
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to change password")
+      }
+
+      toast({
+        title: "Success",
+        description: "Password changed successfully",
+      })
+      setIsPasswordDialogOpen(false)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to change password",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    // Check file size (2MB limit)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "Error",
+        description: "Image size must be less than 2MB",
+        variant: "destructive",
+      })
+      return
+    }
+
+    // Convert to base64
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const base64 = reader.result as string
+      setFormData({ ...formData, profileImage: base64 })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleSaveUser = async () => {
     if (!formData.firstName || !formData.lastName || !formData.email) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!editingUser && !formData.password) {
+      toast({
+        title: "Error",
+        description: "Password is required for new users",
         variant: "destructive",
       })
       return
@@ -76,7 +171,32 @@ export default function UserManagementPage() {
         lastName: formData.lastName,
         email: formData.email,
         role: formData.role,
+        profileImage: formData.profileImage,
       })
+
+      // If profile image was changed, update via API
+      if (formData.profileImage && formData.profileImage !== editingUser.profileImage) {
+        try {
+          const response = await fetch(`/api/users/${editingUser.id}/profile-image`, {
+            method: "PUT",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ imageData: formData.profileImage }),
+          })
+
+          if (!response.ok) {
+            throw new Error("Failed to update profile image")
+          }
+        } catch (error) {
+          toast({
+            title: "Warning",
+            description: "User updated but profile image upload failed",
+            variant: "destructive",
+          })
+        }
+      }
+
       toast({
         title: "Success",
         description: "User updated successfully",
@@ -88,12 +208,14 @@ export default function UserManagementPage() {
         firstName: formData.firstName,
         lastName: formData.lastName,
         email: formData.email,
+        password: formData.password!,
         role: formData.role,
         joinedDate: new Date().toLocaleDateString(),
         completedTopics: 0,
         totalTopics: 12,
         weeklyHours: 0,
         thisWeekHours: 0,
+        profileImage: formData.profileImage,
       })
       toast({
         title: "Success",
@@ -120,7 +242,6 @@ export default function UserManagementPage() {
   }
 
   const generateRandomEmail = () => {
-    // Use timestamp + counter for more deterministic approach
     const timestamp = Date.now()
     const randomNum = Math.floor(Math.random() * 1000)
     setFormData({ ...formData, email: `user${timestamp}${randomNum}@example.com` })
@@ -148,15 +269,24 @@ export default function UserManagementPage() {
           <Table>
             <TableHeader>
               <TableRow className="bg-orange-500 hover:bg-orange-500">
+                <TableHead className="text-white">Profile</TableHead>
                 <TableHead className="text-white">Name</TableHead>
                 <TableHead className="text-white">Email</TableHead>
                 <TableHead className="text-white">Role</TableHead>
-                <TableHead className="text-white">Edit/Delete</TableHead>
+                <TableHead className="text-white">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.map((user) => (
                 <TableRow key={user.id}>
+                  <TableCell>
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={user.profileImage} alt={`${user.firstName} ${user.lastName}`} />
+                      <AvatarFallback>
+                        {user.firstName[0]}{user.lastName[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                  </TableCell>
                   <TableCell className="font-medium">
                     {user.firstName} {user.lastName}
                   </TableCell>
@@ -175,6 +305,17 @@ export default function UserManagementPage() {
                         <Edit className="w-4 h-4 mr-1" />
                         Edit
                       </Button>
+                      {session?.user?.role === "admin" && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleChangePassword(user.id)}
+                          className="text-blue-500 hover:text-blue-700"
+                        >
+                          <Key className="w-4 h-4 mr-1" />
+                          Password
+                        </Button>
+                      )}
                       <Button
                         size="sm"
                         variant="ghost"
@@ -205,6 +346,7 @@ export default function UserManagementPage() {
             <div className="flex justify-center">
               <div className="relative">
                 <Avatar className="w-24 h-24 bg-orange-500">
+                  <AvatarImage src={formData.profileImage} />
                   <AvatarFallback className="text-white text-lg">
                     {formData.firstName[0] || "U"}
                     {formData.lastName[0] || ""}
@@ -213,9 +355,17 @@ export default function UserManagementPage() {
                 <Button
                   size="icon"
                   className="absolute -bottom-2 -right-2 w-8 h-8 bg-orange-500 hover:bg-orange-600 rounded-full"
+                  onClick={() => fileInputRef.current?.click()}
                 >
                   <Camera className="w-4 h-4" />
                 </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
               </div>
             </div>
 
@@ -305,6 +455,43 @@ export default function UserManagementPage() {
             {/* Save Button */}
             <Button onClick={handleSaveUser} className="w-full bg-orange-500 hover:bg-orange-600">
               Save User
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Change Password Dialog */}
+      <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+        <DialogContent className="max-w-md bg-gray-800 text-white border-gray-700">
+          <DialogHeader className="bg-orange-500 text-center -m-6 mb-6 p-6">
+            <DialogTitle>Change Password</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <Label className="text-white">New Password</Label>
+              <Input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                placeholder="Enter new password"
+                className="bg-gray-700 border-gray-600 text-white"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-white">Confirm Password</Label>
+              <Input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                className="bg-gray-700 border-gray-600 text-white"
+              />
+            </div>
+
+            <Button onClick={handleSavePassword} className="w-full bg-orange-500 hover:bg-orange-600">
+              Change Password
             </Button>
           </div>
         </DialogContent>
