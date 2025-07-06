@@ -8,7 +8,7 @@ import { Toaster } from "@/components/ui/toaster"
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "NFT Learning Management System",
+  title: "NFT LMS - Learning Management System",
   description: "Comprehensive LMS for blockchain and cryptocurrency education",
     generator: 'v0.dev'
 }

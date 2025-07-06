@@ -50,16 +50,31 @@ export const Logo = () => {
   return (
     <Link
       href="/dashboard"
-      className="font-normal flex space-x-2 items-center text-sm text-black py-1 relative z-20"
+      className="font-normal flex flex-col items-center text-sm text-black py-2 relative z-20 justify-center space-y-0"
     >
-      <div className="h-8 w-8 rounded bg-orange-500 flex-shrink-0" />
-      <motion.span
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="font-semibold text-black dark:text-white whitespace-pre"
+      <div className="h-48 w-48 flex-shrink-0 relative">
+        <Image
+          src="/nft-logo.png"
+          alt="NFT LMS Logo"
+          fill
+          className="object-contain"
+          sizes="192px"
+        />
+      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-center"
       >
-        LMS System
-      </motion.span>
+        <div className="text-lg font-bold">
+          <span className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-clip-text text-transparent">
+            Learning Management
+          </span>
+          <span className="ml-1 bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 bg-clip-text text-transparent">
+            System
+          </span>
+        </div>
+      </motion.div>
     </Link>
   )
 }
@@ -68,9 +83,17 @@ export const LogoIcon = () => {
   return (
     <Link
       href="/dashboard"
-      className="font-normal flex space-x-2 items-center text-sm text-black py-1 relative z-20"
+      className="font-normal flex space-x-2 items-center text-sm text-black py-1 relative z-20 justify-center"
     >
-      <div className="h-8 w-8 rounded bg-orange-500 flex-shrink-0" />
+      <div className="h-8 w-8 flex-shrink-0 relative">
+        <Image
+          src="/nft-logo.png"
+          alt="NFT LMS Logo"
+          fill
+          className="object-contain"
+          sizes="32px"
+        />
+      </div>
     </Link>
   )
 }
@@ -193,7 +216,7 @@ export function DashboardSidebar() {
           {open ? <Logo /> : <LogoIcon />}
           
           {/* User Profile Section */}
-          <div className="mt-4 mb-4">
+          <div className="mt-2 mb-2">
             <UserProfileSection open={open} />
           </div>
           
