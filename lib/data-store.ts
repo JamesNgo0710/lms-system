@@ -959,6 +959,7 @@ class DataStore {
   constructor() {
     if (typeof window !== "undefined") {
       this.loadFromStorage()
+      this.generateSampleData()
     }
   }
 
@@ -985,6 +986,78 @@ class DataStore {
 
     // Update topics with current lesson counts and assessment status
     this.updateTopicsMetadata()
+  }
+
+  private generateSampleData() {
+    // Only generate sample data if there are no existing views/completions
+    if (this.lessonViews.length === 0 && this.lessonCompletions.length === 0) {
+      this.generateSampleViewsAndCompletions()
+    }
+  }
+
+  private generateSampleViewsAndCompletions() {
+    const students = this.users.filter(u => u.role === 'student')
+    const lessons = this.lessons
+    
+    if (students.length === 0 || lessons.length === 0) return
+
+    // Generate sample views (80% of students view 60% of lessons)
+    const sampleViews: LessonView[] = []
+    const sampleCompletions: LessonCompletion[] = []
+    
+    students.forEach(student => {
+      // Each student views 60-80% of lessons
+      const viewCount = Math.floor(lessons.length * (0.6 + Math.random() * 0.2))
+      const lessonsToView = lessons.slice(0, viewCount)
+      
+      lessonsToView.forEach(lesson => {
+        // Generate multiple views over time (simulate multiple sessions)
+        const viewSessions = Math.floor(Math.random() * 3) + 1
+        
+        for (let i = 0; i < viewSessions; i++) {
+          const viewId = `${student.id}-${lesson.id}-${Date.now()}-${i}`
+          const daysAgo = Math.floor(Math.random() * 30)
+          const viewDate = new Date()
+          viewDate.setDate(viewDate.getDate() - daysAgo)
+          
+          sampleViews.push({
+            id: viewId,
+            userId: student.id,
+            lessonId: lesson.id,
+            topicId: lesson.topicId,
+            viewedAt: viewDate.toISOString(),
+            duration: Math.floor(Math.random() * 30) + 10 // 10-40 minutes
+          })
+        }
+        
+        // 70% chance of completion if viewed
+        if (Math.random() < 0.7) {
+          const completionId = `${student.id}-${lesson.id}-${Date.now()}`
+          const daysAgo = Math.floor(Math.random() * 25)
+          const completionDate = new Date()
+          completionDate.setDate(completionDate.getDate() - daysAgo)
+          
+          sampleCompletions.push({
+            id: completionId,
+            userId: student.id,
+            lessonId: lesson.id,
+            topicId: lesson.topicId,
+            completedAt: completionDate.toISOString(),
+            timeSpent: Math.floor(Math.random() * 45) + 15 // 15-60 minutes
+          })
+        }
+      })
+    })
+    
+    // Add the sample data
+    this.lessonViews = sampleViews
+    this.lessonCompletions = sampleCompletions
+    
+    // Update topic metadata with new data
+    this.updateTopicsMetadata()
+    
+    // Save to storage
+    this.saveToStorage()
   }
 
   private generateInitialLessons(): Lesson[] {
@@ -1870,6 +1943,8 @@ export const calculateDashboardMetrics = () => {
   const users = dataStore.getUsers()
   const topics = dataStore.getTopics()
   const lessons = dataStore.getLessons()
+  const lessonViews = dataStore.getLessonViews()
+  const lessonCompletions = dataStore.getLessonCompletions()
   
   // Filter active users (students with activity)
   const activeUsers = users.filter(user => user.role === 'student' && user.thisWeekHours > 0)
@@ -1884,15 +1959,60 @@ export const calculateDashboardMetrics = () => {
   // Simulate last month data (in real app, this would come from historical data)
   const averageTimeLastMonth = Math.max(1, Math.round(averageTimeThisMonth * 0.7)) // 70% of current
   
-  // Calculate top lessons based on existing topic data
-  const topVideos = topics.slice(0, 4).map((topic, index) => ({
-    id: topic.id,
-    title: topic.title,
-    topic: topic.category,
-    totalViews: topic.students || Math.floor(Math.random() * 50) + 20,
-    numberOfUsers: Math.floor(topic.students * 0.6) || Math.floor(Math.random() * 30) + 15,
-    image: "/placeholder.jpg",
-  }))
+  // Calculate top lessons based on actual view data
+  const lessonStats = lessons.map(lesson => {
+    const views = lessonViews.filter(view => view.lessonId === lesson.id)
+    const completions = lessonCompletions.filter(completion => completion.lessonId === lesson.id)
+    const uniqueViewers = new Set(views.map(view => view.userId)).size
+    const topic = topics.find(t => t.id === lesson.topicId)
+    
+    return {
+      id: lesson.id,
+      title: lesson.title,
+      topic: topic?.category || 'Unknown',
+      topicTitle: topic?.title || 'Unknown Topic',
+      totalViews: views.length,
+      numberOfUsers: uniqueViewers,
+      completions: completions.length,
+      completionRate: uniqueViewers > 0 ? Math.round((completions.length / uniqueViewers) * 100) : 0,
+      image: lesson.image || topic?.image || "/placeholder.jpg",
+      duration: lesson.duration,
+      difficulty: lesson.difficulty,
+      videoUrl: lesson.videoUrl,
+    }
+  }).sort((a, b) => b.totalViews - a.totalViews) // Sort by most viewed
+  
+  // Get top 4 lessons for top videos
+  const topVideos = lessonStats.slice(0, 4)
+  
+  // Calculate most viewed topics
+  const topicStats = topics.map(topic => {
+    const topicLessons = lessons.filter(lesson => lesson.topicId === topic.id)
+    const topicViews = lessonViews.filter(view => 
+      topicLessons.some(lesson => lesson.id === view.lessonId)
+    )
+    const topicCompletions = lessonCompletions.filter(completion => 
+      topicLessons.some(lesson => lesson.id === completion.lessonId)
+    )
+    const uniqueViewers = new Set(topicViews.map(view => view.userId)).size
+    
+    return {
+      id: topic.id,
+      title: topic.title,
+      category: topic.category,
+      totalViews: topicViews.length,
+      numberOfUsers: uniqueViewers,
+      completions: topicCompletions.length,
+      completionRate: uniqueViewers > 0 ? Math.round((topicCompletions.length / uniqueViewers) * 100) : 0,
+      image: topic.image || "/placeholder.jpg",
+      difficulty: topic.difficulty,
+      lessons: topicLessons.length,
+      enrolledStudents: topic.students,
+    }
+  }).sort((a, b) => b.totalViews - a.totalViews) // Sort by most viewed
+  
+  // Get top 6 topics for most viewed topics
+  const mostViewedTopics = topicStats.slice(0, 6)
 
   return {
     admin: {
@@ -1903,7 +2023,12 @@ export const calculateDashboardMetrics = () => {
       averageTimeLastMonth,
       totalStudents: allStudents.length,
       totalAdmins: users.filter(u => u.role === 'admin').length,
-      topVideos
+      topVideos,
+      mostViewedTopics,
+      totalLessons: lessons.length,
+      totalTopics: topics.length,
+      totalViews: lessonViews.length,
+      totalCompletions: lessonCompletions.length
     },
     student: (userId?: string) => {
       // Get specific student data or use defaults

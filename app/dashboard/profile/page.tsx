@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { 
   User, 
   Mail, 
@@ -30,10 +31,17 @@ import {
   Users,
   Star,
   ArrowLeft,
-  Download
+  Download,
+  Settings,
+  Archive
 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { useTopics, useLessons, useLessonCompletions } from "@/hooks/use-data-store"
+import { useToast } from "@/hooks/use-toast"
+import jsPDF from "jspdf"
+import html2canvas from "html2canvas"
 
 const externalCourses = [
   {
@@ -58,29 +66,6 @@ const externalCourses = [
   },
 ]
 
-const completedCourses = [
-  {
-    course: "General Info On Blockchain Tech",
-    completedDate: "October 20, 2023",
-  },
-  {
-    course: "Getting started with Crypto",
-    completedDate: "October 21, 2023",
-  },
-  {
-    course: "Decentralised Finance (DeFi)",
-    completedDate: "October 22, 2023",
-  },
-  {
-    course: "General Info On Blockchain Tech",
-    completedDate: "October 23, 2023",
-  },
-  {
-    course: "Getting started with Crypto",
-    completedDate: "October 24, 2023",
-  },
-]
-
 interface ProfileFormData {
   name: string
   email: string
@@ -95,7 +80,178 @@ interface ProfileFormData {
 export default function ProfilePage() {
   const { data: session } = useSession()
   const user = session?.user
+  const { toast } = useToast()
+  const router = useRouter()
+  const [profileImage, setProfileImage] = useState<string | null>(null)
+  const [isExporting, setIsExporting] = useState(false)
+  const [isHydrated, setIsHydrated] = useState(false)
+  const [isArchiving, setIsArchiving] = useState(false)
   
+  // Data store hooks
+  const { getTopicById } = useTopics()
+  const { getLessonById } = useLessons()
+  const { getUserLessonCompletions } = useLessonCompletions()
+
+  // Handle hydration
+  useEffect(() => {
+    setIsHydrated(true)
+  }, [])
+
+  // Load profile image from localStorage
+  useEffect(() => {
+    if (user?.id) {
+      const savedImage = localStorage.getItem(`profileImage_${user.id}`)
+      if (savedImage) {
+        setProfileImage(savedImage)
+      }
+    }
+  }, [user?.id])
+
+  // Listen for profile image updates
+  useEffect(() => {
+    const handleProfileImageUpdate = (event: CustomEvent) => {
+      if (user?.id && event.detail.userId === user.id) {
+        setProfileImage(event.detail.imageData)
+      }
+    }
+
+    window.addEventListener('profileImageUpdate', handleProfileImageUpdate as EventListener)
+    return () => window.removeEventListener('profileImageUpdate', handleProfileImageUpdate as EventListener)
+  }, [user?.id])
+
+  // Get actual completed courses from data store
+  const getCompletedCourses = () => {
+    if (!user || !isHydrated) return []
+    
+    const completions = getUserLessonCompletions(user.id)
+    
+    // Group completions by topic and get unique topics
+    const topicCompletions: { [key: number]: { completedAt: string; lessons: number } } = {}
+    
+    completions.forEach(completion => {
+      if (!topicCompletions[completion.topicId]) {
+        topicCompletions[completion.topicId] = {
+          completedAt: completion.completedAt,
+          lessons: 0
+        }
+      }
+      topicCompletions[completion.topicId].lessons += 1
+      // Keep the latest completion date
+      if (completion.completedAt > topicCompletions[completion.topicId].completedAt) {
+        topicCompletions[completion.topicId].completedAt = completion.completedAt
+      }
+    })
+
+    // Convert to array of completed courses
+    return Object.entries(topicCompletions).map(([topicId, data]) => {
+      const topic = getTopicById(Number(topicId))
+      return {
+        course: topic?.title || `Topic ${topicId}`,
+        completedDate: new Date(data.completedAt).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        }),
+        lessonsCompleted: data.lessons
+      }
+    })
+  }
+
+  const completedCourses = getCompletedCourses()
+
+  // Export to PDF functionality
+  const exportToPDF = async () => {
+    if (!user) return
+    
+    setIsExporting(true)
+    try {
+      const profileElement = document.getElementById('profile-content')
+      if (!profileElement) {
+        throw new Error('Profile content not found')
+      }
+
+      // Create canvas from HTML
+      const canvas = await html2canvas(profileElement, {
+        scale: 2,
+        logging: false,
+        useCORS: true,
+        allowTaint: true,
+        backgroundColor: '#ffffff'
+      })
+
+      // Create PDF
+      const pdf = new jsPDF('p', 'mm', 'a4')
+      const imgWidth = 210
+      const pageHeight = 295
+      const imgHeight = (canvas.height * imgWidth) / canvas.width
+      let heightLeft = imgHeight
+
+      let position = 0
+
+      // Add image to PDF
+      pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight)
+      heightLeft -= pageHeight
+
+      // Add additional pages if needed
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight
+        pdf.addPage()
+        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', 0, position, imgWidth, imgHeight)
+        heightLeft -= pageHeight
+      }
+
+      // Save PDF
+      pdf.save(`${user.firstName}_${user.lastName}_Profile.pdf`)
+      
+      toast({
+        title: "Success",
+        description: "Profile exported to PDF successfully",
+      })
+    } catch (error) {
+      console.error('Error exporting PDF:', error)
+      toast({
+        title: "Error",
+        description: "Failed to export profile to PDF",
+        variant: "destructive",
+      })
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  // Handle Edit button click
+  const handleEdit = () => {
+    router.push('/dashboard/settings')
+  }
+
+  // Handle Archive button click
+  const handleArchive = async () => {
+    if (!user) return
+    
+    setIsArchiving(true)
+    try {
+      // In a real app, this would make an API call to archive/deactivate the account
+      // For now, we'll simulate the action
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      toast({
+        title: "Account Archived",
+        description: "Your account has been successfully archived. You can reactivate it anytime.",
+      })
+      
+      // In a real app, you might redirect to a deactivation confirmation page
+      // or log the user out
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to archive account. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsArchiving(false)
+    }
+  }
+
   // Mock user data - In real app, this would come from your database
   const userData = {
     id: "1",
@@ -111,6 +267,9 @@ export default function ProfilePage() {
     joinDate: "2023-01-15",
     avatar: "/profile-photo.png",
   }
+
+  // Determine profile image source
+  const displayImage = profileImage || user?.image || "https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-OkLjRyHfzlc5jMC7mGGZgURubqqQQA.png"
 
   if (!user) return null
 
@@ -150,157 +309,210 @@ export default function ProfilePage() {
       </Card>
 
       {/* Main Profile Content */}
-      <Card>
-        <CardContent className="p-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Profile Info */}
-            <div className="lg:col-span-1">
-              <div className="text-center">
-                <Avatar className="w-32 h-32 mx-auto mb-4">
-                  <AvatarImage
-                    src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/image-OkLjRyHfzlc5jMC7mGGZgURubqqQQA.png"
-                    alt={`${user.firstName} ${user.lastName}`}
-                  />
-                  <AvatarFallback className="text-2xl">
-                    {user.firstName[0]}
-                    {user.lastName[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <h2 className="text-xl font-bold">
-                  {user.firstName} {user.lastName}
-                </h2>
-                <p className="text-gray-600">Senior Laravel Developer</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  <strong>Start Date:</strong> {user.joinedDate}
-                </p>
-              </div>
-
-              <div className="mt-6">
-                <h3 className="font-semibold mb-2">Bio:</h3>
-                <p className="text-sm text-gray-600">
-                  Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore
-                  dolore magna aliquat enim ad minim consectetur.
-                </p>
-              </div>
-            </div>
-
-            {/* Skills and Interests */}
-            <div className="lg:col-span-2 space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Skills */}
-                <div className="bg-gray-900 text-white p-6 rounded-lg">
-                  <h3 className="text-lg font-semibold mb-4">Skills</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium">Top Skills/Expertise:</h4>
-                      <p className="text-sm text-gray-300">Laravel, CSS, PHP</p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Other Skills:</h4>
-                      <p className="text-sm text-gray-300">
-                        Lorem ipsum dolor sit amet consectetur adipiscing Sed do eiusmod tempor incididunt ut labore
-                      </p>
-                    </div>
-                  </div>
+      <div id="profile-content">
+        <Card>
+          <CardContent className="p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Profile Info */}
+              <div className="lg:col-span-1">
+                <div className="text-center">
+                  <Avatar className="w-32 h-32 mx-auto mb-4">
+                    <AvatarImage
+                      src={displayImage}
+                      alt={`${user.firstName} ${user.lastName}`}
+                    />
+                    <AvatarFallback className="text-2xl">
+                      {user.firstName[0]}
+                      {user.lastName[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <h2 className="text-xl font-bold">
+                    {user.firstName} {user.lastName}
+                  </h2>
+                  <p className="text-gray-600">Senior Laravel Developer</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    <strong>Start Date:</strong> {user.joinedDate}
+                  </p>
                 </div>
 
-                {/* Professional Interests */}
-                <div className="bg-gray-900 text-white p-6 rounded-lg">
-                  <h3 className="text-lg font-semibold mb-4">Professional Interests</h3>
-                  <div className="space-y-4">
-                    <div>
-                      <h4 className="font-medium">Personal Interests:</h4>
-                      <p className="text-sm text-gray-300">
-                        Lorem ipsum dolor sit amet consectetur adipiscing Sed do eiusmod tempor incididunt ut labore
-                        dolore magna aliquat enim ad minim consectetur.
-                      </p>
-                    </div>
-                    <div>
-                      <h4 className="font-medium">Hobbies:</h4>
-                      <p className="text-sm text-gray-300">
-                        Lorem ipsum dolor sit amet consectetur adipiscing Sed do eiusmod tempor incididunt ut labore
-                      </p>
-                    </div>
-                  </div>
+                <div className="mt-6">
+                  <h3 className="font-semibold mb-2">Bio:</h3>
+                  <p className="text-sm text-gray-600">
+                    Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore
+                    dolore magna aliquat enim ad minim consectetur.
+                  </p>
                 </div>
               </div>
 
-              {/* Export Button */}
-              <div className="text-center">
-                <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-50">
-                  <Download className="w-4 h-4 mr-2" />
-                  Export To PDF
-                </Button>
+              {/* Skills and Interests */}
+              <div className="lg:col-span-2 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Skills */}
+                  <div className="bg-gray-900 text-white p-6 rounded-lg">
+                    <h3 className="text-lg font-semibold mb-4">Skills</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium">Top Skills/Expertise:</h4>
+                        <p className="text-sm text-gray-300">Laravel, CSS, PHP</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Other Skills:</h4>
+                        <p className="text-sm text-gray-300">
+                          Lorem ipsum dolor sit amet consectetur adipiscing Sed do eiusmod tempor incididunt ut labore
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Professional Interests */}
+                  <div className="bg-gray-900 text-white p-6 rounded-lg">
+                    <h3 className="text-lg font-semibold mb-4">Professional Interests</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="font-medium">Personal Interests:</h4>
+                        <p className="text-sm text-gray-300">
+                          Lorem ipsum dolor sit amet consectetur adipiscing Sed do eiusmod tempor incididunt ut labore
+                          dolore magna aliquat enim ad minim consectetur.
+                        </p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium">Hobbies:</h4>
+                        <p className="text-sm text-gray-300">
+                          Lorem ipsum dolor sit amet consectetur adipiscing Sed do eiusmod tempor incididunt ut labore
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* External Courses */}
-      <Card>
-        <CardHeader className="bg-gray-900 text-white">
-          <CardTitle className="flex items-center">
-            <span className="mr-2">📚</span>
-            Courses Taken Or Certificates Received Outside Of The LMS
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-orange-500 hover:bg-orange-500">
-                <TableHead className="text-white">Course</TableHead>
-                <TableHead className="text-white">Location</TableHead>
-                <TableHead className="text-white">Month/Year</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {externalCourses.map((course, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{course.course}</TableCell>
-                  <TableCell>{course.location}</TableCell>
-                  <TableCell>{course.monthYear}</TableCell>
+        {/* External Courses */}
+        <Card>
+          <CardHeader className="bg-gray-900 text-white">
+            <CardTitle className="flex items-center">
+              <span className="mr-2">📚</span>
+              Courses Taken Or Certificates Received Outside Of The LMS
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-orange-500 hover:bg-orange-500">
+                  <TableHead className="text-white">Course</TableHead>
+                  <TableHead className="text-white">Location</TableHead>
+                  <TableHead className="text-white">Month/Year</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {externalCourses.map((course, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">{course.course}</TableCell>
+                    <TableCell>{course.location}</TableCell>
+                    <TableCell>{course.monthYear}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
 
-      {/* Completed Courses */}
-      <Card>
-        <CardHeader className="bg-gray-900 text-white">
-          <CardTitle className="flex items-center">
-            <span className="mr-2">✅</span>
-            Course Completed Within The LMS
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-orange-500 hover:bg-orange-500">
-                <TableHead className="text-white">Course</TableHead>
-                <TableHead className="text-white">Completed Date</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {completedCourses.map((course, index) => (
-                <TableRow key={index}>
-                  <TableCell className="font-medium">{course.course}</TableCell>
-                  <TableCell>{course.completedDate}</TableCell>
+        {/* Completed Courses */}
+        <Card>
+          <CardHeader className="bg-gray-900 text-white">
+            <CardTitle className="flex items-center">
+              <span className="mr-2">✅</span>
+              Course Completed Within The LMS
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-orange-500 hover:bg-orange-500">
+                  <TableHead className="text-white">Course</TableHead>
+                  <TableHead className="text-white">Completed Date</TableHead>
+                  <TableHead className="text-white">Lessons Completed</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {completedCourses.length > 0 ? (
+                  completedCourses.map((course, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">{course.course}</TableCell>
+                      <TableCell>{course.completedDate}</TableCell>
+                      <TableCell>{course.lessonsCompleted}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} className="text-center py-8 text-gray-500">
+                      {isHydrated ? "No courses completed yet" : "Loading..."}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Export Button */}
+      <div className="text-center">
+        <Button 
+          variant="outline" 
+          className="border-orange-500 text-orange-500 hover:bg-orange-50"
+          onClick={exportToPDF}
+          disabled={isExporting}
+        >
+          <Download className="w-4 h-4 mr-2" />
+          {isExporting ? "Exporting..." : "Export To PDF"}
+        </Button>
+      </div>
 
       {/* Action Buttons */}
       <div className="flex justify-center space-x-4 pb-8">
-        <Button className="bg-orange-500 hover:bg-orange-600">Edit</Button>
-        <Button variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-50">
-          Archive
+        <Button 
+          className="bg-orange-500 hover:bg-orange-600"
+          onClick={handleEdit}
+        >
+          <Settings className="w-4 h-4 mr-2" />
+          Edit Profile
         </Button>
+        
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button 
+              variant="outline" 
+              className="border-orange-500 text-orange-500 hover:bg-orange-50"
+              disabled={isArchiving}
+            >
+              <Archive className="w-4 h-4 mr-2" />
+              {isArchiving ? "Archiving..." : "Archive Account"}
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Are you sure you want to archive your account?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action will deactivate your account and hide your profile from other users. 
+                You can reactivate your account at any time by logging in again. 
+                Your data will be preserved.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleArchive}
+                className="bg-red-500 hover:bg-red-600"
+                disabled={isArchiving}
+              >
+                {isArchiving ? "Archiving..." : "Archive Account"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   )
