@@ -1,266 +1,314 @@
 # Learning Management System (LMS)
 
-A comprehensive, configurable Learning Management System built with Next.js, TypeScript, and Tailwind CSS.
+A comprehensive full-stack Learning Management System built with **Next.js 15**, **Laravel 11**, **TypeScript**, and **Tailwind CSS**.
 
 ## 🚀 Features
 
-- **Configurable Branding**: Easy customization of app name, logo, and theme colors
-- **Demo Mode**: Built-in demo data for testing and development
-- **Role-Based Access**: Support for admin, teacher, and student roles
-- **Topic Management**: Create and manage learning topics with lessons and assessments
+### Frontend (Next.js)
+- **Modern UI/UX**: Built with Radix UI and Tailwind CSS
+- **Role-Based Dashboard**: Admin, teacher, and student interfaces
+- **Real-time Updates**: Synchronized data across sessions
+- **Responsive Design**: Mobile-first design approach
+- **Theme Support**: Light and dark mode with system preference detection
+- **Progressive Web App**: Optimized for performance and accessibility
+
+### Backend (Laravel)
+- **RESTful API**: Comprehensive API endpoints for all features
+- **Authentication**: Laravel Sanctum for secure token-based auth
+- **Role-Based Access Control**: Using Spatie Laravel Permission
+- **Database Management**: Eloquent ORM with optimized queries
+- **File Storage**: Support for local and cloud storage
+- **API Documentation**: Well-documented endpoints
+
+### Core Functionality
+- **Topic & Lesson Management**: Create, edit, and organize learning content
+- **Assessment System**: Timed quizzes with automatic grading
 - **Community Features**: Discussion forums with threaded replies
-- **Assessment System**: Timed assessments with automatic grading
-- **Progress Tracking**: Detailed analytics and reporting
-- **Responsive Design**: Works on desktop and mobile devices
-- **Theme Support**: Light and dark mode support
-
-## 📋 Configuration
-
-### Environment Variables
-
-Create a `.env.local` file in the root directory:
-
-```bash
-# Application Configuration
-NEXT_PUBLIC_APP_NAME="Your LMS Name"
-NEXT_PUBLIC_APP_SHORT_NAME="LMS"
-NEXT_PUBLIC_APP_DESCRIPTION="Your custom description"
-NEXT_PUBLIC_APP_THEME_COLOR="#f97316"
-NEXT_PUBLIC_APP_LOGO_URL="/your-logo.png"
-
-# Demo Mode (set to "false" for production)
-NEXT_PUBLIC_DEMO_MODE="true"
-DEMO_ADMIN_EMAIL="admin@yourdomain.com"
-DEMO_ADMIN_PASSWORD="your_admin_password"
-DEMO_STUDENT_EMAIL="student@yourdomain.com"
-DEMO_STUDENT_PASSWORD="your_student_password"
-
-# Authentication
-NEXTAUTH_SECRET="your-secret-key-for-production"
-NEXTAUTH_URL="https://yourdomain.com"
-
-# External Services
-NEXT_PUBLIC_DEFAULT_AVATAR_URL="https://ui-avatars.com/api/?name={name}&background=f97316&color=fff"
-NEXT_PUBLIC_PLACEHOLDER_IMAGE_URL="https://via.placeholder.com/400x225/f97316/ffffff?text=LMS+Content"
-
-# Storage Configuration
-NEXT_PUBLIC_STORAGE_PREFIX="your-app-data"
-```
-
-### Customization
-
-#### 1. **Branding**
-- Update `NEXT_PUBLIC_APP_NAME` and `NEXT_PUBLIC_APP_SHORT_NAME`
-- Replace `/public/nft-logo.png` with your logo
-- Modify `NEXT_PUBLIC_APP_THEME_COLOR` for your brand colors
-
-#### 2. **Demo Data**
-- Edit `lib/demo-data.ts` to customize demo content
-- Update subject areas in `lib/constants.ts` under `SUBJECT_AREAS`
-- Modify default user profiles and external courses
-
-#### 3. **Content Areas**
-- Update `SUBJECT_AREAS.categories` for your specific topics
-- Modify `POST_CATEGORIES` for discussion forum categories
-- Customize `DEFAULT_VALUES` for user profiles and topics
-
-#### 4. **Social Media Links**
-- Update social media URLs in environment variables
-- Modify `SOCIAL_MEDIA` constants for your organization
-
-## 🛠️ Development
-
-### Prerequisites
-
-- Node.js 18.0 or later
-- npm, yarn, or pnpm
-
-### Installation
-
-1. Clone the repository:
-```bash
-git clone <repository-url>
-cd lms-system
-```
-
-2. Install dependencies:
-```bash
-npm install
-# or
-yarn install
-# or
-pnpm install
-```
-
-3. Create your `.env.local` file (see Configuration section)
-
-4. Run the development server:
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-```
-
-5. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-### Demo Accounts
-
-When `NEXT_PUBLIC_DEMO_MODE="true"`, you can use these default accounts:
-
-- **Admin**: Use the email/password from `DEMO_ADMIN_EMAIL`/`DEMO_ADMIN_PASSWORD`
-- **Student**: Use the email/password from `DEMO_STUDENT_EMAIL`/`DEMO_STUDENT_PASSWORD`
-- **Learner**: learner@lms.com / learner123
+- **Progress Tracking**: Detailed analytics and completion tracking
+- **User Management**: Admin controls for user roles and permissions
+- **Content Analytics**: Engagement and performance metrics
 
 ## 🏗️ Architecture
 
-### File Structure
-
 ```
 lms-system/
-├── app/                    # Next.js app router pages
-├── components/            # React components
-├── lib/                   # Utilities and configuration
-│   ├── constants.ts       # App constants and configuration
-│   ├── demo-data.ts       # Demo data configuration
+├── app/                    # Next.js 15 App Router
+├── components/            # React components with TypeScript
+├── lib/                   # Utilities and API services
+│   ├── api-client.ts      # Axios configuration for Laravel API
+│   ├── services/          # API service layers
 │   ├── config.ts          # Environment configuration
-│   └── data-store.ts      # Data management
-├── hooks/                 # Custom React hooks
+│   └── utils.ts           # Utility functions
+├── laravel-backend/       # Laravel 11 API backend
+│   ├── app/Models/        # Eloquent models
+│   ├── app/Http/Controllers/Api/  # API controllers
+│   ├── database/migrations/       # Database schema
+│   └── routes/api.php     # API routes
 ├── public/                # Static assets
-└── types/                 # TypeScript type definitions
+└── types/                 # TypeScript definitions
 ```
 
-### Key Configuration Files
+## 📋 Prerequisites
 
-- **`lib/constants.ts`**: Main configuration file for app constants
-- **`lib/demo-data.ts`**: Demo data and content templates
-- **`lib/config.ts`**: Environment-specific configuration
-- **`lib/data-store.ts`**: Data management and storage
+- **Node.js** 18.0 or later
+- **PHP** 8.1 or later
+- **Composer** 2.0 or later
+- **MySQL** 8.0 or **PostgreSQL** 13+
+- **Git**
 
-## 📊 Data Management
+## 🛠️ Installation
 
-The system uses localStorage for data persistence in development. For production, consider integrating with:
+### Step 1: Clone and Setup Frontend
 
-- **Database**: PostgreSQL, MySQL, or MongoDB
-- **Authentication**: Auth0, Firebase Auth, or custom backend
-- **File Storage**: AWS S3, Cloudinary, or similar
-- **API**: REST or GraphQL backend
+```bash
+git clone https://github.com/your-username/lms-system.git
+cd lms-system
 
-## 🔧 Customization Examples
+# Install dependencies
+npm install
 
-### Adding New Subject Areas
-
-1. Update `lib/constants.ts`:
-```typescript
-export const SUBJECT_AREAS = {
-  default: "Your Default Subject",
-  categories: [
-    "Mathematics",
-    "Science",
-    "History",
-    "Languages",
-    // Add your subjects here
-  ],
-}
+# Create environment file
+cp env.example .env.local
 ```
 
-2. Update demo data in `lib/demo-data.ts`:
-```typescript
-export const getDemoTopics = () => [
-  {
-    id: 1,
-    title: "Introduction to Mathematics",
-    category: "Mathematics",
-    // ... other properties
-  },
-  // Add more topics
-]
+### Step 2: Configure Environment Variables
+
+Update `.env.local`:
+
+```bash
+# Next.js Configuration
+NEXT_PUBLIC_APP_NAME="LMS System"
+NEXT_PUBLIC_API_URL="http://localhost:8000"
+
+# NextAuth Configuration
+NEXTAUTH_SECRET="your-super-secret-key-for-production"
+NEXTAUTH_URL="http://localhost:3000"
+
+# Laravel Backend URL
+NEXT_PUBLIC_LARAVEL_API_URL="http://localhost:8000/api"
 ```
 
-### Customizing User Profiles
+### Step 3: Setup Laravel Backend
 
-Update `lib/constants.ts`:
-```typescript
-export const DEFAULT_VALUES = {
-  user: {
-    firstName: "Your Default",
-    lastName: "User Name",
-    email: "user@yourdomain.com",
-    bio: "Your default bio",
-    website: "https://yourdomain.com",
-    location: "Your City, Country",
-    phone: "+1 (555) 000-0000",
-  },
-  // ... other defaults
-}
+```bash
+cd laravel-backend
+
+# Install dependencies
+composer install
+
+# Create environment file
+cp .env.example .env
+
+# Generate application key
+php artisan key:generate
+
+# Configure database in .env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=lms_system
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+
+# Configure CORS and Sanctum
+SANCTUM_STATEFUL_DOMAINS=localhost:3000,127.0.0.1:3000
+SESSION_DOMAIN=localhost
 ```
 
-### Adding Custom Themes
+### Step 4: Database Setup
 
-1. Update theme colors in `tailwind.config.ts`
-2. Modify `NEXT_PUBLIC_APP_THEME_COLOR` in environment variables
-3. Update color classes in components as needed
+```bash
+# Create database
+mysql -u root -p -e "CREATE DATABASE lms_system;"
+
+# Run migrations and seeders
+php artisan migrate --seed
+
+# Publish Sanctum configuration
+php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+```
+
+### Step 5: Start Development Servers
+
+**Terminal 1 - Laravel Backend:**
+```bash
+cd laravel-backend
+php artisan serve
+```
+Backend runs at: http://localhost:8000
+
+**Terminal 2 - Next.js Frontend:**
+```bash
+# From project root
+npm run dev
+```
+Frontend runs at: http://localhost:3000
+
+## 🔑 Demo Accounts
+
+After running the database seeder, you can login with:
+
+- **Admin**: `admin@lms.com` / `admin123`
+- **Teacher**: `teacher@lms.com` / `teacher123`  
+- **Student**: `student@lms.com` / `student123`
+
+## 📊 API Documentation
+
+### Authentication Endpoints
+- `POST /api/login` - User login
+- `POST /api/logout` - User logout
+- `GET /api/user` - Get authenticated user
+
+### Topics & Lessons
+- `GET /api/topics` - List all topics
+- `POST /api/topics` - Create new topic
+- `GET /api/topics/{id}/lessons` - Get topic lessons
+- `POST /api/lessons` - Create new lesson
+
+### Community
+- `GET /api/community/posts` - List community posts
+- `POST /api/community/posts` - Create new post
+- `POST /api/community/posts/{id}/replies` - Add reply
+
+### Assessments
+- `GET /api/assessments` - List assessments
+- `POST /api/assessments/{id}/attempt` - Submit assessment attempt
+- `GET /api/assessments/{id}/results` - Get assessment results
 
 ## 🚀 Deployment
 
-### Vercel (Recommended)
+### Production Environment Variables
 
-1. Push your code to GitHub
-2. Import project in Vercel
-3. Add environment variables in Vercel dashboard
-4. Deploy
+**Frontend (.env.local):**
+```bash
+NEXT_PUBLIC_APP_NAME="Your LMS Name"
+NEXT_PUBLIC_API_URL="https://your-api-domain.com"
+NEXTAUTH_SECRET="your-production-secret"
+NEXTAUTH_URL="https://your-frontend-domain.com"
+```
 
-### Other Platforms
+**Backend (.env):**
+```bash
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://your-api-domain.com
+DB_CONNECTION=mysql
+DB_HOST=your-db-host
+DB_DATABASE=your-db-name
+DB_USERNAME=your-db-user
+DB_PASSWORD=your-db-password
+```
 
-- **Netlify**: Add environment variables in site settings
-- **AWS**: Use Amplify or EC2 with proper environment configuration
-- **Docker**: Create `.env` file and mount as volume
+### Deployment Platforms
 
-## 📝 License
+**Frontend (Vercel):**
+1. Connect GitHub repository to Vercel
+2. Set environment variables in Vercel dashboard
+3. Deploy automatically on push
 
-This project is open source and available under the [MIT License](LICENSE).
+**Backend (Laravel Forge/DigitalOcean):**
+1. Set up server with PHP 8.1+, MySQL, and Nginx
+2. Configure environment variables
+3. Set up SSL certificates
+4. Configure CORS for your frontend domain
 
-## 🤝 Contributing
+## 🔧 Development
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/your-feature`
-3. Commit changes: `git commit -m 'Add your feature'`
-4. Push to branch: `git push origin feature/your-feature`
-5. Open a Pull Request
+### Available Scripts
 
-## 📞 Support
+**Frontend:**
+```bash
+npm run dev          # Development server
+npm run build        # Production build
+npm run start        # Start production server
+npm run lint         # ESLint
+npm run type-check   # TypeScript checking
+```
 
-For support and questions:
-- Create an issue in the repository
-- Check the documentation
-- Review the configuration files
+**Backend:**
+```bash
+php artisan serve    # Development server
+php artisan migrate  # Run migrations
+php artisan db:seed  # Seed database
+php artisan test     # Run tests
+```
 
-## 🔄 Data Migration
+### Adding New Features
 
-To migrate from demo data to production:
-
-1. Set `NEXT_PUBLIC_DEMO_MODE="false"`
-2. Implement backend API integration
-3. Replace localStorage with database calls
-4. Update authentication to use your provider
-5. Configure file upload and storage
+1. **Backend**: Create controllers, models, and migrations
+2. **Frontend**: Create services in `lib/services/`
+3. **UI**: Build components in `components/`
+4. **Integration**: Update API client and hooks
 
 ## 🧪 Testing
 
-Run tests with:
+**Frontend:**
 ```bash
-npm test
-# or
-yarn test
-# or
-pnpm test
+npm run test
 ```
 
-## 📈 Analytics
+**Backend:**
+```bash
+php artisan test
+```
 
-To add analytics:
+## 📝 Contributing
 
-1. Add `NEXT_PUBLIC_GA_ID` to environment variables
-2. Implement tracking in `lib/config.ts`
-3. Add tracking calls to components as needed 
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+**Port Already in Use:**
+```bash
+# Kill process using port 3000
+npx kill-port 3000
+
+# Or use different port
+npm run dev:alt  # Uses port 3001
+
+# Or manually specify port
+npm run dev -- --port 3001
+```
+
+**CORS Errors:**
+- Check `config/cors.php` in Laravel backend
+- Ensure frontend URL is in `SANCTUM_STATEFUL_DOMAINS`
+
+**Database Connection:**
+- Verify database credentials in Laravel `.env`
+- Ensure MySQL/PostgreSQL is running
+- Check if database exists
+
+**Authentication Issues:**
+- Clear browser cookies and localStorage
+- Verify `NEXTAUTH_SECRET` is set
+- Check Laravel session configuration
+
+## 📚 Additional Resources
+
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Laravel Documentation](https://laravel.com/docs)
+- [Laravel Sanctum](https://laravel.com/docs/sanctum)
+- [NextAuth.js](https://next-auth.js.org/)
+- [Tailwind CSS](https://tailwindcss.com/docs)
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🤝 Support
+
+For questions and support:
+- Create an issue in the GitHub repository
+- Check the troubleshooting section above
+- Review the API documentation
+
+---
+
+**Built with ❤️ using Next.js and Laravel** 
