@@ -34,9 +34,9 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-neutral-800 w-full">
+    <div className="relative h-screen bg-gray-100 dark:bg-neutral-800 w-full">
       <DashboardSidebar />
-      <div className="flex flex-1 flex-col overflow-hidden">
+      <div className="flex flex-col h-full overflow-hidden md:pl-[60px]">
         <div className="hidden md:block">
           <DashboardHeader />
         </div>

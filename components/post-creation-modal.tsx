@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -9,12 +9,13 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Plus, X } from "lucide-react"
-import { dataStore } from "@/lib/data-store"
+import { CommunityService } from "@/lib/services/community.service"
 import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 
 interface PostCreationModalProps {
-  children: React.ReactNode
+  isOpen: boolean
+  onClose: () => void
   onPostCreated?: () => void
 }
 
@@ -29,10 +30,9 @@ const categories = [
   "General Discussion"
 ]
 
-export function PostCreationModal({ children, onPostCreated }: PostCreationModalProps) {
+export function PostCreationModal({ isOpen, onClose, onPostCreated }: PostCreationModalProps) {
   const { data: session } = useSession()
   const { toast } = useToast()
-  const [open, setOpen] = useState(false)
   const [title, setTitle] = useState("")
   const [content, setContent] = useState("")
   const [category, setCategory] = useState("")
@@ -96,16 +96,11 @@ export function PostCreationModal({ children, onPostCreated }: PostCreationModal
     setIsSubmitting(true)
 
     try {
-      dataStore.addCommunityPost({
+      await CommunityService.createPost({
         title: title.trim(),
         content: content.trim(),
-        authorId: session.user.id || "anonymous",
-        authorName: `${session.user.firstName || "Anonymous"} ${session.user.lastName || ""}`.trim(),
         category,
-        tags,
-        isAnswered: false,
-        isPinned: false,
-        status: "active"
+        tags: tags.length > 0 ? tags : undefined,
       })
 
       // Reset form
@@ -115,7 +110,12 @@ export function PostCreationModal({ children, onPostCreated }: PostCreationModal
       setTags([])
       setNewTag("")
       setErrors({})
-      setOpen(false)
+      onClose()
+      
+      toast({
+        title: "Success",
+        description: "Your post has been created successfully!",
+      })
       
       onPostCreated?.()
     } catch (error) {
@@ -137,11 +137,14 @@ export function PostCreationModal({ children, onPostCreated }: PostCreationModal
     }
   }
 
+  const handleClose = () => {
+    if (!isSubmitting) {
+      onClose()
+    }
+  }
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Start New Discussion</DialogTitle>
@@ -155,13 +158,14 @@ export function PostCreationModal({ children, onPostCreated }: PostCreationModal
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What would you like to discuss?"
               className={errors.title ? "border-red-500" : ""}
+              disabled={isSubmitting}
             />
             {errors.title && <p className="text-sm text-red-500">{errors.title}</p>}
           </div>
 
           <div className="space-y-2">
             <Label htmlFor="category">Category *</Label>
-            <Select value={category} onValueChange={setCategory}>
+            <Select value={category} onValueChange={setCategory} disabled={isSubmitting}>
               <SelectTrigger className={errors.category ? "border-red-500" : ""}>
                 <SelectValue placeholder="Select a category" />
               </SelectTrigger>
@@ -185,6 +189,7 @@ export function PostCreationModal({ children, onPostCreated }: PostCreationModal
               placeholder="Share your thoughts, ask questions, or start a discussion..."
               rows={8}
               className={errors.content ? "border-red-500" : ""}
+              disabled={isSubmitting}
             />
             {errors.content && <p className="text-sm text-red-500">{errors.content}</p>}
           </div>
@@ -198,52 +203,50 @@ export function PostCreationModal({ children, onPostCreated }: PostCreationModal
                 onKeyDown={handleKeyDown}
                 placeholder="Add a tag"
                 className="flex-1"
-                disabled={tags.length >= 5}
+                disabled={isSubmitting}
               />
-              <Button
-                type="button"
+              <Button 
+                type="button" 
                 onClick={addTag}
-                disabled={!newTag.trim() || tags.length >= 5}
-                variant="outline"
+                disabled={!newTag.trim() || tags.length >= 5 || isSubmitting}
                 size="sm"
               >
                 <Plus className="w-4 h-4" />
               </Button>
             </div>
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {tags.map((tag) => (
-                  <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      className="ml-1 hover:text-red-500"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2 mt-2">
+              {tags.map((tag) => (
+                <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="ml-1 hover:text-red-500"
+                    disabled={isSubmitting}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              ))}
+            </div>
             <p className="text-sm text-gray-500">
               Add up to 5 tags to help others find your post
             </p>
           </div>
 
-          <div className="flex justify-end gap-3 pt-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setOpen(false)}
+          <div className="flex justify-end gap-3">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={handleClose}
               disabled={isSubmitting}
             >
               Cancel
             </Button>
-            <Button
-              type="submit"
+            <Button 
+              type="submit" 
               disabled={isSubmitting}
-              className="bg-orange-500 hover:bg-orange-600"
+              className="bg-blue-600 hover:bg-blue-700"
             >
               {isSubmitting ? "Creating..." : "Create Post"}
             </Button>

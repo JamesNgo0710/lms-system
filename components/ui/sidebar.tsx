@@ -87,20 +87,36 @@ export const DesktopSidebar = ({
 }: React.ComponentProps<typeof motion.div>) => {
   const { open, setOpen, animate } = useSidebar()
   return (
-    <motion.div
-      className={cn(
-        "h-full px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[400px] flex-shrink-0",
-        className
-      )}
-      animate={{
-        width: animate ? (open ? "400px" : "60px") : "400px",
-      }}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
-      {...props}
-    >
-      {children}
-    </motion.div>
+    <>
+      {/* Backdrop overlay when sidebar is open */}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="fixed inset-0 bg-black/20 z-40 hidden md:block"
+            onClick={() => setOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+      
+      <motion.div
+        className={cn(
+          "absolute left-0 top-0 h-full px-4 py-4 hidden md:flex md:flex-col bg-neutral-100 dark:bg-neutral-800 w-[400px] z-50 shadow-lg border-r border-neutral-200 dark:border-neutral-700",
+          className
+        )}
+        animate={{
+          width: animate ? (open ? "400px" : "70px") : "400px",
+        }}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => setOpen(false)}
+        {...props}
+      >
+        {children}
+      </motion.div>
+    </>
   )
 }
 

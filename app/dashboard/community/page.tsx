@@ -1,367 +1,297 @@
 "use client"
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import React, { useState, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { MessageCircle, ThumbsUp, Clock, Users, Plus } from "lucide-react"
-import { useState, useEffect } from "react"
-import { dataStore, type CommunityPost, type CommunityStats } from "@/lib/data-store"
-import { useSession } from "next-auth/react"
+import { Input } from "@/components/ui/input"
+import { Plus, Search, MessageSquare, Users, TrendingUp, Eye, Heart, MessageCircle } from 'lucide-react'
 import { PostCreationModal } from "@/components/post-creation-modal"
+import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { CommunityService, CommunityPost, CommunityStats } from "@/lib/services/community.service"
 
 export default function CommunityPage() {
   const { data: session } = useSession()
-  const { toast } = useToast()
   const router = useRouter()
+  const { toast } = useToast()
   const [posts, setPosts] = useState<CommunityPost[]>([])
   const [stats, setStats] = useState<CommunityStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState("All")
+  const [isModalOpen, setIsModalOpen] = useState(false)
 
   useEffect(() => {
-    const loadCommunityData = () => {
-      const communityPosts = dataStore.getCommunityPosts()
-      const communityStats = dataStore.getCommunityStats()
-      setPosts(communityPosts)
-      setStats(communityStats)
-      setIsLoading(false)
-    }
-
     loadCommunityData()
-
-    // Subscribe to data store changes
-    const unsubscribe = dataStore.subscribe(loadCommunityData)
-    return unsubscribe
   }, [])
 
-  const handlePostCreated = () => {
-    // Refresh the posts when a new one is created
-    const communityPosts = dataStore.getCommunityPosts()
-    const communityStats = dataStore.getCommunityStats()
-    setPosts(communityPosts)
-    setStats(communityStats)
+  const loadCommunityData = async () => {
+    try {
+      setIsLoading(true)
+      const [postsData, statsData] = await Promise.all([
+        CommunityService.getPosts(),
+        CommunityService.getStats()
+      ])
+      setPosts(postsData)
+      setStats(statsData)
+    } catch (error) {
+      console.error('Error loading community data:', error)
+      toast({
+        title: "Error",
+        description: "Failed to load community data. Please try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handlePostClick = (postId: string) => {
-    // Increment view count and navigate to post
-    dataStore.incrementPostViews(postId)
     router.push(`/dashboard/community/${postId}`)
   }
 
-  const handleLikePost = (postId: string, event: React.MouseEvent) => {
-    event.stopPropagation() // Prevent navigation when clicking like
-    if (!session?.user?.id) {
+  const handleLike = async (postId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    if (!session?.user?.id) return
+
+    try {
+      const result = await CommunityService.togglePostLike(postId)
+      
+      // Update local state
+      setPosts(prevPosts => 
+        prevPosts.map(post => 
+          post.id === postId 
+            ? { 
+                ...post, 
+                likes: result.totalLikes,
+                isLikedByUser: result.liked
+              }
+            : post
+        )
+      )
+    } catch (error) {
+      console.error('Error toggling like:', error)
       toast({
-        title: "Authentication required",
-        description: "Please log in to like posts",
+        title: "Error",
+        description: "Failed to update like status. Please try again.",
         variant: "destructive",
       })
-      return
     }
-    dataStore.togglePostLike(postId, session.user.id)
   }
 
-  const formatTimeAgo = (dateString: string) => {
-    const date = new Date(dateString)
-    const now = new Date()
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-    
-    if (diffInHours < 1) return "Just now"
-    if (diffInHours < 24) return `${diffInHours} hours ago`
-    const diffInDays = Math.floor(diffInHours / 24)
-    if (diffInDays < 7) return `${diffInDays} days ago`
-    return date.toLocaleDateString()
-  }
+  const filteredPosts = posts.filter(post => {
+    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         post.content.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === "All" || post.category === selectedCategory
+    return matchesSearch && matchesCategory
+  })
+
+  const categories = ["All", ...Array.from(new Set(posts.map(post => post.category)))]
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Community</h1>
-          <div className="w-32 h-10 bg-gray-200 animate-pulse rounded"></div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-20 bg-gray-200 animate-pulse rounded"></div>
-          ))}
+      <div className="container mx-auto p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-lg">Loading community...</div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Community</h1>
-        <PostCreationModal onPostCreated={handlePostCreated}>
-          <Button className="bg-orange-500 hover:bg-orange-600">
-            <Plus className="w-4 h-4 mr-2" />
-            Start New Discussion
-          </Button>
-        </PostCreationModal>
+    <div className="container mx-auto p-6">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Community</h1>
+          <p className="text-gray-600 mt-2">Connect, share, and learn together</p>
+        </div>
+        <Button onClick={() => setIsModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="w-4 h-4 mr-2" />
+          New Post
+        </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-3 space-y-6">
-          {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3">
-                  <MessageCircle className="w-8 h-8 text-blue-500" />
-                  <div>
-                    <p className="text-2xl font-bold">{stats?.totalPosts || 0}</p>
-                    <p className="text-sm text-gray-600">Total Discussions</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3">
-                  <Users className="w-8 h-8 text-green-500" />
-                  <div>
-                    <p className="text-2xl font-bold">{stats?.totalUsers || 0}</p>
-                    <p className="text-sm text-gray-600">Active Members</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center space-x-3">
-                  <ThumbsUp className="w-8 h-8 text-orange-500" />
-                  <div>
-                    <p className="text-2xl font-bold">{stats?.totalReplies || 0}</p>
-                    <p className="text-sm text-gray-600">Total Replies</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Categories */}
+      {/* Stats Cards */}
+      {stats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Popular Categories</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Posts</CardTitle>
+              <MessageSquare className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {stats?.topCategories.map((category) => (
-                  <Badge 
-                    key={category.name} 
-                    variant="outline" 
-                    className="cursor-pointer hover:bg-orange-100"
-                  >
-                    {category.name} ({category.count})
-                  </Badge>
-                ))}
-                {/* Fallback categories if no stats */}
-                {(!stats?.topCategories || stats.topCategories.length === 0) && (
-                  <>
-                    <Badge variant="outline" className="cursor-pointer hover:bg-orange-100">
-                      Blockchain Basics
-                    </Badge>
-                    <Badge variant="outline" className="cursor-pointer hover:bg-orange-100">
-                      Smart Contracts
-                    </Badge>
-                    <Badge variant="outline" className="cursor-pointer hover:bg-orange-100">
-                      DeFi
-                    </Badge>
-                    <Badge variant="outline" className="cursor-pointer hover:bg-orange-100">
-                      NFTs
-                    </Badge>
-                  </>
-                )}
-              </div>
+              <div className="text-2xl font-bold">{stats.totalPosts}</div>
             </CardContent>
           </Card>
-
-          {/* Recent Discussions */}
           <Card>
-            <CardHeader>
-              <CardTitle>Recent Discussions</CardTitle>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Replies</CardTitle>
+              <MessageCircle className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {posts.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <MessageCircle className="w-12 h-12 mx-auto mb-4 text-gray-300" />
-                    <p>No discussions yet. Be the first to start a conversation!</p>
-                  </div>
-                ) : (
-                  posts.map((post) => (
-                    <div 
-                      key={post.id} 
-                      className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                      onClick={() => handlePostClick(post.id)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <h3 className="font-semibold hover:text-orange-500">{post.title}</h3>
-                            {post.isAnswered && (
-                              <Badge variant="default" className="bg-green-500">
-                                Answered
-                              </Badge>
-                            )}
-                            {post.isPinned && (
-                              <Badge variant="outline" className="border-orange-500 text-orange-500">
-                                Pinned
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center space-x-4 text-sm text-gray-600">
-                            <div className="flex items-center space-x-1">
-                              <Avatar className="w-5 h-5">
-                                <AvatarFallback className="text-xs">
-                                  {post.authorName
-                                    .split(" ")
-                                    .map((n) => n[0])
-                                    .join("")}
-                                </AvatarFallback>
-                              </Avatar>
-                              <span>{post.authorName}</span>
-                            </div>
-                            <Badge variant="outline" className="text-xs">
-                              {post.category}
-                            </Badge>
-                            <div className="flex items-center space-x-1">
-                              <Clock className="w-3 h-3" />
-                              <span>{formatTimeAgo(post.createdAt)}</span>
-                            </div>
-                            <div className="flex items-center space-x-1">
-                              <span className="text-xs">Views: {post.views}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          <div className="flex items-center space-x-1">
-                            <MessageCircle className="w-4 h-4" />
-                            <span>{post.replyCount}</span>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={(e) => handleLikePost(post.id, e)}
-                            className={`flex items-center space-x-1 p-0 h-auto ${
-                              session?.user?.id && dataStore.hasUserLikedPost(post.id, session.user.id) 
-                                ? 'text-orange-500' 
-                                : 'text-gray-600 hover:text-orange-500'
-                            }`}
-                          >
-                            <ThumbsUp className={`w-4 h-4 ${
-                              session?.user?.id && dataStore.hasUserLikedPost(post.id, session.user.id) 
-                                ? 'fill-current' 
-                                : ''
-                            }`} />
-                            <span>{post.likes}</span>
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+              <div className="text-2xl font-bold">{stats.totalReplies}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+              <Users className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.totalUsers}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Answered Rate</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.answeredRate}%</div>
             </CardContent>
           </Card>
         </div>
+      )}
 
-        {/* Sidebar */}
-        <div className="space-y-6">
-          {/* Top Contributors */}
-          <Card>
+      {/* Search and Filter */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Search posts..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex gap-2 flex-wrap">
+          {categories.map(category => (
+            <Button
+              key={category}
+              variant={selectedCategory === category ? "default" : "outline"}
+              size="sm"
+              onClick={() => setSelectedCategory(category)}
+            >
+              {category}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      {/* Posts List */}
+      <div className="space-y-4">
+        {filteredPosts.map(post => (
+          <Card 
+            key={post.id} 
+            className="cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => handlePostClick(post.id)}
+          >
             <CardHeader>
-              <CardTitle>Top Contributors</CardTitle>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    {post.isPinned && (
+                      <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                        Pinned
+                      </Badge>
+                    )}
+                    {post.isAnswered && (
+                      <Badge variant="secondary" className="bg-green-100 text-green-800">
+                        Answered
+                      </Badge>
+                    )}
+                    <Badge variant="outline">{post.category}</Badge>
+                  </div>
+                  <CardTitle className="text-lg hover:text-blue-600 transition-colors">
+                    {post.title}
+                  </CardTitle>
+                  <CardDescription className="mt-1">
+                    by {post.authorName} • {new Date(post.createdAt).toLocaleDateString()}
+                  </CardDescription>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {stats?.topContributors.length === 0 ? (
-                  <p className="text-sm text-gray-500 text-center py-4">
-                    No contributors yet
-                  </p>
-                ) : (
-                  stats?.topContributors.map((contributor, index) => (
-                    <div key={contributor.id} className="flex items-center space-x-3">
-                      <div className="flex-shrink-0">
-                        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                          {index + 1}
-                        </div>
-                      </div>
-                      <Avatar>
-                        <AvatarFallback>
-                          {contributor.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <p className="font-medium">{contributor.name}</p>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm text-gray-600">{contributor.reputation} pts</span>
-                          <Badge variant="outline" className="text-xs">
-                            {contributor.reputation > 50 ? "Expert" : contributor.reputation > 20 ? "Advanced" : "Beginner"}
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
+              <p className="text-gray-600 mb-4 line-clamp-2">
+                {post.content.length > 150 ? `${post.content.substring(0, 150)}...` : post.content}
+              </p>
+              
+              {/* Tags */}
+              {post.tags && post.tags.length > 0 && (
+                <div className="flex gap-1 mb-4">
+                  {post.tags.slice(0, 3).map(tag => (
+                    <Badge key={tag} variant="secondary" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                  {post.tags.length > 3 && (
+                    <Badge variant="secondary" className="text-xs">
+                      +{post.tags.length - 3}
+                    </Badge>
+                  )}
+                </div>
+              )}
+
+              {/* Post Stats */}
+              <div className="flex items-center justify-between text-sm text-gray-500">
+                <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-1">
+                    <Eye className="w-4 h-4" />
+                    <span>{post.views}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <MessageCircle className="w-4 h-4" />
+                    <span>{post.replyCount}</span>
+                  </div>
+                  <button
+                    onClick={(e) => handleLike(post.id, e)}
+                    className={`flex items-center gap-1 hover:text-red-500 transition-colors ${
+                      post.isLikedByUser ? 'text-red-500' : ''
+                    }`}
+                  >
+                    <Heart className={`w-4 h-4 ${post.isLikedByUser ? 'fill-current' : ''}`} />
+                    <span>{post.likes}</span>
+                  </button>
+                </div>
+                <Badge 
+                  variant={post.status === 'active' ? 'default' : 'secondary'}
+                  className="text-xs"
+                >
+                  {post.status}
+                </Badge>
               </div>
             </CardContent>
           </Card>
+        ))}
+      </div>
 
-          {/* Community Guidelines */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Community Guidelines</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 text-sm">
-                <div className="flex items-start space-x-2">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p>Be respectful and constructive in discussions</p>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p>Search before posting to avoid duplicates</p>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p>Use clear, descriptive titles</p>
-                </div>
-                <div className="flex items-start space-x-2">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p>Mark helpful answers as solutions</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* User Role Info */}
-          {session?.user && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Your Role</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-sm">
-                  <p className="font-medium">{session.user.role === 'admin' ? 'Administrator' : 'Student'}</p>
-                  <p className="text-gray-600 mt-1">
-                    {session.user.role === 'admin' 
-                      ? 'You can moderate discussions and help manage the community.' 
-                      : 'Share your questions and help others learn!'}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+      {filteredPosts.length === 0 && (
+        <div className="text-center py-12">
+          <MessageSquare className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No posts found</h3>
+          <p className="text-gray-500 mb-4">
+            {searchTerm || selectedCategory !== "All" 
+              ? "Try adjusting your search criteria." 
+              : "Be the first to start a discussion!"
+            }
+          </p>
+          {(!searchTerm && selectedCategory === "All") && (
+            <Button onClick={() => setIsModalOpen(true)}>
+              Create First Post
+            </Button>
           )}
         </div>
-      </div>
+      )}
+
+      {/* Post Creation Modal */}
+      <PostCreationModal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)}
+        onPostCreated={loadCommunityData}
+      />
     </div>
   )
 }

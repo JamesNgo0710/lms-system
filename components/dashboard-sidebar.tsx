@@ -54,29 +54,29 @@ export const Logo = () => {
   return (
     <Link
       href="/dashboard"
-      className="font-normal flex flex-col items-center text-sm text-black py-2 relative z-20 justify-center space-y-0"
+      className="font-normal flex items-center text-sm text-black py-2 relative z-20 justify-center space-x-3 w-full"
     >
-      <div className="h-48 w-48 flex-shrink-0 relative">
+      <div className="h-16 w-16 flex-shrink-0 relative">
         <Image
           src={APP_CONFIG.logoUrl}
           alt={`${APP_CONFIG.name} Logo`}
           fill
           className="object-contain"
-          sizes="192px"
+          sizes="64px"
         />
       </div>
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-center"
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="flex flex-col"
       >
-        <div className="text-lg font-bold">
-          <span className="bg-gradient-to-r from-orange-500 via-red-500 to-pink-500 bg-clip-text text-transparent">
-            {APP_CONFIG.name.split(' ').slice(0, -1).join(' ')}
-          </span>
-          <span className="ml-1 bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 bg-clip-text text-transparent">
-            {APP_CONFIG.name.split(' ').slice(-1)[0]}
-          </span>
+        <div className="text-base font-bold">
+          <div className="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 bg-clip-text text-transparent">
+            Learning Management
+          </div>
+          <div className="bg-gradient-to-r from-orange-500 via-orange-600 to-orange-700 bg-clip-text text-transparent">
+            System
+          </div>
         </div>
       </motion.div>
     </Link>
@@ -89,13 +89,13 @@ export const LogoIcon = () => {
       href="/dashboard"
       className="font-normal flex items-center text-sm text-black py-2 relative z-20 justify-center"
     >
-      <div className="h-12 w-12 flex-shrink-0 relative">
+      <div className="h-8 w-8 flex-shrink-0 relative">
         <Image
           src={APP_CONFIG.logoUrl}
           alt={`${APP_CONFIG.name} Logo`}
           fill
           className="object-contain"
-          sizes="48px"
+          sizes="32px"
         />
       </div>
     </Link>
@@ -212,8 +212,6 @@ export function DashboardSidebar() {
     ),
   }))
 
-  
-
   return (
     <SidebarProvider>
       <Sidebar open={open} setOpen={setOpen}>
@@ -240,23 +238,6 @@ export function DashboardSidebar() {
                 />
               ))}
             </div>
-          </div>
-          <div>
-                    <SidebarLink
-          link={{
-            label: session?.user?.name || "User",
-            href: "/dashboard/profile",
-            icon: (
-              <Image
-                src={getAvatarUrl(session?.user?.name || "User")}
-                className="h-7 w-7 flex-shrink-0 rounded-full"
-                width={50}
-                height={50}
-                alt="Avatar"
-              />
-            ),
-          }}
-        />
           </div>
         </SidebarBody>
       </Sidebar>
