@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { dataStore, type Topic, type Assessment, type AssessmentAttempt, type User, type Lesson, type LessonCompletion, type LessonView } from "@/lib/data-store"
+import { dataStore, type Topic, type Assessment, type AssessmentAttempt, type User, type Lesson, type LessonCompletion, type LessonView, type AssessmentHistory } from "@/lib/data-store"
 import { syncManager } from "@/lib/sync-manager"
 
 export function useTopics() {
@@ -30,12 +30,15 @@ export function useTopics() {
 
 export function useAssessments() {
   const [assessments, setAssessments] = useState<Assessment[]>([])
+  const [assessmentHistory, setAssessmentHistory] = useState<AssessmentHistory[]>([])
 
   useEffect(() => {
     setAssessments(dataStore.getAssessments())
+    setAssessmentHistory(dataStore.getAssessmentHistory())
 
     const unsubscribe = dataStore.subscribe(() => {
       setAssessments(dataStore.getAssessments())
+      setAssessmentHistory(dataStore.getAssessmentHistory())
     })
 
     return unsubscribe
@@ -43,12 +46,15 @@ export function useAssessments() {
 
   return {
     assessments,
+    assessmentHistory,
     addAssessment: dataStore.addAssessment.bind(dataStore),
     updateAssessment: dataStore.updateAssessment.bind(dataStore),
     deleteAssessment: dataStore.deleteAssessment.bind(dataStore),
     getAssessmentByTopicId: dataStore.getAssessmentByTopicId.bind(dataStore),
     updateAssessmentCooldown: dataStore.updateAssessmentCooldown.bind(dataStore),
     formatCooldownPeriod: dataStore.formatCooldownPeriod.bind(dataStore),
+    getAssessmentHistory: dataStore.getAssessmentHistory.bind(dataStore),
+    getRecentAssessmentHistory: dataStore.getRecentAssessmentHistory.bind(dataStore),
   }
 }
 

@@ -4,65 +4,61 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\CommunityPost;
-use App\Models\CommunityReply;
-use App\Models\User;
+use App\Models\CommunityComment;
+use App\Models\CommunityVote;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class CommunityController extends Controller
 {
-    // Posts
-    public function getPosts()
+    // Posts endpoints
+    public function getPosts(Request $request)
     {
-        $posts = CommunityPost::with(['author', 'replies.author'])
-            ->orderBy('is_pinned', 'desc')
-            ->orderBy('created_at', 'desc')
-            ->get()
-            ->map(function ($post) {
-                // Add author name for compatibility
-                $post->author_name = $post->author->name;
+        $query = CommunityPost::visible()
+            ->with(['author', 'votes'])
+            ->withCount(['comments' => function($query) {
+                $query->visible();
+            }]);
 
-                // Add like status for current user
-                if (auth()->check()) {
-                    $post->is_liked_by_user = $post->isLikedBy(auth()->id());
-                }
+        // Apply filters
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('content', 'like', "%{$search}%");
+            });
+        }
 
+        if ($request->has('author')) {
+            $query->where('author_id', $request->author);
+        }
+
+        // Sort by pinned first, then by activity
+        $posts = $query->orderBy('is_pinned', 'desc')
+                      ->orderBy('last_activity_at', 'desc')
+                      ->paginate(20);
+
+        // Add user vote information if authenticated
+        if (Auth::check()) {
+            $posts->getCollection()->transform(function ($post) {
+                $post->user_vote = $post->getUserVote(Auth::id());
                 return $post;
             });
+        }
 
         return response()->json($posts);
     }
 
     public function getPost($id)
     {
-        $post = CommunityPost::with(['author', 'replies.author', 'replies.childReplies.author'])
+        $post = CommunityPost::visible()
+            ->with(['author', 'votes'])
             ->findOrFail($id);
 
-        // Increment views
-        $post->increment('views');
-
-        // Add author name for compatibility
-        $post->author_name = $post->author->name;
-
-        // Add like status for current user
-        if (auth()->check()) {
-            $post->is_liked_by_user = $post->isLikedBy(auth()->id());
-
-            // Add like status for replies
-            $post->replies = $post->replies->map(function ($reply) {
-                $reply->author_name = $reply->author->name;
-                $reply->is_liked_by_user = $reply->isLikedBy(auth()->id());
-
-                // Handle nested replies
-                if ($reply->childReplies) {
-                    $reply->childReplies = $reply->childReplies->map(function ($childReply) {
-                        $childReply->author_name = $childReply->author->name;
-                        $childReply->is_liked_by_user = $childReply->isLikedBy(auth()->id());
-                        return $childReply;
-                    });
-                }
-
-                return $reply;
-            });
+        // Add user vote information if authenticated
+        if (Auth::check()) {
+            $post->user_vote = $post->getUserVote(Auth::id());
         }
 
         return response()->json($post);
@@ -70,61 +66,55 @@ class CommunityController extends Controller
 
     public function createPost(Request $request)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
-            'content' => 'required|string',
-            'category' => 'required|string|max:255',
-            'tags' => 'nullable|array',
-            'tags.*' => 'string|max:50',
+            'content' => 'required|string|max:10000',
         ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
         $post = CommunityPost::create([
-            'title' => $validated['title'],
-            'content' => $validated['content'],
-            'author_id' => auth()->id(),
-            'category' => $validated['category'],
-            'tags' => $validated['tags'] ?? [],
-            'status' => 'active',
+            'title' => $request->title,
+            'content' => $request->content,
+            'author_id' => Auth::id(),
+            'last_activity_at' => now(),
         ]);
 
-        return response()->json($post->load('author'), 201);
+        $post->load('author');
+
+        return response()->json($post, 201);
     }
 
     public function updatePost(Request $request, $id)
     {
         $post = CommunityPost::findOrFail($id);
 
-        // Check if user can edit (author or admin)
-        if ($post->author_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
+        if (!$post->canUserEdit(Auth::id())) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $validated = $request->validate([
-            'title' => 'sometimes|string|max:255',
-            'content' => 'sometimes|string',
-            'category' => 'sometimes|string|max:255',
-            'tags' => 'sometimes|array',
-            'tags.*' => 'string|max:50',
-            'is_pinned' => 'sometimes|boolean',
-            'status' => 'sometimes|in:active,closed,archived',
+        $validator = Validator::make($request->all(), [
+            'title' => 'sometimes|required|string|max:255',
+            'content' => 'sometimes|required|string|max:10000',
         ]);
 
-        // Only admins can pin posts or change status
-        if (!auth()->user()->hasRole('admin')) {
-            unset($validated['is_pinned'], $validated['status']);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $post->update($validated);
+        $post->update($request->only(['title', 'content']));
+        $post->load('author');
 
-        return response()->json($post->load('author'));
+        return response()->json($post);
     }
 
     public function deletePost($id)
     {
         $post = CommunityPost::findOrFail($id);
 
-        // Check if user can delete (author or admin)
-        if ($post->author_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
+        if (!$post->canUserDelete(Auth::id())) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
@@ -133,177 +123,204 @@ class CommunityController extends Controller
         return response()->json(['message' => 'Post deleted successfully']);
     }
 
-    public function togglePostLike($id)
+    // Comments endpoints
+    public function getComments($postId)
     {
+        $post = CommunityPost::findOrFail($postId);
+
+        $comments = $post->topLevelComments()
+            ->visible()
+            ->with(['author', 'replies.author', 'votes'])
+            ->get();
+
+        // Add user vote information if authenticated
+        if (Auth::check()) {
+            $this->addUserVotesToComments($comments);
+        }
+
+        return response()->json($comments);
+    }
+
+    private function addUserVotesToComments($comments)
+    {
+        foreach ($comments as $comment) {
+            $comment->user_vote = $comment->getUserVote(Auth::id());
+            if ($comment->replies->count() > 0) {
+                $this->addUserVotesToComments($comment->replies);
+            }
+        }
+    }
+
+    public function createComment(Request $request, $postId)
+    {
+        $post = CommunityPost::findOrFail($postId);
+
+        if ($post->is_locked) {
+            return response()->json(['message' => 'This post is locked for comments'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'content' => 'required|string|max:5000',
+            'parent_id' => 'nullable|exists:community_comments,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $comment = CommunityComment::create([
+            'content' => $request->content,
+            'author_id' => Auth::id(),
+            'post_id' => $postId,
+            'parent_id' => $request->parent_id,
+        ]);
+
+        $comment->load('author');
+
+        return response()->json($comment, 201);
+    }
+
+    public function updateComment(Request $request, $id)
+    {
+        $comment = CommunityComment::findOrFail($id);
+
+        if (!$comment->canUserEdit(Auth::id())) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'content' => 'required|string|max:5000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $comment->update(['content' => $request->content]);
+        $comment->load('author');
+
+        return response()->json($comment);
+    }
+
+    public function deleteComment($id)
+    {
+        $comment = CommunityComment::findOrFail($id);
+
+        if (!$comment->canUserDelete(Auth::id())) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $comment->delete();
+
+        return response()->json(['message' => 'Comment deleted successfully']);
+    }
+
+    // Voting endpoints
+    public function vote(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'voteable_type' => 'required|in:post,comment',
+            'voteable_id' => 'required|integer',
+            'vote_type' => 'required|in:1,-1', // 1 for upvote, -1 for downvote
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $voteableType = $request->voteable_type === 'post'
+            ? CommunityPost::class
+            : CommunityComment::class;
+
+        $voteable = $voteableType::findOrFail($request->voteable_id);
+
+        // Check if user already voted
+        $existingVote = CommunityVote::where([
+            'user_id' => Auth::id(),
+            'voteable_type' => $voteableType,
+            'voteable_id' => $request->voteable_id,
+        ])->first();
+
+        if ($existingVote) {
+            if ($existingVote->vote_type == $request->vote_type) {
+                // Same vote - remove it
+                $existingVote->delete();
+                return response()->json(['message' => 'Vote removed']);
+            } else {
+                // Different vote - update it
+                $existingVote->update(['vote_type' => $request->vote_type]);
+                return response()->json(['message' => 'Vote updated']);
+            }
+        } else {
+            // New vote
+            CommunityVote::create([
+                'user_id' => Auth::id(),
+                'voteable_type' => $voteableType,
+                'voteable_id' => $request->voteable_id,
+                'vote_type' => $request->vote_type,
+            ]);
+            return response()->json(['message' => 'Vote recorded']);
+        }
+    }
+
+    // Admin endpoints
+    public function togglePin($id)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
         $post = CommunityPost::findOrFail($id);
-        $liked = $post->toggleLike(auth()->id());
+        $post->update(['is_pinned' => !$post->is_pinned]);
 
         return response()->json([
-            'liked' => $liked,
-            'total_likes' => $post->fresh()->likes
+            'message' => $post->is_pinned ? 'Post pinned' : 'Post unpinned',
+            'is_pinned' => $post->is_pinned
         ]);
     }
 
-    // Replies
-    public function getRepliesByPost($postId)
+    public function toggleLock($id)
     {
-        $replies = CommunityReply::with(['author', 'childReplies.author'])
-            ->where('post_id', $postId)
-            ->whereNull('parent_reply_id') // Only top-level replies
-            ->orderBy('created_at', 'asc')
-            ->get()
-            ->map(function ($reply) {
-                $reply->author_name = $reply->author->name;
-
-                if (auth()->check()) {
-                    $reply->is_liked_by_user = $reply->isLikedBy(auth()->id());
-
-                    // Handle nested replies
-                    if ($reply->childReplies) {
-                        $reply->childReplies = $reply->childReplies->map(function ($childReply) {
-                            $childReply->author_name = $childReply->author->name;
-                            $childReply->is_liked_by_user = $childReply->isLikedBy(auth()->id());
-                            return $childReply;
-                        });
-                    }
-                }
-
-                return $reply;
-            });
-
-        return response()->json($replies);
-    }
-
-    public function createReply(Request $request)
-    {
-        $validated = $request->validate([
-            'post_id' => 'required|exists:community_posts,id',
-            'content' => 'required|string',
-            'parent_reply_id' => 'nullable|exists:community_replies,id',
-        ]);
-
-        $reply = CommunityReply::create([
-            'post_id' => $validated['post_id'],
-            'author_id' => auth()->id(),
-            'content' => $validated['content'],
-            'parent_reply_id' => $validated['parent_reply_id'] ?? null,
-        ]);
-
-        // Update post reply count
-        $post = CommunityPost::find($validated['post_id']);
-        $post->updateReplyCount();
-
-        return response()->json($reply->load('author'), 201);
-    }
-
-    public function updateReply(Request $request, $id)
-    {
-        $reply = CommunityReply::findOrFail($id);
-
-        // Check if user can edit (author or admin)
-        if ($reply->author_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin')) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $validated = $request->validate([
-            'content' => 'required|string',
-        ]);
-
-        $reply->update($validated);
-
-        return response()->json($reply->load('author'));
-    }
-
-    public function deleteReply($id)
-    {
-        $reply = CommunityReply::findOrFail($id);
-
-        // Check if user can delete (author or admin)
-        if ($reply->author_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
-            return response()->json(['message' => 'Unauthorized'], 403);
-        }
-
-        $postId = $reply->post_id;
-        $reply->delete();
-
-        // Update post reply count
-        $post = CommunityPost::find($postId);
-        $post->updateReplyCount();
-
-        return response()->json(['message' => 'Reply deleted successfully']);
-    }
-
-    public function toggleReplyLike($id)
-    {
-        $reply = CommunityReply::findOrFail($id);
-        $liked = $reply->toggleLike(auth()->id());
+        $post = CommunityPost::findOrFail($id);
+        $post->update(['is_locked' => !$post->is_locked]);
 
         return response()->json([
-            'liked' => $liked,
-            'total_likes' => $reply->fresh()->likes
+            'message' => $post->is_locked ? 'Post locked' : 'Post unlocked',
+            'is_locked' => $post->is_locked
         ]);
     }
 
-    public function markReplyAsAccepted($id)
+    public function toggleHide($id)
     {
-        $reply = CommunityReply::findOrFail($id);
-
-        // Only post author or admin can mark as accepted
-        if ($reply->post->author_id !== auth()->id() && !auth()->user()->hasRole('admin')) {
+        if (!Auth::user()->hasRole('admin')) {
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $reply->markAsAccepted();
-
-        return response()->json(['message' => 'Reply marked as accepted answer']);
-    }
-
-    // Community Stats
-    public function getStats()
-    {
-        $totalPosts = CommunityPost::count();
-        $totalReplies = CommunityReply::count();
-        $totalUsers = User::count();
-        $answeredPosts = CommunityPost::where('is_answered', true)->count();
-        $answeredRate = $totalPosts > 0 ? round(($answeredPosts / $totalPosts) * 100, 2) : 0;
-
-        // Top categories
-        $topCategories = CommunityPost::selectRaw('category, COUNT(*) as count')
-            ->groupBy('category')
-            ->orderBy('count', 'desc')
-            ->limit(5)
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'name' => $item->category,
-                    'count' => $item->count
-                ];
-            });
-
-        // Top contributors
-        $topContributors = User::withCount(['communityPosts', 'communityReplies'])
-            ->having('community_posts_count', '>', 0)
-            ->orHaving('community_replies_count', '>', 0)
-            ->orderByRaw('community_posts_count + community_replies_count DESC')
-            ->limit(5)
-            ->get()
-            ->map(function ($user) {
-                return [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'posts' => $user->community_posts_count,
-                    'replies' => $user->community_replies_count,
-                    'reputation' => ($user->community_posts_count * 5) + ($user->community_replies_count * 2),
-                ];
-            });
+        $post = CommunityPost::findOrFail($id);
+        $post->update(['is_hidden' => !$post->is_hidden]);
 
         return response()->json([
-            'total_posts' => $totalPosts,
-            'total_replies' => $totalReplies,
-            'total_users' => $totalUsers,
-            'answered_rate' => $answeredRate,
-            'top_categories' => $topCategories,
-            'top_contributors' => $topContributors,
+            'message' => $post->is_hidden ? 'Post hidden' : 'Post shown',
+            'is_hidden' => $post->is_hidden
+        ]);
+    }
+
+    public function hideComment($id)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $comment = CommunityComment::findOrFail($id);
+        $comment->update(['is_hidden' => !$comment->is_hidden]);
+
+        return response()->json([
+            'message' => $comment->is_hidden ? 'Comment hidden' : 'Comment shown',
+            'is_hidden' => $comment->is_hidden
         ]);
     }
 }

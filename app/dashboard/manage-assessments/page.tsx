@@ -1,29 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Search, Edit, Trash2, Eye } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Eye, History, User, Calendar, FileText, ChevronLeft, ChevronRight } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+
 import { useTopics, useAssessments } from "@/hooks/use-data-store"
 
 export default function ManageAssessmentsPage() {
   const { topics } = useTopics()
-  const { assessments, addAssessment, deleteAssessment } = useAssessments()
+  const { assessments, addAssessment, deleteAssessment, getRecentAssessmentHistory } = useAssessments()
   const [searchTerm, setSearchTerm] = useState("")
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [selectedTopic, setSelectedTopic] = useState<(typeof topics)[0] | null>(null)
-  const [formData, setFormData] = useState({
-    totalQuestions: "",
-    timeLimit: "",
-    retakePeriod: "",
-  })
+
   const { toast } = useToast()
 
   const filteredTopics = topics.filter(
@@ -33,40 +25,29 @@ export default function ManageAssessmentsPage() {
   )
 
   const handleCreateAssessment = (topic: (typeof topics)[0]) => {
-    setSelectedTopic(topic)
-    setFormData({ totalQuestions: "", timeLimit: "", retakePeriod: "" })
-    setIsCreateDialogOpen(true)
-  }
+    // Create assessment directly with defaults and redirect to edit page
+    const templateQuestions = generateTemplateQuestions(topic.title, 1) // Default 1 question
 
-  const handleSubmitAssessment = () => {
-    if (!selectedTopic || !formData.totalQuestions) {
-      toast({
-        title: "Error",
-        description: "Please fill in all required fields",
-        variant: "destructive",
-      })
-      return
-    }
-
-    const templateQuestions = generateTemplateQuestions(selectedTopic.title, Number.parseInt(formData.totalQuestions))
-
-    addAssessment({
-      topicId: selectedTopic.id,
-      totalQuestions: Number.parseInt(formData.totalQuestions),
-      timeLimit: formData.timeLimit || "01:00",
-      retakePeriod: formData.retakePeriod || "3",
+    const newAssessment = addAssessment({
+      topicId: topic.id,
+      totalQuestions: 1, // Default 1 question
+      timeLimit: "01:00", // Default 1 hour
+      retakePeriod: "1", // Default 1 month (we'll remove this in UI)
+      cooldownPeriod: 1, // Default 1 hour cooldown
       questions: templateQuestions,
       createdAt: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD format
     })
 
     toast({
-      title: "Success",
-      description: `Assessment created for ${selectedTopic?.title} with ${templateQuestions.length} questions`,
+      title: "Assessment Created",
+      description: `Draft assessment created for ${topic.title}. You can now edit the questions.`,
     })
-    setIsCreateDialogOpen(false)
-    setFormData({ totalQuestions: "", timeLimit: "", retakePeriod: "" })
-    setSelectedTopic(null)
+
+    // Redirect to edit page
+    window.location.href = `/dashboard/manage-assessments/edit/${topic.id}`
   }
+
+
 
   const handleDeleteAssessment = (topicId: number) => {
     deleteAssessment(topicId)
@@ -87,6 +68,19 @@ export default function ManageAssessmentsPage() {
         <h1 className="text-3xl font-bold">Assessments</h1>
         <p className="text-gray-600">Select Topic below to Create Assessment</p>
       </div>
+
+      {/* Recently Edited Assessments */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center space-x-2">
+            <History className="w-5 h-5 text-orange-500" />
+            <h2 className="text-xl font-semibold">Recently Edited Assessments</h2>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <RecentlyEditedAssessments getRecentAssessmentHistory={getRecentAssessmentHistory} />
+        </CardContent>
+      </Card>
 
       {/* Search */}
       <Card>
@@ -192,81 +186,166 @@ export default function ManageAssessmentsPage() {
         })}
       </div>
 
-      {/* Create Assessment Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-gray-800 text-white border-gray-700">
-          <DialogHeader className="bg-orange-500 text-center -m-6 mb-6 p-6">
-            <DialogTitle>Create Assessment</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <Label className="text-orange-400">Topic:</Label>
-              <div className="text-white font-medium">{selectedTopic?.title}</div>
-            </div>
 
-            <div className="space-y-2">
-              <Label className="text-white">Total Questions *</Label>
-              <Select
-                value={formData.totalQuestions}
-                onValueChange={(value) => setFormData({ ...formData, totalQuestions: value })}
-              >
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                  <SelectValue placeholder="Select number of questions" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="5">5</SelectItem>
-                  <SelectItem value="10">10</SelectItem>
-                  <SelectItem value="15">15</SelectItem>
-                  <SelectItem value="20">20</SelectItem>
-                  <SelectItem value="25">25</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+    </div>
+  )
+}
 
-            <div className="space-y-2">
-              <Label className="text-white">Time Limit</Label>
-              <Select
-                value={formData.timeLimit}
-                onValueChange={(value) => setFormData({ ...formData, timeLimit: value })}
-              >
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                  <SelectValue placeholder="Select time limit" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="00:30">30 minutes</SelectItem>
-                  <SelectItem value="01:00">1 hour</SelectItem>
-                  <SelectItem value="01:30">1.5 hours</SelectItem>
-                  <SelectItem value="02:00">2 hours</SelectItem>
-                  <SelectItem value="03:00">3 hours</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+// Recently Edited Assessments Component
+function RecentlyEditedAssessments({ getRecentAssessmentHistory }: { getRecentAssessmentHistory: (limit?: number) => any[] }) {
+  const [currentPage, setCurrentPage] = useState(0)
+  const itemsPerPage = 8 // 4 rows × 2 columns
+  const allHistory = getRecentAssessmentHistory(20) // Reduced from 50 to 20 for better performance
+  
+  const totalPages = Math.max(1, Math.ceil(allHistory.length / itemsPerPage))
+  const safePage = Math.min(currentPage, totalPages - 1)
+  const startIndex = safePage * itemsPerPage
+  const currentPageHistory = allHistory.slice(startIndex, startIndex + itemsPerPage)
 
-            <div className="space-y-2">
-              <Label className="text-white">Re-Take Period</Label>
-              <Select
-                value={formData.retakePeriod}
-                onValueChange={(value) => setFormData({ ...formData, retakePeriod: value })}
-              >
-                <SelectTrigger className="bg-gray-700 border-gray-600 text-white">
-                  <SelectValue placeholder="Select re-take period" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1">1 Month</SelectItem>
-                  <SelectItem value="3">3 Months</SelectItem>
-                  <SelectItem value="6">6 Months</SelectItem>
-                  <SelectItem value="12">1 Year</SelectItem>
-                </SelectContent>
-              </Select>
+  if (allHistory.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+        <p>No recent assessment activity</p>
+      </div>
+    )
+  }
+
+  const getActionColor = (action: string) => {
+    switch (action) {
+      case "created": return "bg-green-100 text-green-800"
+      case "edited": return "bg-blue-100 text-blue-800"
+      case "deleted": return "bg-red-100 text-red-800"
+      case "published": return "bg-emerald-100 text-emerald-800"
+      case "unpublished": return "bg-gray-100 text-gray-800"
+      default: return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getActionIcon = (action: string) => {
+    switch (action) {
+      case "created": return <Plus className="w-4 h-4" />
+      case "edited": return <Edit className="w-4 h-4" />
+      case "deleted": return <Trash2 className="w-4 h-4" />
+      case "published": return <Eye className="w-4 h-4" />
+      case "unpublished": return <Eye className="w-4 h-4" />
+      default: return <FileText className="w-4 h-4" />
+    }
+  }
+
+  const formatTimeAgo = (timestamp: string) => {
+    const now = new Date()
+    const time = new Date(timestamp)
+    const diffInSeconds = Math.floor((now.getTime() - time.getTime()) / 1000)
+    
+    if (diffInSeconds < 60) return "Just now"
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
+    return `${Math.floor(diffInSeconds / 86400)}d ago`
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Grid Layout - 2 columns */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-[320px]">
+        {currentPageHistory.map((entry) => (
+          <div key={entry.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors h-fit">
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
+              <div className={`p-2 rounded-lg flex-shrink-0 ${getActionColor(entry.action)}`}>
+                {getActionIcon(entry.action)}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center space-x-2 mb-1">
+                  <span className="font-medium text-sm truncate">{entry.topicTitle}</span>
+                  <Badge variant="outline" className={`${getActionColor(entry.action)} text-xs flex-shrink-0`}>
+                    {entry.action}
+                  </Badge>
+                </div>
+                <div className="flex items-center space-x-3 text-xs text-gray-600">
+                  <div className="flex items-center space-x-1">
+                    <User className="w-3 h-3 flex-shrink-0" />
+                    <span className="truncate">{entry.actionByName}</span>
+                  </div>
+                  <div className="flex items-center space-x-1 flex-shrink-0">
+                    <Calendar className="w-3 h-3" />
+                    <span>{formatTimeAgo(entry.timestamp)}</span>
+                  </div>
+                </div>
+                {entry.details && (
+                  <p className="text-xs text-gray-500 mt-1 truncate">{entry.details}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center space-x-1 flex-shrink-0">
+              <Link href={`/dashboard/manage-assessments/edit/${entry.topicId}`}>
+                <Button size="sm" variant="ghost" className="text-orange-500 hover:text-orange-600 p-1">
+                  <Edit className="w-3 h-3" />
+                </Button>
+              </Link>
             </div>
           </div>
-          <DialogFooter>
-            <Button onClick={handleSubmitAssessment} className="w-full bg-orange-500 hover:bg-orange-600">
-              Create Assessment
+        ))}
+      </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t">
+          <div className="text-sm text-gray-500">
+            Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, allHistory.length)} of {allHistory.length} activities
+          </div>
+          <div className="flex items-center space-x-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.max(0, safePage - 1))}
+              disabled={safePage === 0}
+              className="flex items-center space-x-1"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              <span className="hidden sm:inline">Previous</span>
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            
+            {/* Page Numbers */}
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                let pageNum;
+                if (totalPages <= 3) {
+                  pageNum = i;
+                } else if (safePage < 1) {
+                  pageNum = i;
+                } else if (safePage > totalPages - 2) {
+                  pageNum = totalPages - 3 + i;
+                } else {
+                  pageNum = safePage - 1 + i;
+                }
+                
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={safePage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className={`w-8 h-8 p-0 ${safePage === pageNum ? "bg-orange-500 hover:bg-orange-600" : ""}`}
+                  >
+                    {pageNum + 1}
+                  </Button>
+                );
+              })}
+            </div>
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.min(totalPages - 1, safePage + 1))}
+              disabled={safePage >= totalPages - 1}
+              className="flex items-center space-x-1"
+            >
+              <span className="hidden sm:inline">Next</span>
+              <ChevronRight className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

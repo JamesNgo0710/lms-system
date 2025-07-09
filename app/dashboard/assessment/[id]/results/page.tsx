@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo, use } from "react"
 import { useSession } from "next-auth/react"
 import { notFound, useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,31 +23,92 @@ import {
   BookOpen,
   Users,
   Calendar,
-  Star
+  Star,
+  AlertCircle
 } from "lucide-react"
 import Link from "next/link"
-import { useAssessments, useAssessmentSubmissions } from "@/hooks/use-data-store"
+import { useAssessments, useAssessmentAttempts, useTopics } from "@/hooks/use-data-store"
 
-const wrongAnswers = [
-  {
-    questionNo: 5,
-    question:
-      "Lorem Ipsum Dolor Sit Amet Consectetur Adipiscing Elit Sed Do Eiusmod Tempor Incididunt Labore Et Dolore Magna Aliqua",
-    userAnswer: "False",
-    correctAnswer: "True",
-    image: "/placeholder.svg?height=200&width=300",
-  },
-]
+interface WrongAnswer {
+  questionNo: number
+  question: string
+  userAnswer: string | number
+  correctAnswer: string | number
+  type: string
+  options?: string[]
+  image?: string
+}
 
-export default function AssessmentResultsPage({ params }: { params: { id: string } }) {
+export default function AssessmentResultsPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session } = useSession()
   const user = session?.user
   const searchParams = useSearchParams()
+  const { getAssessmentByTopicId } = useAssessments()
+  const { getUserAssessmentAttempts } = useAssessmentAttempts()
+  const { getTopicById } = useTopics()
+
+  // Unwrap params Promise
+  const resolvedParams = use(params)
 
   const score = Number.parseInt(searchParams.get("score") || "0")
   const timeSpent = Number.parseInt(searchParams.get("timeSpent") || "0")
   const correct = Number.parseInt(searchParams.get("correct") || "0")
   const total = Number.parseInt(searchParams.get("total") || "0")
+
+  const [wrongAnswers, setWrongAnswers] = useState<WrongAnswer[]>([])
+  const [isCalculated, setIsCalculated] = useState(false)
+
+  // Memoize data to prevent infinite re-renders
+  const topicId = useMemo(() => Number.parseInt(resolvedParams.id), [resolvedParams.id])
+  const topic = useMemo(() => getTopicById(topicId), [topicId, getTopicById])
+  const assessment = useMemo(() => getAssessmentByTopicId(topicId), [topicId, getAssessmentByTopicId])
+
+  // Calculate wrong answers once when we have the necessary data
+  useEffect(() => {
+    if (user?.id && assessment?.id && assessment?.questions && !isCalculated) {
+      const userAttempts = getUserAssessmentAttempts(user.id)
+      const assessmentAttempts = userAttempts.filter(attempt => attempt.assessmentId === assessment.id)
+      const latestAttempt = assessmentAttempts.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())[0]
+
+      if (latestAttempt) {
+        // Calculate wrong answers
+        const wrongAnswersData: WrongAnswer[] = []
+        
+        assessment.questions.forEach((question: any, index: number) => {
+          const userAnswer = latestAttempt.answers[index]
+          const isCorrect = userAnswer === question.correctAnswer || 
+                          (question.type === "true-false" && userAnswer?.toString() === question.correctAnswer?.toString())
+          
+          if (!isCorrect) {
+            // Format the answers based on question type
+            let formattedUserAnswer: string | number = userAnswer ?? "No answer"
+            let formattedCorrectAnswer: string | number = question.correctAnswer
+
+            if (question.type === "multiple-choice" && question.options) {
+              formattedUserAnswer = typeof userAnswer === "number" ? question.options[userAnswer] || "No answer" : "No answer"
+              formattedCorrectAnswer = typeof question.correctAnswer === "number" ? question.options[question.correctAnswer] || question.correctAnswer : question.correctAnswer
+            } else if (question.type === "true-false") {
+              formattedUserAnswer = userAnswer?.toString() || "No answer"
+              formattedCorrectAnswer = question.correctAnswer?.toString() || "No answer"
+            }
+
+            wrongAnswersData.push({
+              questionNo: index + 1,
+              question: question.question,
+              userAnswer: formattedUserAnswer,
+              correctAnswer: formattedCorrectAnswer,
+              type: question.type,
+              options: question.options,
+              image: question.image
+            })
+          }
+        })
+
+        setWrongAnswers(wrongAnswersData)
+        setIsCalculated(true)
+      }
+    }
+  }, [user?.id, assessment?.id, assessment?.questions?.length, isCalculated])
 
   const passed = score >= 70
   const timeSpentFormatted = `${Math.floor(timeSpent / 3600)}:${Math.floor((timeSpent % 3600) / 60)
@@ -82,8 +143,8 @@ export default function AssessmentResultsPage({ params }: { params: { id: string
                   Result:{" "}
                   <span className={passed ? "text-green-600" : "text-red-600"}>{passed ? "Passed" : "Failed"}</span>
                 </h2>
-                <p className="text-gray-600">Topic: General Info On Blockchain Tech</p>
-                <p className="text-gray-600">Time Limit: 3 Hours</p>
+                <p className="text-gray-600">Topic: {topic?.title || "Assessment"}</p>
+                <p className="text-gray-600">Time Limit: {assessment?.timeLimit || "Not specified"}</p>
               </div>
             </div>
 
@@ -93,7 +154,7 @@ export default function AssessmentResultsPage({ params }: { params: { id: string
                 <CardContent className="p-6 text-center">
                   <Clock className="w-8 h-8 mx-auto mb-2" />
                   <p className="text-sm text-gray-300">Time Spent</p>
-                  <p className="text-2xl font-bold">{Math.floor(timeSpent / 3600)} Hour</p>
+                  <p className="text-2xl font-bold">{timeSpentFormatted}</p>
                 </CardContent>
               </Card>
 
@@ -127,47 +188,127 @@ export default function AssessmentResultsPage({ params }: { params: { id: string
         {/* Wrong Answers */}
         {wrongAnswers.length > 0 && (
           <Card>
-            <CardContent className="p-8">
-              <h3 className="text-xl font-bold mb-6">Wrong Answer:</h3>
-
-              {wrongAnswers.map((item, index) => (
-                <div key={index} className="border rounded-lg p-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-2">
-                      <h4 className="font-semibold text-orange-500 mb-4">Question No. {item.questionNo}</h4>
-                      <p className="text-gray-700 mb-6">{item.question}</p>
-
-                      <div className="flex space-x-4">
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="destructive" className="bg-red-500">
-                            <XCircle className="w-3 h-3 mr-1" />
-                            {item.userAnswer}
+            <CardHeader className="bg-red-50 border-b">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="w-5 h-5 text-red-600" />
+                <CardTitle className="text-xl text-red-700">
+                  Questions to Review ({wrongAnswers.length})
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-6">
+                {wrongAnswers.map((item, index) => (
+                  <div key={index} className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                      <div className="lg:col-span-3">
+                        {/* Question Header */}
+                        <div className="flex items-center space-x-3 mb-4">
+                          <div className="bg-orange-100 text-orange-700 font-semibold px-3 py-1 rounded-full text-sm">
+                            Question {item.questionNo}
+                          </div>
+                          <Badge variant="outline" className="text-xs">
+                            {item.type === "multiple-choice" ? "Multiple Choice" : "True/False"}
                           </Badge>
-                          <span className="text-sm text-gray-500">Your Answer</span>
                         </div>
 
-                        <div className="flex items-center space-x-2">
-                          <Badge variant="default" className="bg-green-500">
-                            <CheckCircle className="w-3 h-3 mr-1" />
-                            {item.correctAnswer}
-                          </Badge>
-                          <span className="text-sm text-gray-500">Correct Answer</span>
+                        {/* Question Text */}
+                        <p className="text-gray-800 mb-6 leading-relaxed font-medium">{item.question}</p>
+
+                        {/* Answer Comparison */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                          {/* Your Answer */}
+                          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <XCircle className="w-4 h-4 text-red-600" />
+                              <span className="text-sm font-medium text-red-700">Your Answer</span>
+                            </div>
+                            <div className="bg-white border border-red-300 rounded-md px-3 py-2">
+                              <span className="text-red-800 font-medium">{item.userAnswer}</span>
+                            </div>
+                          </div>
+
+                          {/* Correct Answer */}
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <div className="flex items-center space-x-2 mb-2">
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                              <span className="text-sm font-medium text-green-700">Correct Answer</span>
+                            </div>
+                            <div className="bg-white border border-green-300 rounded-md px-3 py-2">
+                              <span className="text-green-800 font-medium">{item.correctAnswer}</span>
+                            </div>
+                          </div>
                         </div>
+
+                        {/* Show all options for multiple choice questions */}
+                        {item.type === "multiple-choice" && item.options && (
+                          <div className="bg-gray-50 rounded-lg p-4">
+                            <p className="text-sm font-medium text-gray-700 mb-3">All Available Options:</p>
+                            <div className="grid grid-cols-1 gap-2">
+                              {item.options.map((option, optionIndex) => {
+                                const isUserAnswer = option === item.userAnswer
+                                const isCorrectAnswer = optionIndex === item.correctAnswer
+                                
+                                return (
+                                  <div 
+                                    key={optionIndex} 
+                                    className={`p-2 rounded-md border text-sm flex items-center ${
+                                      isCorrectAnswer 
+                                        ? "bg-green-100 border-green-300 text-green-800" 
+                                        : isUserAnswer 
+                                          ? "bg-red-100 border-red-300 text-red-800"
+                                          : "bg-white border-gray-200 text-gray-700"
+                                    }`}
+                                  >
+                                    <span className="font-medium mr-3 w-6">
+                                      {String.fromCharCode(65 + optionIndex)}.
+                                    </span>
+                                    <span className="flex-1">{option}</span>
+                                    {isCorrectAnswer && (
+                                      <CheckCircle className="w-4 h-4 text-green-600 ml-2" />
+                                    )}
+                                    {isUserAnswer && !isCorrectAnswer && (
+                                      <XCircle className="w-4 h-4 text-red-600 ml-2" />
+                                    )}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Question Image */}
+                      <div className="lg:col-span-1">
+                        {item.image && (
+                          <div className="bg-gray-100 rounded-lg overflow-hidden">
+                            <img
+                              src={item.image || "/placeholder.svg"}
+                              alt="Question illustration"
+                              className="w-full h-48 object-cover"
+                            />
+                          </div>
+                        )}
                       </div>
                     </div>
-
-                    <div className="lg:col-span-1">
-                      {item.image && (
-                        <img
-                          src={item.image || "/placeholder.svg"}
-                          alt="Question illustration"
-                          className="w-full h-32 object-cover rounded-lg"
-                        />
-                      )}
-                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* No wrong answers message */}
+        {isCalculated && wrongAnswers.length === 0 && (
+          <Card>
+            <CardContent className="p-8 text-center">
+              <div className="bg-green-100 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-4">
+                <Trophy className="w-10 h-10 text-green-600" />
+              </div>
+              <h3 className="text-2xl font-bold mb-2 text-green-600">Perfect Score!</h3>
+              <p className="text-gray-600 text-lg">
+                Congratulations! You answered all questions correctly. Outstanding performance!
+              </p>
             </CardContent>
           </Card>
         )}
@@ -175,10 +316,15 @@ export default function AssessmentResultsPage({ params }: { params: { id: string
         {/* Actions */}
         <div className="flex justify-center space-x-4">
           <Link href="/dashboard/topics">
-            <Button variant="outline">Continue Learning</Button>
+            <Button variant="outline" className="px-6 py-2">
+              <BookOpen className="w-4 h-4 mr-2" />
+              Continue Learning
+            </Button>
           </Link>
           <Link href="/dashboard">
-            <Button className="bg-orange-500 hover:bg-orange-600">Back to Dashboard</Button>
+            <Button className="bg-orange-500 hover:bg-orange-600 px-6 py-2">
+              Back to Dashboard
+            </Button>
           </Link>
         </div>
       </div>

@@ -158,36 +158,7 @@ export const getDemoQuestions = () => [
   },
 ]
 
-// Demo Community Posts
-export const getDemoPosts = () => [
-  {
-    title: "Welcome to the Learning Community!",
-    content: "Hello everyone! This is a space for learners to connect, share ideas, and help each other grow. Feel free to introduce yourself and share your learning goals.",
-    authorName: "Community Manager",
-    category: "General Discussion",
-    tags: ["welcome", "introduction", "community"],
-    isPinned: true,
-    status: "active" as const,
-  },
-  {
-    title: "Study Group for Advanced Topics",
-    content: "Looking to form a study group for advanced topics. Who's interested in joining? We can meet weekly to discuss concepts and work through challenging problems together.",
-    authorName: "Alex Johnson",
-    category: "Study Groups",
-    tags: ["study-group", "advanced", "collaboration"],
-    isPinned: false,
-    status: "active" as const,
-  },
-  {
-    title: "Best Practices for Online Learning",
-    content: "What are your top tips for staying motivated and organized while learning online? Share your strategies and tools that have worked best for you!",
-    authorName: "Student User",
-    category: "General Discussion",
-    tags: ["tips", "online-learning", "motivation"],
-    isPinned: false,
-    status: "active" as const,
-  },
-]
+
 
 // Demo User Profiles
 export const getDemoUserProfiles = () => [

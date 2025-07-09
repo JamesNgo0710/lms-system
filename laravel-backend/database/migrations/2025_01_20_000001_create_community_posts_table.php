@@ -14,17 +14,19 @@ return new class extends Migration
         Schema::create('community_posts', function (Blueprint $table) {
             $table->id();
             $table->string('title');
-            $table->longText('content');
+            $table->text('content');
             $table->foreignId('author_id')->constrained('users')->onDelete('cascade');
-            $table->string('category');
-            $table->json('tags')->nullable(); // array of strings
-            $table->integer('views')->default(0);
-            $table->integer('likes')->default(0);
-            $table->boolean('is_answered')->default(false);
             $table->boolean('is_pinned')->default(false);
-            $table->enum('status', ['active', 'closed', 'archived'])->default('active');
-            $table->integer('reply_count')->default(0);
+            $table->boolean('is_locked')->default(false);
+            $table->boolean('is_hidden')->default(false);
+            $table->integer('vote_count')->default(0);
+            $table->integer('comment_count')->default(0);
+            $table->timestamp('last_activity_at')->nullable();
             $table->timestamps();
+
+            $table->index(['author_id', 'created_at']);
+            $table->index(['is_pinned', 'is_hidden', 'created_at']);
+            $table->index('last_activity_at');
         });
     }
 

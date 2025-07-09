@@ -34,7 +34,7 @@ interface NavItem {
 const studentNavItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: Home },
   { title: "Topics", href: "/dashboard/topics", icon: BookOpen, roles: ["student", "teacher"] },
-  { title: "Community", href: "/dashboard/community", icon: MessageSquare, roles: ["student", "teacher"] },
+  { title: "Community", href: "/dashboard/community", icon: MessageSquare },
   { title: "Profile", href: "/dashboard/profile", icon: User },
   { title: "Settings", href: "/dashboard/settings", icon: Settings },
 ]

@@ -58,26 +58,35 @@ Route::get('/', function () {
             'GET /api/assessments/{id}/attempts' => 'Get user attempts',
             'GET /api/assessments/{assessmentId}/attempts/{attemptId}' => 'Get attempt results',
 
-            // Community
-            'GET /api/community/posts' => 'List community posts',
-            'POST /api/community/posts' => 'Create community post',
+            // Community Forum
+            'GET /api/community/posts' => 'List forum posts',
+            'POST /api/community/posts' => 'Create forum post (authenticated)',
             'GET /api/community/posts/{id}' => 'Get post details',
-            'PUT /api/community/posts/{id}' => 'Update post',
-            'DELETE /api/community/posts/{id}' => 'Delete post',
-            'POST /api/community/posts/{id}/like' => 'Toggle post like',
-            'GET /api/community/posts/{postId}/replies' => 'Get post replies',
-            'POST /api/community/replies' => 'Create reply',
-            'PUT /api/community/replies/{id}' => 'Update reply',
-            'DELETE /api/community/replies/{id}' => 'Delete reply',
-            'POST /api/community/replies/{id}/like' => 'Toggle reply like',
-            'POST /api/community/replies/{id}/accept' => 'Mark reply as accepted',
-            'GET /api/community/stats' => 'Get community statistics',
+            'PUT /api/community/posts/{id}' => 'Update post (author/admin)',
+            'DELETE /api/community/posts/{id}' => 'Delete post (author/admin)',
+            'GET /api/community/posts/{id}/comments' => 'Get post comments',
+            'POST /api/community/posts/{id}/comments' => 'Create comment (authenticated)',
+            'PUT /api/community/comments/{id}' => 'Update comment (author/admin)',
+            'DELETE /api/community/comments/{id}' => 'Delete comment (author/admin)',
+            'POST /api/community/vote' => 'Vote on post/comment (authenticated)',
+            'POST /api/community/posts/{id}/pin' => 'Pin/unpin post (admin)',
+            'POST /api/community/posts/{id}/lock' => 'Lock/unlock post (admin)',
+            'POST /api/community/posts/{id}/hide' => 'Hide/show post (admin)',
+            'POST /api/community/comments/{id}/hide' => 'Hide/show comment (admin)',
         ]
     ]);
 });
 
 // Public routes
 Route::post('/login', [AuthController::class, 'login']);
+
+// Community routes - public access
+Route::prefix('community')->group(function () {
+    // Public viewing (no auth required)
+    Route::get('/posts', [CommunityController::class, 'getPosts']);
+    Route::get('/posts/{id}', [CommunityController::class, 'getPost']);
+    Route::get('/posts/{id}/comments', [CommunityController::class, 'getComments']);
+});
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
@@ -138,20 +147,23 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/assessments/{id}', [AssessmentController::class, 'destroy']);
     });
 
-    // Community routes
-    Route::get('/community/posts', [CommunityController::class, 'getPosts']);
-    Route::post('/community/posts', [CommunityController::class, 'createPost']);
-    Route::get('/community/posts/{id}', [CommunityController::class, 'getPost']);
-    Route::put('/community/posts/{id}', [CommunityController::class, 'updatePost']);
-    Route::delete('/community/posts/{id}', [CommunityController::class, 'deletePost']);
-    Route::post('/community/posts/{id}/like', [CommunityController::class, 'togglePostLike']);
+        // Community routes - authenticated user actions
+    Route::prefix('community')->group(function () {
+        // Authenticated user actions
+        Route::post('/posts', [CommunityController::class, 'createPost']);
+        Route::put('/posts/{id}', [CommunityController::class, 'updatePost']);
+        Route::delete('/posts/{id}', [CommunityController::class, 'deletePost']);
+        Route::post('/posts/{id}/comments', [CommunityController::class, 'createComment']);
+        Route::put('/comments/{id}', [CommunityController::class, 'updateComment']);
+        Route::delete('/comments/{id}', [CommunityController::class, 'deleteComment']);
+        Route::post('/vote', [CommunityController::class, 'vote']);
 
-    Route::get('/community/posts/{postId}/replies', [CommunityController::class, 'getRepliesByPost']);
-    Route::post('/community/replies', [CommunityController::class, 'createReply']);
-    Route::put('/community/replies/{id}', [CommunityController::class, 'updateReply']);
-    Route::delete('/community/replies/{id}', [CommunityController::class, 'deleteReply']);
-    Route::post('/community/replies/{id}/like', [CommunityController::class, 'toggleReplyLike']);
-    Route::post('/community/replies/{id}/accept', [CommunityController::class, 'markReplyAsAccepted']);
-
-    Route::get('/community/stats', [CommunityController::class, 'getStats']);
+        // Admin-only actions
+        Route::middleware('role:admin')->group(function () {
+            Route::post('/posts/{id}/pin', [CommunityController::class, 'togglePin']);
+            Route::post('/posts/{id}/lock', [CommunityController::class, 'toggleLock']);
+            Route::post('/posts/{id}/hide', [CommunityController::class, 'toggleHide']);
+            Route::post('/comments/{id}/hide', [CommunityController::class, 'hideComment']);
+        });
+    });
 });

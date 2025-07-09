@@ -36,8 +36,7 @@ export const STORAGE_KEYS = {
   completions: "lesson-completions",
   views: "lesson-views",
   attempts: "assessment-attempts",
-  posts: "community-posts",
-  replies: "community-replies",
+  assessmentHistory: "assessment-history",
   metadata: "metadata",
 }
 
@@ -103,16 +102,7 @@ export const DIFFICULTY_LEVELS = ["Beginner", "Intermediate", "Advanced"] as con
 // Assessment Types
 export const ASSESSMENT_TYPES = ["multiple-choice", "true-false", "essay"] as const;
 
-// Post Categories
-export const POST_CATEGORIES = [
-  "General Discussion",
-  "Technical Help",
-  "Course Questions",
-  "Study Groups",
-  "Announcements",
-  "Feedback",
-  "Off-Topic",
-] as const;
+
 
 // File Types
 export const ALLOWED_FILE_TYPES = {

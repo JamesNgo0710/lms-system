@@ -73,14 +73,14 @@ class User extends Authenticatable
         return $this->hasMany(CommunityPost::class, 'author_id');
     }
 
-    public function communityReplies()
+    public function communityComments()
     {
-        return $this->hasMany(CommunityReply::class, 'author_id');
+        return $this->hasMany(CommunityComment::class, 'author_id');
     }
 
-    public function likes()
+    public function communityVotes()
     {
-        return $this->hasMany(Like::class);
+        return $this->hasMany(CommunityVote::class);
     }
 
     // Helper methods

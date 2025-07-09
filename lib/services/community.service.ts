@@ -1,205 +1,224 @@
-import { apiClient } from '@/lib/api-client';
+import { apiClient } from '../api-client';
 
 export interface CommunityPost {
-  id: string;
+  id: number;
   title: string;
   content: string;
-  authorId: string;
-  authorName: string;
-  category: string;
-  tags: string[];
-  createdAt: string;
-  updatedAt: string;
-  views: number;
-  likes: number;
-  isAnswered: boolean;
-  isPinned: boolean;
-  status: 'active' | 'closed' | 'archived';
-  replyCount: number;
-  isLikedByUser?: boolean;
-  replies?: CommunityReply[];
+  author_id: number;
+  author: {
+    id: number;
+    name: string;
+    first_name: string;
+    last_name: string;
+    profile_image?: string;
+  };
+  is_pinned: boolean;
+  is_locked: boolean;
+  is_hidden: boolean;
+  vote_count: number;
+  comment_count: number;
+  comments_count?: number;
+  last_activity_at: string;
+  created_at: string;
+  updated_at: string;
+  user_vote?: CommunityVote;
 }
 
-export interface CommunityReply {
-  id: string;
-  postId: string;
-  authorId: string;
-  authorName: string;
+export interface CommunityComment {
+  id: number;
   content: string;
-  createdAt: string;
-  updatedAt: string;
-  likes: number;
-  isAcceptedAnswer: boolean;
-  parentReplyId?: string;
-  isLikedByUser?: boolean;
-  childReplies?: CommunityReply[];
+  author_id: number;
+  author: {
+    id: number;
+    name: string;
+    first_name: string;
+    last_name: string;
+    profile_image?: string;
+  };
+  post_id: number;
+  parent_id?: number;
+  is_hidden: boolean;
+  vote_count: number;
+  depth: number;
+  created_at: string;
+  updated_at: string;
+  replies?: CommunityComment[];
+  user_vote?: CommunityVote;
 }
 
-export interface CommunityStats {
-  totalPosts: number;
-  totalReplies: number;
-  totalUsers: number;
-  answeredRate: number;
-  topCategories: { name: string; count: number }[];
-  topContributors: { id: string; name: string; posts: number; replies: number; reputation: number }[];
+export interface CommunityVote {
+  id: number;
+  user_id: number;
+  voteable_type: string;
+  voteable_id: number;
+  vote_type: 1 | -1; // 1 for upvote, -1 for downvote
+  created_at: string;
+  updated_at: string;
 }
 
 export interface CreatePostData {
   title: string;
   content: string;
-  category: string;
-  tags?: string[];
 }
 
-export interface CreateReplyData {
-  postId: string;
+export interface CreateCommentData {
   content: string;
-  parentReplyId?: string;
+  parent_id?: number;
+}
+
+export interface VoteData {
+  voteable_type: 'post' | 'comment';
+  voteable_id: number;
+  vote_type: 1 | -1;
+}
+
+export interface PostsResponse {
+  data: CommunityPost[];
+  current_page: number;
+  last_page: number;
+  per_page: number;
+  total: number;
+}
+
+export interface PostFilters {
+  search?: string;
+  author?: number;
+  page?: number;
 }
 
 export class CommunityService {
-  
+  private static baseUrl = '/api/community';
+
   // Posts
-  static async getPosts(): Promise<CommunityPost[]> {
-    try {
-      const response = await apiClient.get('/community/posts');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      throw error;
-    }
+  static async getPosts(filters: PostFilters = {}): Promise<PostsResponse> {
+    const params = new URLSearchParams();
+    
+    if (filters.search) params.append('search', filters.search);
+    if (filters.author) params.append('author', filters.author.toString());
+    if (filters.page) params.append('page', filters.page.toString());
+
+    const queryString = params.toString();
+    const url = `${this.baseUrl}/posts${queryString ? `?${queryString}` : ''}`;
+    
+    const response = await apiClient.get(url);
+    return response.data;
   }
 
-  static async getPost(id: string): Promise<CommunityPost> {
-    try {
-      const response = await apiClient.get(`/community/posts/${id}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching post:', error);
-      throw error;
-    }
+  static async getPost(id: number): Promise<CommunityPost> {
+    const response = await apiClient.get(`${this.baseUrl}/posts/${id}`);
+    return response.data;
   }
 
   static async createPost(data: CreatePostData): Promise<CommunityPost> {
-    try {
-      const response = await apiClient.post('/community/posts', data);
-      return response.data;
-    } catch (error) {
-      console.error('Error creating post:', error);
-      throw error;
-    }
+    const response = await apiClient.post(`${this.baseUrl}/posts`, data);
+    return response.data;
   }
 
-  static async updatePost(id: string, updates: Partial<CommunityPost>): Promise<CommunityPost> {
-    try {
-      const response = await apiClient.put(`/community/posts/${id}`, updates);
-      return response.data;
-    } catch (error) {
-      console.error('Error updating post:', error);
-      throw error;
-    }
+  static async updatePost(id: number, data: Partial<CreatePostData>): Promise<CommunityPost> {
+    const response = await apiClient.put(`${this.baseUrl}/posts/${id}`, data);
+    return response.data;
   }
 
-  static async deletePost(id: string): Promise<void> {
-    try {
-      await apiClient.delete(`/community/posts/${id}`);
-    } catch (error) {
-      console.error('Error deleting post:', error);
-      throw error;
-    }
+  static async deletePost(id: number): Promise<void> {
+    await apiClient.delete(`${this.baseUrl}/posts/${id}`);
   }
 
-  static async togglePostLike(id: string): Promise<{ liked: boolean; totalLikes: number }> {
-    try {
-      const response = await apiClient.post(`/community/posts/${id}/like`);
-      return response.data;
-    } catch (error) {
-      console.error('Error toggling post like:', error);
-      throw error;
-    }
+  // Comments
+  static async getComments(postId: number): Promise<CommunityComment[]> {
+    const response = await apiClient.get(`${this.baseUrl}/posts/${postId}/comments`);
+    return response.data;
   }
 
-  // Replies
-  static async getRepliesByPost(postId: string): Promise<CommunityReply[]> {
-    try {
-      const response = await apiClient.get(`/community/posts/${postId}/replies`);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching replies:', error);
-      throw error;
-    }
+  static async createComment(postId: number, data: CreateCommentData): Promise<CommunityComment> {
+    const response = await apiClient.post(`${this.baseUrl}/posts/${postId}/comments`, data);
+    return response.data;
   }
 
-  static async createReply(data: CreateReplyData): Promise<CommunityReply> {
-    try {
-      const response = await apiClient.post('/community/replies', data);
-      return response.data;
-    } catch (error) {
-      console.error('Error creating reply:', error);
-      throw error;
-    }
+  static async updateComment(id: number, content: string): Promise<CommunityComment> {
+    const response = await apiClient.put(`${this.baseUrl}/comments/${id}`, { content });
+    return response.data;
   }
 
-  static async updateReply(id: string, content: string): Promise<CommunityReply> {
-    try {
-      const response = await apiClient.put(`/community/replies/${id}`, { content });
-      return response.data;
-    } catch (error) {
-      console.error('Error updating reply:', error);
-      throw error;
-    }
+  static async deleteComment(id: number): Promise<void> {
+    await apiClient.delete(`${this.baseUrl}/comments/${id}`);
   }
 
-  static async deleteReply(id: string): Promise<void> {
-    try {
-      await apiClient.delete(`/community/replies/${id}`);
-    } catch (error) {
-      console.error('Error deleting reply:', error);
-      throw error;
-    }
+  // Voting
+  static async vote(data: VoteData): Promise<{ message: string }> {
+    const response = await apiClient.post(`${this.baseUrl}/vote`, data);
+    return response.data;
   }
 
-  static async toggleReplyLike(id: string): Promise<{ liked: boolean; totalLikes: number }> {
-    try {
-      const response = await apiClient.post(`/community/replies/${id}/like`);
-      return response.data;
-    } catch (error) {
-      console.error('Error toggling reply like:', error);
-      throw error;
-    }
+  static async upvote(type: 'post' | 'comment', id: number): Promise<{ message: string }> {
+    return this.vote({
+      voteable_type: type,
+      voteable_id: id,
+      vote_type: 1
+    });
   }
 
-  static async markReplyAsAccepted(id: string): Promise<void> {
-    try {
-      await apiClient.post(`/community/replies/${id}/accept`);
-    } catch (error) {
-      console.error('Error marking reply as accepted:', error);
-      throw error;
-    }
+  static async downvote(type: 'post' | 'comment', id: number): Promise<{ message: string }> {
+    return this.vote({
+      voteable_type: type,
+      voteable_id: id,
+      vote_type: -1
+    });
   }
 
-  // Stats
-  static async getStats(): Promise<CommunityStats> {
-    try {
-      const response = await apiClient.get('/community/stats');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching community stats:', error);
-      throw error;
-    }
+  // Admin functions
+  static async togglePin(postId: number): Promise<{ message: string; is_pinned: boolean }> {
+    const response = await apiClient.post(`${this.baseUrl}/posts/${postId}/pin`);
+    return response.data;
   }
 
-  // Helper methods
-  static hasUserLikedPost(post: CommunityPost): boolean {
-    return post.isLikedByUser || false;
+  static async toggleLock(postId: number): Promise<{ message: string; is_locked: boolean }> {
+    const response = await apiClient.post(`${this.baseUrl}/posts/${postId}/lock`);
+    return response.data;
   }
 
-  static hasUserLikedReply(reply: CommunityReply): boolean {
-    return reply.isLikedByUser || false;
+  static async toggleHide(postId: number): Promise<{ message: string; is_hidden: boolean }> {
+    const response = await apiClient.post(`${this.baseUrl}/posts/${postId}/hide`);
+    return response.data;
   }
 
-  static incrementPostViews(postId: string): void {
-    // This is handled automatically by the API when fetching a post
-    // No need for manual increment on frontend
+  static async hideComment(commentId: number): Promise<{ message: string; is_hidden: boolean }> {
+    const response = await apiClient.post(`${this.baseUrl}/comments/${commentId}/hide`);
+    return response.data;
+  }
+
+  // Helper functions
+  static formatTimeAgo(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInMinutes = Math.floor(diffInMs / (1000 * 60));
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    const diffInDays = Math.floor(diffInHours / 24);
+
+    if (diffInMinutes < 1) return 'just now';
+    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInDays < 7) return `${diffInDays}d ago`;
+    
+    return date.toLocaleDateString();
+  }
+
+  static getVoteStatus(userVote?: CommunityVote): 'upvoted' | 'downvoted' | 'none' {
+    if (!userVote) return 'none';
+    return userVote.vote_type === 1 ? 'upvoted' : 'downvoted';
+  }
+
+  static canUserEdit(post: CommunityPost | CommunityComment, userId?: number): boolean {
+    if (!userId) return false;
+    return post.author_id === userId;
+  }
+
+  static canUserDelete(post: CommunityPost | CommunityComment, userId?: number, isAdmin?: boolean): boolean {
+    if (!userId) return false;
+    return post.author_id === userId || !!isAdmin;
+  }
+
+  static canUserModerate(isAdmin?: boolean): boolean {
+    return !!isAdmin;
   }
 } 

@@ -630,7 +630,7 @@ export function ErrorHandler({ children }: { children: React.ReactNode }) {
 1. Implement remaining API endpoints for:
    - Topics and lessons
    - Assessments
-   - Community posts
+   
    - File uploads
 
 2. Add real-time features with Laravel WebSockets

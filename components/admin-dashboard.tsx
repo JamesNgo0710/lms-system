@@ -132,11 +132,13 @@ export function AdminDashboard() {
                         (e.target as HTMLImageElement).src = "/placeholder.jpg"
                       }}
                     />
-                    <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                      <Button size="icon" className="bg-white/90 hover:bg-white text-gray-900">
-                        <Play className="w-6 h-6" />
-                      </Button>
-                    </div>
+                    <Link href={`/dashboard/topics/${video.topicId}/lessons/${video.id}`}>
+                      <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity cursor-pointer">
+                        <Button size="icon" className="bg-white/90 hover:bg-white text-gray-900">
+                          <Play className="w-6 h-6" />
+                        </Button>
+                      </div>
+                    </Link>
                     {/* Ranking badge */}
                     <div className="absolute top-2 left-2">
                       <Badge className="bg-orange-500 text-white">

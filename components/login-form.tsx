@@ -42,6 +42,7 @@ export function LoginForm() {
       if (result?.ok) {
         // Get the session to extract the token
         const session = await getSession()
+        
         if (session?.accessToken) {
           // Store token in localStorage for API calls
           localStorage.setItem('auth-token', session.accessToken)

@@ -23,7 +23,7 @@ A comprehensive full-stack Learning Management System built with **Next.js 15**,
 ### Core Functionality
 - **Topic & Lesson Management**: Create, edit, and organize learning content
 - **Assessment System**: Timed quizzes with automatic grading
-- **Community Features**: Discussion forums with threaded replies
+
 - **Progress Tracking**: Detailed analytics and completion tracking
 - **User Management**: Admin controls for user roles and permissions
 - **Content Analytics**: Engagement and performance metrics
@@ -165,10 +165,7 @@ After running the database seeder, you can login with:
 - `GET /api/topics/{id}/lessons` - Get topic lessons
 - `POST /api/lessons` - Create new lesson
 
-### Community
-- `GET /api/community/posts` - List community posts
-- `POST /api/community/posts` - Create new post
-- `POST /api/community/posts/{id}/replies` - Add reply
+
 
 ### Assessments
 - `GET /api/assessments` - List assessments

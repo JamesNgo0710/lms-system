@@ -72,6 +72,7 @@ interface Assessment {
   cooldownPeriod: number // in hours (1-168 hours = 1 hour to 7 days)
   questions: Question[]
   createdAt: string
+  status: "Published" | "Draft"
 }
 
 interface AssessmentAttempt {
@@ -113,45 +114,19 @@ interface User {
   profileImage?: string // Added profile image field
 }
 
-interface CommunityPost {
+interface AssessmentHistory {
   id: string
-  title: string
-  content: string
-  authorId: string
-  authorName: string
-  category: string
-  tags: string[]
-  createdAt: string
-  updatedAt: string
-  views: number
-  likes: number
-  isAnswered: boolean
-  isPinned: boolean
-  status: "active" | "closed" | "archived"
-  replyCount: number
+  assessmentId: number
+  topicId: number
+  topicTitle: string
+  action: "created" | "edited" | "deleted" | "published" | "unpublished"
+  actionBy: string // user ID
+  actionByName: string // user name
+  timestamp: string
+  details?: string // optional details about what was changed
 }
 
-interface CommunityReply {
-  id: string
-  postId: string
-  authorId: string
-  authorName: string
-  content: string
-  createdAt: string
-  updatedAt: string
-  likes: number
-  isAcceptedAnswer: boolean
-  parentReplyId?: string
-}
 
-interface CommunityStats {
-  totalPosts: number
-  totalReplies: number
-  totalUsers: number
-  answeredRate: number
-  topCategories: { name: string; count: number }[]
-  topContributors: { id: string; name: string; posts: number; replies: number; reputation: number }[]
-}
 
 // Template questions for each topic
 const templateQuestions: Record<string, Question[]> = {
@@ -636,6 +611,7 @@ const generateInitialAssessments = (): Assessment[] => {
       cooldownPeriod: 6, // 6 hours default
       questions: templateQuestions["General Info on Blockchain Tech"] || [],
       createdAt: "2023-01-16",
+      status: "Published",
     },
     {
       id: 2,
@@ -646,6 +622,7 @@ const generateInitialAssessments = (): Assessment[] => {
       cooldownPeriod: 6, // 6 hours default
       questions: templateQuestions["Getting Started With Crypto"] || [],
       createdAt: "2023-02-21",
+      status: "Published",
     },
     {
       id: 3,
@@ -656,6 +633,7 @@ const generateInitialAssessments = (): Assessment[] => {
       cooldownPeriod: 6, // 6 hours default
       questions: templateQuestions["Using MetaMask"] || [],
       createdAt: "2023-03-11",
+      status: "Published",
     },
     {
       id: 4,
@@ -666,6 +644,7 @@ const generateInitialAssessments = (): Assessment[] => {
       cooldownPeriod: 6, // 6 hours default
       questions: templateQuestions["Decentralised Finance (DeFi)"] || [],
       createdAt: "2023-01-26",
+      status: "Published",
     },
   ]
 }
@@ -998,8 +977,7 @@ class DataStore {
   private lessonCompletions: LessonCompletion[] = []
   private lessonViews: LessonView[] = []
   private assessmentAttempts: AssessmentAttempt[] = []
-  private communityPosts: CommunityPost[] = []
-  private communityReplies: CommunityReply[] = []
+  private assessmentHistory: AssessmentHistory[] = []
   private listeners: (() => void)[] = []
   private idCounter: number = 1
   private currentUserId: string = 'anonymous'
@@ -1043,8 +1021,7 @@ class DataStore {
     const storedCompletions = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.completions}`)
     const storedViews = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.views}`)
     const storedAttempts = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.attempts}`)
-    const storedPosts = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.posts}`)
-    const storedReplies = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.replies}`)
+    const storedHistory = localStorage.getItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.assessmentHistory}`)
 
     this.topics = storedTopics ? JSON.parse(storedTopics) : initialTopics
     this.assessments = storedAssessments ? JSON.parse(storedAssessments) : generateInitialAssessments()
@@ -1053,8 +1030,7 @@ class DataStore {
     this.lessonCompletions = storedCompletions ? JSON.parse(storedCompletions) : []
     this.lessonViews = storedViews ? JSON.parse(storedViews) : []
     this.assessmentAttempts = storedAttempts ? JSON.parse(storedAttempts) : []
-    this.communityPosts = storedPosts ? JSON.parse(storedPosts) : this.generateInitialCommunityPosts()
-    this.communityReplies = storedReplies ? JSON.parse(storedReplies) : this.generateInitialCommunityReplies()
+    this.assessmentHistory = storedHistory ? JSON.parse(storedHistory) : []
 
     // Update topics with current lesson counts and assessment status
     this.updateTopicsMetadata()
@@ -1153,106 +1129,92 @@ class DataStore {
     return lessons
   }
 
-  private generateInitialCommunityPosts(): CommunityPost[] {
-    const fixedDate = "2024-01-01"
-    return [
-      {
-        id: "1",
-        title: "Best practices for NFT smart contracts?",
-        content: "I'm working on my first NFT project and want to make sure I'm following the best practices. What are some key things to consider when writing smart contracts for NFTs?",
-        authorId: "student1",
-        authorName: "Alex Chen",
-        category: "Smart Contracts",
-        tags: ["NFT", "smart-contracts", "best-practices"],
-        createdAt: fixedDate,
-        updatedAt: fixedDate,
-        views: 45,
-        likes: 24,
-        isAnswered: true,
-        isPinned: false,
-        status: "active" as const,
-        replyCount: 12
-      },
-      {
-        id: "2",
-        title: "How to optimize gas fees in DeFi transactions",
-        content: "Gas fees have been really high lately. Are there any strategies or tools you recommend for optimizing gas usage in DeFi transactions?",
-        authorId: "student2",
-        authorName: "Sarah Johnson",
-        category: "DeFi",
-        tags: ["gas-optimization", "defi", "ethereum"],
-        createdAt: fixedDate,
-        updatedAt: fixedDate,
-        views: 32,
-        likes: 15,
-        isAnswered: false,
-        isPinned: false,
-        status: "active" as const,
-        replyCount: 8
-      },
-      {
-        id: "3",
-        title: "Understanding Layer 2 solutions",
-        content: "Can someone explain the different Layer 2 solutions and their trade-offs? I'm trying to decide which one to use for my project.",
-        authorId: "student1",
-        authorName: "Mike Rodriguez",
-        category: "Blockchain",
-        tags: ["layer2", "scaling", "ethereum"],
-        createdAt: fixedDate,
-        updatedAt: fixedDate,
-        views: 68,
-        likes: 32,
-        isAnswered: true,
-        isPinned: true,
-        status: "active" as const,
-        replyCount: 18
-      }
-    ]
-  }
 
-  private generateInitialCommunityReplies(): CommunityReply[] {
-    const fixedDate = "2024-01-01"
-    return [
-      {
-        id: "1",
-        postId: "1",
-        authorId: "admin1",
-        authorName: "Expert Admin",
-        content: "Great question! Here are some key best practices: 1) Use OpenZeppelin's contracts as a base, 2) Implement proper access controls, 3) Add metadata standards like ERC-721, 4) Test thoroughly on testnets first.",
-        createdAt: fixedDate,
-        updatedAt: fixedDate,
-        likes: 15,
-        isAcceptedAnswer: true
-      },
-      {
-        id: "2",
-        postId: "2",
-        authorId: "student3",
-        authorName: "Emma Davis",
-        content: "I've been using 1inch for gas optimization. Their API helps find the most efficient routes for swaps.",
-        createdAt: fixedDate,
-        updatedAt: fixedDate,
-        likes: 8,
-        isAcceptedAnswer: false
-      }
-    ]
-  }
+
+
 
   private saveToStorage() {
     if (typeof window !== "undefined") {
-      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.topics}`, JSON.stringify(this.topics))
-      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.assessments}`, JSON.stringify(this.assessments))
-      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.users}`, JSON.stringify(this.users))
-      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.lessons}`, JSON.stringify(this.lessons))
-      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.completions}`, JSON.stringify(this.lessonCompletions))
-      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.views}`, JSON.stringify(this.lessonViews))
-      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.attempts}`, JSON.stringify(this.assessmentAttempts))
-      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.posts}`, JSON.stringify(this.communityPosts))
-      localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.replies}`, JSON.stringify(this.communityReplies))
-      
-      // Update sync metadata to notify other tabs/browsers
-      syncManager.updateMetadata(this.currentUserId)
+      try {
+        // Clean up data before saving to prevent quota issues
+        this.cleanupStorageData()
+        
+        localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.topics}`, JSON.stringify(this.topics))
+        localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.assessments}`, JSON.stringify(this.assessments))
+        localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.users}`, JSON.stringify(this.users))
+        localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.lessons}`, JSON.stringify(this.lessons))
+        localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.completions}`, JSON.stringify(this.lessonCompletions))
+        localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.views}`, JSON.stringify(this.lessonViews))
+        localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.attempts}`, JSON.stringify(this.assessmentAttempts))
+        localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.assessmentHistory}`, JSON.stringify(this.assessmentHistory))
+        
+        // Update sync metadata to notify other tabs/browsers
+        syncManager.updateMetadata(this.currentUserId)
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+          console.warn('Storage quota exceeded, performing aggressive cleanup...')
+          // Perform more aggressive cleanup
+          this.performAggressiveCleanup()
+          
+          // Try saving again with reduced data
+          try {
+            localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.topics}`, JSON.stringify(this.topics))
+            localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.assessments}`, JSON.stringify(this.assessments))
+            localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.users}`, JSON.stringify(this.users))
+            localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.lessons}`, JSON.stringify(this.lessons))
+            localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.completions}`, JSON.stringify(this.lessonCompletions))
+            localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.views}`, JSON.stringify(this.lessonViews))
+            localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.attempts}`, JSON.stringify(this.assessmentAttempts))
+            localStorage.setItem(`${STORAGE_KEYS.prefix}-${STORAGE_KEYS.assessmentHistory}`, JSON.stringify(this.assessmentHistory))
+            
+            syncManager.updateMetadata(this.currentUserId)
+            console.log('Storage saved successfully after cleanup')
+          } catch (secondError) {
+            console.error('Failed to save even after cleanup:', secondError)
+            // Notify user about storage issue
+            if (typeof window !== 'undefined' && window.dispatchEvent) {
+              window.dispatchEvent(new CustomEvent('storageQuotaExceeded', {
+                detail: { message: 'Storage quota exceeded. Some data may not be saved.' }
+              }))
+            }
+          }
+        } else {
+          console.error('Error saving to storage:', error)
+        }
+      }
     }
+  }
+
+  private cleanupStorageData() {
+    // Keep only last 50 assessment history entries
+    this.assessmentHistory = this.assessmentHistory
+      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+      .slice(0, 50)
+
+    // Keep only last 1000 lesson views (reduce data size)
+    this.lessonViews = this.lessonViews
+      .sort((a, b) => new Date(b.viewedAt).getTime() - new Date(a.viewedAt).getTime())
+      .slice(0, 1000)
+
+    // Keep only last 500 lesson completions
+    this.lessonCompletions = this.lessonCompletions
+      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+      .slice(0, 500)
+
+    // Keep only last 100 assessment attempts
+    this.assessmentAttempts = this.assessmentAttempts
+      .sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())
+      .slice(0, 100)
+  }
+
+  private performAggressiveCleanup() {
+    // More aggressive cleanup for quota exceeded situations
+    this.assessmentHistory = this.assessmentHistory.slice(0, 20) // Keep only 20 entries
+    this.lessonViews = this.lessonViews.slice(0, 500) // Keep only 500 views
+    this.lessonCompletions = this.lessonCompletions.slice(0, 200) // Keep only 200 completions
+    this.assessmentAttempts = this.assessmentAttempts.slice(0, 50) // Keep only 50 attempts
+    
+
   }
 
   private updateTopicsMetadata() {
@@ -1421,28 +1383,67 @@ class DataStore {
     return this.assessments
   }
 
-  addAssessment(assessment: Omit<Assessment, "id">): Assessment {
+  addAssessment(assessment: Omit<Assessment, "id" | "status">): Assessment {
     const newAssessment: Assessment = {
       ...assessment,
       id: Math.max(0, ...this.assessments.map((a) => a.id)) + 1,
+      status: "Draft", // Default to Draft status
     }
     this.assessments.push(newAssessment)
     this.updateTopicsMetadata()
     this.saveToStorage()
     this.notifyListeners()
+    
+    // Track the creation in history
+    this.trackAssessmentAction(newAssessment.id, "created", `Assessment created with ${newAssessment.totalQuestions} questions`)
+    
     return newAssessment
   }
 
   updateAssessment(id: number, updates: Partial<Assessment>): void {
+    const existingAssessment = this.assessments.find(a => a.id === id)
+    
     this.assessments = this.assessments.map((assessment) =>
       assessment.id === id ? { ...assessment, ...updates } : assessment,
     )
+    
+    // Track specific actions in history
+    if (existingAssessment && updates.status && updates.status !== existingAssessment.status) {
+      const action = updates.status === "Published" ? "published" : "unpublished"
+      this.trackAssessmentAction(id, action, `Assessment ${action}`)
+    } else if (existingAssessment) {
+      // General edit tracking
+      const changes: string[] = []
+      if (updates.totalQuestions && updates.totalQuestions !== existingAssessment.totalQuestions) {
+        changes.push(`questions: ${existingAssessment.totalQuestions} → ${updates.totalQuestions}`)
+      }
+      if (updates.timeLimit && updates.timeLimit !== existingAssessment.timeLimit) {
+        changes.push(`time limit: ${existingAssessment.timeLimit} → ${updates.timeLimit}`)
+      }
+      if (updates.cooldownPeriod && updates.cooldownPeriod !== existingAssessment.cooldownPeriod) {
+        changes.push(`cooldown: ${existingAssessment.cooldownPeriod}h → ${updates.cooldownPeriod}h`)
+      }
+      if (updates.questions && JSON.stringify(updates.questions) !== JSON.stringify(existingAssessment.questions)) {
+        changes.push(`questions modified`)
+      }
+      
+      if (changes.length > 0) {
+        this.trackAssessmentAction(id, "edited", `Updated: ${changes.join(', ')}`)
+      }
+    }
+    
     this.updateTopicsMetadata()
     this.saveToStorage()
     this.notifyListeners()
   }
 
   deleteAssessment(topicId: number): void {
+    const assessmentToDelete = this.assessments.find(a => a.topicId === topicId)
+    
+    if (assessmentToDelete) {
+      this.trackAssessmentAction(assessmentToDelete.id, "deleted", `Assessment deleted`)
+    }
+    
     this.assessments = this.assessments.filter((assessment) => assessment.topicId !== topicId)
     this.updateTopicsMetadata()
     this.saveToStorage()
@@ -1451,6 +1452,49 @@ class DataStore {
 
   getAssessmentByTopicId(topicId: number): Assessment | undefined {
     return this.assessments.find((assessment) => assessment.topicId === topicId)
+  }
+
+  // Assessment History methods
+  getAssessmentHistory(): AssessmentHistory[] {
+    return this.assessmentHistory.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+  }
+
+  getRecentAssessmentHistory(limit: number = 10): AssessmentHistory[] {
+    return this.getAssessmentHistory().slice(0, limit)
+  }
+
+  addAssessmentHistory(history: Omit<AssessmentHistory, "id" | "timestamp">): AssessmentHistory {
+    const newHistory: AssessmentHistory = {
+      ...history,
+      id: `history-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date().toISOString(),
+    }
+    this.assessmentHistory.push(newHistory)
+    this.saveToStorage()
+    this.notifyListeners()
+    return newHistory
+  }
+
+  private trackAssessmentAction(
+    assessmentId: number, 
+    action: AssessmentHistory['action'], 
+    details?: string
+  ): void {
+    const assessment = this.assessments.find(a => a.id === assessmentId)
+    const topic = assessment ? this.getTopicById(assessment.topicId) : null
+    const currentUser = this.getUserById(this.currentUserId)
+    
+    if (assessment && topic && currentUser) {
+      this.addAssessmentHistory({
+        assessmentId,
+        topicId: assessment.topicId,
+        topicTitle: topic.title,
+        action,
+        actionBy: this.currentUserId,
+        actionByName: `${currentUser.firstName} ${currentUser.lastName}`,
+        details,
+      })
+    }
   }
 
   // User methods
@@ -1762,243 +1806,7 @@ class DataStore {
     return `${days} day${days === 1 ? '' : 's'} ${remainingHours} hour${remainingHours === 1 ? '' : 's'}`
   }
 
-  // Community Posts methods
-  getCommunityPosts(): CommunityPost[] {
-    return this.communityPosts.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-  }
 
-  getCommunityPostById(id: string): CommunityPost | undefined {
-    return this.communityPosts.find(post => post.id === id)
-  }
-
-  addCommunityPost(post: Omit<CommunityPost, "id" | "createdAt" | "updatedAt" | "views" | "likes" | "replyCount">): CommunityPost {
-    const newPost: CommunityPost = {
-      ...post,
-      id: (Math.max(0, ...this.communityPosts.map(p => parseInt(p.id))) + 1).toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      views: 0,
-      likes: 0,
-      replyCount: 0
-    }
-    this.communityPosts.push(newPost)
-    this.saveToStorage()
-    this.notifyListeners()
-    return newPost
-  }
-
-  updateCommunityPost(id: string, updates: Partial<CommunityPost>): void {
-    this.communityPosts = this.communityPosts.map(post => 
-      post.id === id ? { ...post, ...updates, updatedAt: new Date().toISOString() } : post
-    )
-    this.saveToStorage()
-    this.notifyListeners()
-  }
-
-  deleteCommunityPost(id: string): void {
-    this.communityPosts = this.communityPosts.filter(post => post.id !== id)
-    this.communityReplies = this.communityReplies.filter(reply => reply.postId !== id)
-    this.saveToStorage()
-    this.notifyListeners()
-  }
-
-  incrementPostViews(id: string): void {
-    const post = this.communityPosts.find(p => p.id === id)
-    if (post) {
-      post.views += 1
-      this.saveToStorage()
-    }
-  }
-
-  togglePostLike(postId: string, userId: string): void {
-    const post = this.communityPosts.find(p => p.id === postId)
-    if (post) {
-      // Simple like tracking - in a real app you'd track individual user likes properly
-      const storageKey = `post_likes_${postId}`
-      const userLikes = JSON.parse(localStorage.getItem(storageKey) || '[]')
-      const hasLiked = userLikes.includes(userId)
-      
-      if (hasLiked) {
-        post.likes = Math.max(0, post.likes - 1)
-        const updatedLikes = userLikes.filter((id: string) => id !== userId)
-        localStorage.setItem(storageKey, JSON.stringify(updatedLikes))
-      } else {
-        post.likes += 1
-        userLikes.push(userId)
-        localStorage.setItem(storageKey, JSON.stringify(userLikes))
-      }
-      
-      this.saveToStorage()
-      this.notifyListeners()
-    }
-  }
-
-  hasUserLikedPost(postId: string, userId: string): boolean {
-    const storageKey = `post_likes_${postId}`
-    const userLikes = JSON.parse(localStorage.getItem(storageKey) || '[]')
-    return userLikes.includes(userId)
-  }
-
-  toggleReplyLike(replyId: string, userId: string): void {
-    const reply = this.communityReplies.find(r => r.id === replyId)
-    if (reply) {
-      const storageKey = `reply_likes_${replyId}`
-      const userLikes = JSON.parse(localStorage.getItem(storageKey) || '[]')
-      const hasLiked = userLikes.includes(userId)
-      
-      if (hasLiked) {
-        reply.likes = Math.max(0, reply.likes - 1)
-        const updatedLikes = userLikes.filter((id: string) => id !== userId)
-        localStorage.setItem(storageKey, JSON.stringify(updatedLikes))
-      } else {
-        reply.likes += 1
-        userLikes.push(userId)
-        localStorage.setItem(storageKey, JSON.stringify(userLikes))
-      }
-      
-      this.saveToStorage()
-      this.notifyListeners()
-    }
-  }
-
-  hasUserLikedReply(replyId: string, userId: string): boolean {
-    const storageKey = `reply_likes_${replyId}`
-    const userLikes = JSON.parse(localStorage.getItem(storageKey) || '[]')
-    return userLikes.includes(userId)
-  }
-
-  // Community Replies methods
-  getCommunityReplies(): CommunityReply[] {
-    return this.communityReplies
-  }
-
-  getRepliesByPostId(postId: string): CommunityReply[] {
-    return this.communityReplies
-      .filter(reply => reply.postId === postId)
-      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime())
-  }
-
-  addCommunityReply(reply: Omit<CommunityReply, "id" | "createdAt" | "updatedAt" | "likes">): CommunityReply {
-    const newReply: CommunityReply = {
-      ...reply,
-      id: (Math.max(0, ...this.communityReplies.map(r => parseInt(r.id))) + 1).toString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      likes: 0
-    }
-    this.communityReplies.push(newReply)
-    
-    // Update post reply count
-    const post = this.communityPosts.find(p => p.id === reply.postId)
-    if (post) {
-      post.replyCount += 1
-      if (newReply.isAcceptedAnswer) {
-        post.isAnswered = true
-      }
-    }
-    
-    this.saveToStorage()
-    this.notifyListeners()
-    return newReply
-  }
-
-  updateCommunityReply(id: string, updates: Partial<CommunityReply>): void {
-    this.communityReplies = this.communityReplies.map(reply => 
-      reply.id === id ? { ...reply, ...updates, updatedAt: new Date().toISOString() } : reply
-    )
-    this.saveToStorage()
-    this.notifyListeners()
-  }
-
-  deleteCommunityReply(id: string): void {
-    const reply = this.communityReplies.find(r => r.id === id)
-    if (reply) {
-      // Update post reply count
-      const post = this.communityPosts.find(p => p.id === reply.postId)
-      if (post) {
-        post.replyCount = Math.max(0, post.replyCount - 1)
-      }
-    }
-    this.communityReplies = this.communityReplies.filter(reply => reply.id !== id)
-    this.saveToStorage()
-    this.notifyListeners()
-  }
-
-  markReplyAsAccepted(replyId: string): void {
-    const reply = this.communityReplies.find(r => r.id === replyId)
-    if (reply) {
-      // Unmark other accepted answers for the same post
-      this.communityReplies.forEach(r => {
-        if (r.postId === reply.postId && r.id !== replyId) {
-          r.isAcceptedAnswer = false
-        }
-      })
-      
-      reply.isAcceptedAnswer = true
-      
-      // Mark post as answered
-      const post = this.communityPosts.find(p => p.id === reply.postId)
-      if (post) {
-        post.isAnswered = true
-      }
-      
-      this.saveToStorage()
-      this.notifyListeners()
-    }
-  }
-
-  // Community Statistics
-  getCommunityStats(): CommunityStats {
-    const totalPosts = this.communityPosts.length
-    const totalReplies = this.communityReplies.length
-    const answeredPosts = this.communityPosts.filter(p => p.isAnswered).length
-    const answeredRate = totalPosts > 0 ? (answeredPosts / totalPosts) * 100 : 0
-
-    // Calculate category counts
-    const categoryMap = new Map<string, number>()
-    this.communityPosts.forEach(post => {
-      categoryMap.set(post.category, (categoryMap.get(post.category) || 0) + 1)
-    })
-    const topCategories = Array.from(categoryMap.entries())
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 5)
-
-    // Calculate top contributors
-    const contributorMap = new Map<string, { name: string; posts: number; replies: number }>()
-    
-    this.communityPosts.forEach(post => {
-      const existing = contributorMap.get(post.authorId) || { name: post.authorName, posts: 0, replies: 0 }
-      existing.posts += 1
-      contributorMap.set(post.authorId, existing)
-    })
-    
-    this.communityReplies.forEach(reply => {
-      const existing = contributorMap.get(reply.authorId) || { name: reply.authorName, posts: 0, replies: 0 }
-      existing.replies += 1
-      contributorMap.set(reply.authorId, existing)
-    })
-
-    const topContributors = Array.from(contributorMap.entries())
-      .map(([id, data]) => ({
-        id,
-        name: data.name,
-        posts: data.posts,
-        replies: data.replies,
-        reputation: data.posts * 5 + data.replies * 2 // Simple reputation calculation
-      }))
-      .sort((a, b) => b.reputation - a.reputation)
-      .slice(0, 5)
-
-    return {
-      totalPosts,
-      totalReplies,
-      totalUsers: this.users.filter(u => u.role === 'student').length,
-      answeredRate,
-      topCategories,
-      topContributors
-    }
-  }
 
   // Authentication methods
   authenticateUser(email: string, password: string): User | null {
@@ -2052,6 +1860,72 @@ class DataStore {
     
     return true
   }
+
+  // Method to clear all storage data (for emergency cleanup)
+  clearAllStorageData(): void {
+    if (typeof window !== "undefined") {
+      const keys = [
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.topics}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.assessments}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.users}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.lessons}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.completions}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.views}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.attempts}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.assessmentHistory}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.metadata}`,
+      ]
+      
+      keys.forEach(key => {
+        try {
+          localStorage.removeItem(key)
+        } catch (error) {
+          console.error(`Failed to remove ${key}:`, error)
+        }
+      })
+      
+      // Reload initial data
+      this.loadFromStorage()
+      this.notifyListeners()
+    }
+  }
+
+  // Get storage usage information
+  getStorageInfo(): { used: number; available: number; total: number } {
+    if (typeof window === "undefined") {
+      return { used: 0, available: 0, total: 0 }
+    }
+    
+    let used = 0
+    try {
+      // Calculate current storage usage
+      const keys = [
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.topics}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.assessments}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.users}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.lessons}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.completions}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.views}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.attempts}`,
+        `${STORAGE_KEYS.prefix}-${STORAGE_KEYS.assessmentHistory}`,
+      ]
+      
+      keys.forEach(key => {
+        const item = localStorage.getItem(key)
+        if (item) {
+          used += new Blob([item]).size
+        }
+      })
+    } catch (error) {
+      console.error('Error calculating storage usage:', error)
+    }
+    
+    // Typical localStorage limit is 5-10MB, we'll estimate 5MB
+    const total = 5 * 1024 * 1024 // 5MB in bytes
+    const available = Math.max(0, total - used)
+    
+    return { used, available, total }
+  }
 }
 
 // Create singleton instance
@@ -2070,9 +1944,7 @@ export type {
   Lesson, 
   LessonCompletion, 
   LessonView,
-  CommunityPost,
-  CommunityReply,
-  CommunityStats 
+  AssessmentHistory
 }
 
 // Dashboard Analytics Functions - Calculate real metrics from actual data
@@ -2105,6 +1977,7 @@ export const calculateDashboardMetrics = () => {
     
     return {
       id: lesson.id,
+      topicId: lesson.topicId,
       title: lesson.title,
       topic: topic?.category || 'Unknown',
       topicTitle: topic?.title || 'Unknown Topic',

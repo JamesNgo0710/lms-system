@@ -8,27 +8,22 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-class CommunityPost extends Model
+class CommunityComment extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'title',
         'content',
         'author_id',
-        'is_pinned',
-        'is_locked',
+        'post_id',
+        'parent_id',
         'is_hidden',
         'vote_count',
-        'comment_count',
-        'last_activity_at',
+        'depth',
     ];
 
     protected $casts = [
-        'is_pinned' => 'boolean',
-        'is_locked' => 'boolean',
         'is_hidden' => 'boolean',
-        'last_activity_at' => 'datetime',
     ];
 
     protected $with = ['author'];
@@ -39,15 +34,19 @@ class CommunityPost extends Model
         return $this->belongsTo(User::class, 'author_id');
     }
 
-    public function comments(): HasMany
+    public function post(): BelongsTo
     {
-        return $this->hasMany(CommunityComment::class, 'post_id');
+        return $this->belongsTo(CommunityPost::class, 'post_id');
     }
 
-    public function topLevelComments(): HasMany
+    public function parent(): BelongsTo
     {
-        return $this->hasMany(CommunityComment::class, 'post_id')
-                    ->whereNull('parent_id')
+        return $this->belongsTo(CommunityComment::class, 'parent_id');
+    }
+
+    public function replies(): HasMany
+    {
+        return $this->hasMany(CommunityComment::class, 'parent_id')
                     ->orderBy('created_at', 'asc');
     }
 
@@ -60,18 +59,6 @@ class CommunityPost extends Model
     public function updateVoteCount()
     {
         $this->vote_count = $this->votes()->sum('vote_type');
-        $this->save();
-    }
-
-    public function updateCommentCount()
-    {
-        $this->comment_count = $this->comments()->count();
-        $this->save();
-    }
-
-    public function updateLastActivity()
-    {
-        $this->last_activity_at = now();
         $this->save();
     }
 
@@ -92,19 +79,41 @@ class CommunityPost extends Model
         return $this->author_id === $userId || $user?->hasRole('admin');
     }
 
+    public function setDepth()
+    {
+        if ($this->parent_id) {
+            $parent = $this->parent;
+            $this->depth = $parent->depth + 1;
+        } else {
+            $this->depth = 0;
+        }
+        $this->save();
+    }
+
+    // Update post activity when comment is created
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function ($comment) {
+            $comment->post->updateCommentCount();
+            $comment->post->updateLastActivity();
+            $comment->setDepth();
+        });
+
+        static::deleted(function ($comment) {
+            $comment->post->updateCommentCount();
+        });
+    }
+
     // Scopes
     public function scopeVisible($query)
     {
         return $query->where('is_hidden', false);
     }
 
-    public function scopePinned($query)
+    public function scopeTopLevel($query)
     {
-        return $query->where('is_pinned', true);
-    }
-
-    public function scopeRecent($query)
-    {
-        return $query->orderBy('last_activity_at', 'desc');
+        return $query->whereNull('parent_id');
     }
 }

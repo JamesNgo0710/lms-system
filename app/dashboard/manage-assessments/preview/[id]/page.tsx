@@ -9,11 +9,15 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useTopics, useAssessments } from "@/hooks/use-data-store"
+import { useToast } from "@/hooks/use-toast"
 
 export default function PreviewAssessmentPage({ params }: { params: Promise<{ id: string }> }) {
   const { getTopicById } = useTopics()
   const { getAssessmentByTopicId } = useAssessments()
+  const router = useRouter()
+  const { toast } = useToast()
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | number | null>(null)
 
@@ -31,6 +35,15 @@ export default function PreviewAssessmentPage({ params }: { params: Promise<{ id
       setCurrentQuestion(currentQuestion + 1)
       setSelectedAnswer(null)
     }
+  }
+
+  const handleFinish = () => {
+    // In preview mode, just show a completion message and redirect
+    toast({
+      title: "Preview Completed",
+      description: "This is how the assessment would end for students. You can now edit or publish the assessment.",
+    })
+    router.push("/dashboard/manage-assessments")
   }
 
   const handlePrevious = () => {
@@ -182,8 +195,7 @@ export default function PreviewAssessmentPage({ params }: { params: Promise<{ id
                     Previous
                   </Button>
                   <Button
-                    onClick={handleNext}
-                    disabled={currentQuestion === questions.length - 1}
+                    onClick={currentQuestion === questions.length - 1 ? handleFinish : handleNext}
                     className="bg-orange-500 hover:bg-orange-600"
                   >
                     {currentQuestion === questions.length - 1 ? "Finish" : "Next Question"}
