@@ -1,7 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { serverDataStore } from "@/lib/server-data-store"
-import { config } from "@/lib/config"
+import { serverApiClient, getCsrfCookie } from "@/lib/api-client"
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -16,45 +15,62 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        // Authenticate user from server data store
-        const user = serverDataStore.authenticateUser(credentials.email, credentials.password)
+        try {
+          // Get CSRF cookie first
+          await getCsrfCookie();
+          
+          // Make login request using server-safe client
+          const response = await serverApiClient.post('/login', {
+            email: credentials.email,
+            password: credentials.password,
+          });
 
-        if (user) {
-          return {
-            id: user.id,
-            email: user.email,
-            name: `${user.firstName} ${user.lastName}`,
-            firstName: user.firstName,
-            lastName: user.lastName,
-            role: user.role,
-            image: user.profileImage,
+          const { user, token } = response.data;
+
+          if (user && token) {
+            return {
+              id: user.id.toString(),
+              email: user.email,
+              name: user.name,
+              firstName: user.first_name,
+              lastName: user.last_name,
+              role: user.role,
+              image: user.profile_image,
+              token: token,
+            }
           }
-        }
 
-        return null
+          return null
+        } catch (error) {
+          console.error('Login error:', error.response?.data?.message || error.message);
+          return null
+        }
       }
     })
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        token.id = user.id
         token.role = user.role
         token.firstName = user.firstName
         token.lastName = user.lastName
         token.image = user.image
+        token.accessToken = user.token
       }
       return token
     },
     async session({ session, token }) {
       if (session.user) {
+        session.user.id = token.id as string
         session.user.role = token.role as string
         session.user.firstName = token.firstName as string
         session.user.lastName = token.lastName as string
-        session.user.id = token.sub as string
         if (token.image) {
           session.user.image = token.image as string
         }
       }
+      session.accessToken = token.accessToken as string
       return session
     },
   },
@@ -64,10 +80,8 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: config.nextAuthSecret,
-  debug: config.enableDebug,
+  secret: process.env.NEXTAUTH_SECRET,
 }
 
 const handler = NextAuth(authOptions)
-
 export { handler as GET, handler as POST } 

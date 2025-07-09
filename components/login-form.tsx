@@ -7,11 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { signIn } from "next-auth/react"
+import { signIn, getSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 import { APP_CONFIG, UI_TEXT } from "@/lib/constants"
-import { dataStore } from "@/lib/data-store"
 import { Eye, EyeOff } from "lucide-react"
 
 export function LoginForm() {
@@ -19,24 +18,15 @@ export function LoginForm() {
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [demoAccounts, setDemoAccounts] = useState<Array<{ email: string; role: string; password?: string }>>([])
   const router = useRouter()
   const { toast } = useToast()
 
-  useEffect(() => {
-    // Get some demo accounts from the data store
-    const users = dataStore.getUsers()
-    const demos = [
-      users.find(u => u.role === "admin"),
-      users.find(u => u.role === "student")
-    ].filter(Boolean).slice(0, 2).map(user => ({
-      email: user!.email,
-      role: user!.role,
-      password: user!.email === "admin@lms.com" ? "admin123" : 
-                user!.email === "student@lms.com" ? "student123" : undefined
-    }))
-    setDemoAccounts(demos)
-  }, [])
+  // Demo accounts that match Laravel backend
+  const demoAccounts = [
+    { email: "admin@lms.com", password: "admin123", role: "admin" },
+    { email: "teacher@lms.com", password: "teacher123", role: "teacher" },
+    { email: "student@lms.com", password: "student123", role: "student" }
+  ]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,6 +40,13 @@ export function LoginForm() {
       })
 
       if (result?.ok) {
+        // Get the session to extract the token
+        const session = await getSession()
+        if (session?.accessToken) {
+          // Store token in localStorage for API calls
+          localStorage.setItem('auth-token', session.accessToken)
+        }
+
         toast({
           title: "Login successful",
           description: `Welcome to ${APP_CONFIG.name}`,
@@ -74,10 +71,8 @@ export function LoginForm() {
   }
 
   const fillDemoCredentials = (account: typeof demoAccounts[0]) => {
-    if (account.password) {
-      setEmail(account.email)
-      setPassword(account.password)
-    }
+    setEmail(account.email)
+    setPassword(account.password)
   }
 
   return (
@@ -133,35 +128,30 @@ export function LoginForm() {
           </Button>
         </form>
 
-        {demoAccounts.length > 0 && (
-          <div className="mt-6 space-y-2 text-sm text-muted-foreground">
-            <p className="font-semibold">Quick Access (Demo Accounts):</p>
-            <div className="space-y-2">
-              {demoAccounts.map((account) => (
-                <div key={account.email} className="flex items-center justify-between">
-                  <div>
-                    <strong className="capitalize">{account.role}:</strong> {account.email}
-                    {account.password && ` / ${account.password}`}
-                  </div>
-                  {account.password && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => fillDemoCredentials(account)}
-                      className="ml-2 h-auto p-1 text-xs"
-                    >
-                      Use
-                    </Button>
-                  )}
+        <div className="mt-6 space-y-2 text-sm text-muted-foreground">
+          <p className="font-semibold">Quick Access (Demo Accounts):</p>
+          <div className="space-y-2">
+            {demoAccounts.map((account) => (
+              <div key={account.email} className="flex items-center justify-between">
+                <div>
+                  <strong className="capitalize">{account.role}:</strong> {account.email} / {account.password}
                 </div>
-              ))}
-            </div>
-            <p className="text-xs text-muted-foreground mt-4">
-              Note: You can create new users with custom passwords in the User Management section after logging in as an admin.
-            </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => fillDemoCredentials(account)}
+                  className="ml-2 h-auto p-1 text-xs"
+                >
+                  Use
+                </Button>
+              </div>
+            ))}
           </div>
-        )}
+          <p className="text-xs text-muted-foreground mt-4">
+            Note: These demo accounts are pre-seeded in the Laravel backend database.
+          </p>
+        </div>
       </CardContent>
     </Card>
   )
