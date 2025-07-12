@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { getSession } from 'next-auth/react';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:8000';
 
 // Create axios instance with default config
 export const apiClient = axios.create({
@@ -24,9 +24,12 @@ export const getCsrfCookie = async () => {
   try {
     await axios.get(`${API_URL}/sanctum/csrf-cookie`, {
       withCredentials: true,
+      timeout: 5000, // 5 second timeout
     });
+    console.log('CSRF cookie obtained successfully');
   } catch (error) {
     csrfTokenRequested = false;
+    console.error('Failed to get CSRF cookie:', error);
     throw error;
   }
 };
@@ -45,29 +48,39 @@ export const initializeApiClient = async () => {
 // Add request interceptor to include token and handle CSRF
 apiClient.interceptors.request.use(
   async (config) => {
-    // Ensure CSRF token is obtained before making requests
-    if (typeof window !== 'undefined' && !csrfTokenRequested) {
+    // Get token from NextAuth session for authenticated endpoints
+    if (typeof window !== 'undefined') {
+      try {
+        const session = await getSession();
+        console.log('🔍 Debug session:', session);
+        if (session?.accessToken) {
+          // Use Bearer token authentication (Sanctum API tokens)
+          config.headers.Authorization = `Bearer ${session.accessToken}`;
+          console.log('✅ API Request with auth token:', config.method?.toUpperCase(), config.url);
+          console.log('🔑 Token (first 20 chars):', session.accessToken.substring(0, 20) + '...');
+          return config; // Skip CSRF when using Bearer tokens
+        } else {
+          console.log('❌ No auth token - making public API request:', config.method?.toUpperCase(), config.url);
+          console.log('🔍 Session object:', session);
+        }
+      } catch (error) {
+        console.warn('Failed to get session token:', error);
+        // Don't fail the request if session check fails
+      }
+    }
+
+    // Only try to get CSRF token for write operations when no Bearer token
+    const needsCSRF = ['post', 'put', 'delete'].includes(config.method?.toLowerCase() || '');
+    
+    if (typeof window !== 'undefined' && needsCSRF && !csrfTokenRequested) {
       try {
         await getCsrfCookie();
       } catch (error) {
         console.warn('Failed to get CSRF token:', error);
+        // Don't fail the request if CSRF fails
       }
     }
 
-    // Get token from NextAuth session instead of localStorage
-    if (typeof window !== 'undefined') {
-      try {
-        const session = await getSession();
-        if (session?.accessToken) {
-          config.headers.Authorization = `Bearer ${session.accessToken}`;
-          console.log('API Request with auth token:', config.method?.toUpperCase(), config.url);
-        } else {
-          console.warn('No auth token found in session for request:', config.method?.toUpperCase(), config.url);
-        }
-      } catch (error) {
-        console.warn('Failed to get session token:', error);
-      }
-    }
     return config;
   },
   (error) => {
