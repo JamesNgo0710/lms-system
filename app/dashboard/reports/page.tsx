@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Download, FileText, Users, Play, ExternalLink } from "lucide-react"
+import { Download, FileText, Users, Play, ExternalLink, Flag, Eye, CheckCircle, XCircle, AlertTriangle } from "lucide-react"
 import Link from "next/link"
 import { useTopics, useLessons, useLessonCompletions, useLessonViews, useUsers } from "@/hooks/use-data-store"
+import { apiClient } from "@/lib/api-client"
+import { useSession } from "next-auth/react"
 
 interface VideoReport {
   lessonId: number
@@ -22,6 +24,34 @@ interface VideoReport {
   videoUrl?: string
 }
 
+interface CommunityReport {
+  id: number
+  reportable_type: string
+  reportable_id: number
+  reporter: {
+    id: number
+    first_name: string
+    last_name: string
+    email: string
+  }
+  reason: string
+  description: string
+  status: 'pending' | 'reviewed' | 'resolved' | 'dismissed'
+  reviewed_by?: number
+  admin_notes?: string
+  reviewed_at?: string
+  created_at: string
+  reportable?: {
+    id: number
+    title?: string
+    content: string
+    author: {
+      first_name: string
+      last_name: string
+    }
+  }
+}
+
 export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState("videos")
   const { topics } = useTopics()
@@ -30,10 +60,28 @@ export default function ReportsPage() {
   const { views } = useLessonViews()
   const { users } = useUsers()
   const [isHydrated, setIsHydrated] = useState(false)
+  const [communityReports, setCommunityReports] = useState<CommunityReport[]>([])
+  const [loadingReports, setLoadingReports] = useState(false)
+  const { data: session } = useSession()
 
   useEffect(() => {
     setIsHydrated(true)
+    loadCommunityReports()
   }, [])
+
+  const loadCommunityReports = async () => {
+    if (!session?.accessToken) return
+    
+    try {
+      setLoadingReports(true)
+      const response = await apiClient.get('/community/reports')
+      setCommunityReports(response.data)
+    } catch (error) {
+      console.error('Error loading community reports:', error)
+    } finally {
+      setLoadingReports(false)
+    }
+  }
 
   // Calculate real video reports from actual data
   const calculateVideoReports = (): VideoReport[] => {
@@ -116,7 +164,7 @@ export default function ReportsPage() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="videos" className="flex items-center space-x-2">
             <FileText className="w-4 h-4" />
             <span>Videos</span>
@@ -124,6 +172,10 @@ export default function ReportsPage() {
           <TabsTrigger value="users" className="flex items-center space-x-2">
             <Users className="w-4 h-4" />
             <span>Users</span>
+          </TabsTrigger>
+          <TabsTrigger value="community" className="flex items-center space-x-2">
+            <Flag className="w-4 h-4" />
+            <span>Community Reports</span>
           </TabsTrigger>
         </TabsList>
 
@@ -262,13 +314,119 @@ export default function ReportsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="bg-orange-500 text-white border-orange-500 hover:bg-orange-600"
-                          >
-                            View Details
-                          </Button>
+                          <Link href={`/dashboard/user-management?user=${encodeURIComponent(report.name)}`}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="bg-orange-500 text-white border-orange-500 hover:bg-orange-600"
+                            >
+                              View Details
+                            </Button>
+                          </Link>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="community" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>Community Reports</span>
+                <Badge variant="outline" className="text-sm">
+                  {communityReports.filter(r => r.status === 'pending').length} Pending
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {loadingReports ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Loading community reports...</p>
+                </div>
+              ) : communityReports.length === 0 ? (
+                <div className="text-center py-8">
+                  <Flag className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">No reports yet</h3>
+                  <p className="text-gray-600 mb-4">Community reports will appear when users report content.</p>
+                  <Link href="/dashboard/community">
+                    <Button className="bg-orange-500 hover:bg-orange-600">
+                      View Community
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-orange-500 hover:bg-orange-500">
+                      <TableHead className="text-white">Reporter</TableHead>
+                      <TableHead className="text-white">Content Type</TableHead>
+                      <TableHead className="text-white">Reason</TableHead>
+                      <TableHead className="text-white">Status</TableHead>
+                      <TableHead className="text-white">Reported</TableHead>
+                      <TableHead className="text-white">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {communityReports.map((report) => (
+                      <TableRow key={report.id}>
+                        <TableCell className="font-medium">
+                          {report.reporter.first_name} {report.reporter.last_name}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {report.reportable_type.includes('Post') ? 'Post' : 'Comment'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">
+                            {report.reason.replace('_', ' ')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            {report.status === 'pending' && <AlertTriangle className="w-4 h-4 text-yellow-500" />}
+                            {report.status === 'reviewed' && <Eye className="w-4 h-4 text-blue-500" />}
+                            {report.status === 'resolved' && <CheckCircle className="w-4 h-4 text-green-500" />}
+                            {report.status === 'dismissed' && <XCircle className="w-4 h-4 text-gray-500" />}
+                            <Badge variant={
+                              report.status === 'pending' ? 'destructive' :
+                              report.status === 'reviewed' ? 'default' :
+                              report.status === 'resolved' ? 'default' : 'secondary'
+                            }>
+                              {report.status}
+                            </Badge>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {new Date(report.created_at).toLocaleDateString('en-GB')}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Link href={`/dashboard/community/${report.reportable_type.includes('Post') ? report.reportable_id : ''}`}>
+                              <Button size="sm" variant="outline" className="text-orange-500 border-orange-500">
+                                <Eye className="w-3 h-3 mr-1" />
+                                View Content
+                              </Button>
+                            </Link>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                alert(`Report Details:
+Reporter: ${report.reporter.first_name} ${report.reporter.last_name} (${report.reporter.email})
+Reason: ${report.reason.replace('_', ' ')}
+Description: ${report.description}
+${report.admin_notes ? `Admin Notes: ${report.admin_notes}` : ''}`)
+                              }}
+                            >
+                              Details
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
