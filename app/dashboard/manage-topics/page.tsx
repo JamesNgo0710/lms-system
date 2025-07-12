@@ -401,35 +401,36 @@ export default function ManageTopicsPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Manage Topics</h1>
-          <p className="text-gray-600">Create and manage learning topics</p>
-          <p className="text-sm text-orange-600 mt-1">💡 Tip: Click on any row to manage lessons and content</p>
+          <h1 className="text-2xl sm:text-3xl font-bold dark:text-gray-100">Manage Topics</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-base">Create and manage learning topics</p>
+          <p className="text-xs sm:text-sm text-orange-600 dark:text-orange-400 mt-1">💡 Tip: Click on any row to manage lessons and content</p>
         </div>
         <Link href="/dashboard/manage-topics/create">
-          <Button className="bg-orange-500 hover:bg-orange-600 w-full sm:w-auto">
+          <Button className="bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500 w-full sm:w-auto text-sm sm:text-base">
             <Plus className="w-4 h-4 mr-2" />
-            Create New Topic
+            <span className="hidden sm:inline">Create New Topic</span>
+            <span className="sm:hidden">New Topic</span>
           </Button>
         </Link>
       </div>
 
       {/* Search and View Toggle */}
-      <div className="flex items-center justify-between space-x-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 w-4 h-4" />
           <Input
             placeholder="Search topics..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
+            className="pl-10 dark:bg-gray-900 dark:border-gray-800 dark:text-gray-200 dark:placeholder-gray-500"
           />
         </div>
-        <div className="flex items-center border rounded-lg p-1">
+        <div className="flex items-center border rounded-lg p-1 dark:border-gray-800">
           <Button
             variant={viewMode === "grid" ? "default" : "ghost"}
             size="sm"
             onClick={() => setViewMode("grid")}
-            className="px-3"
+            className="px-2 sm:px-3 dark:text-gray-300 dark:hover:bg-gray-800"
           >
             <Grid3X3 className="w-4 h-4" />
           </Button>
@@ -437,7 +438,7 @@ export default function ManageTopicsPage() {
             variant={viewMode === "list" ? "default" : "ghost"}
             size="sm"
             onClick={() => setViewMode("list")}
-            className="px-3"
+            className="px-2 sm:px-3 dark:text-gray-300 dark:hover:bg-gray-800"
           >
             <List className="w-4 h-4" />
           </Button>
@@ -445,17 +446,17 @@ export default function ManageTopicsPage() {
       </div>
 
       {/* Topics Grid/List View */}
-      <Card>
+      <Card className="dark:bg-gray-900 dark:border-gray-800">
         <CardHeader>
-          <CardTitle>Topics ({filteredTopics.length})</CardTitle>
+          <CardTitle className="dark:text-gray-100">Topics ({filteredTopics.length})</CardTitle>
         </CardHeader>
         <CardContent>
           {viewMode === "grid" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
               {filteredTopics.map((topic) => (
                 <Card 
                   key={topic.id} 
-                  className="overflow-hidden hover:shadow-lg transition-shadow group"
+                  className="overflow-hidden hover:shadow-lg transition-shadow group dark:bg-gray-900 dark:border-gray-800"
                 >
                   <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">
                     <img 
@@ -467,18 +468,18 @@ export default function ManageTopicsPage() {
                     <div className="absolute inset-0 flex items-center justify-center">
                       <BookOpen className="w-12 h-12 text-white opacity-80" />
                     </div>
-                    <div className="absolute top-4 left-4 right-4 flex items-start justify-between">
-                      <div className="flex flex-col space-y-2">
-                        <Badge variant="secondary" className="bg-white/20 text-white w-fit">
+                    <div className="absolute top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 flex items-start justify-between">
+                      <div className="flex flex-col space-y-1 sm:space-y-2 max-w-[60%]">
+                        <Badge variant="secondary" className="bg-white/90 text-gray-800 text-xs truncate">
                           {topic.category}
                         </Badge>
                         <Badge 
-                          className={`w-fit bg-white/90 ${
+                          className={`text-xs truncate ${
                             topic.difficulty === "Beginner"
-                              ? "text-green-800"
+                              ? "bg-green-500 text-white"
                               : topic.difficulty === "Intermediate"
-                                ? "text-yellow-800"
-                                : "text-red-800"
+                                ? "bg-yellow-500 text-white"
+                                : "bg-red-500 text-white"
                           }`}
                         >
                           {topic.difficulty}
@@ -486,18 +487,22 @@ export default function ManageTopicsPage() {
                       </div>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="secondary" size="icon" className="h-8 w-8 bg-white/90 backdrop-blur-sm">
+                          <Button 
+                            variant="secondary" 
+                            size="icon" 
+                            className="h-8 w-8 bg-white/95 text-gray-700 hover:bg-white hover:text-gray-900 backdrop-blur-sm shadow-md dark:bg-gray-800/95 dark:text-gray-200 dark:hover:bg-gray-800"
+                          >
                             <MoreHorizontal className="w-4 h-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
+                        <DropdownMenuContent align="end" className="dark:bg-gray-900 dark:border-gray-800">
+                          <DropdownMenuItem asChild className="dark:hover:bg-gray-800 dark:focus:bg-gray-800">
                             <Link href={`/dashboard/topics/${topic.id}?returnTo=manage&topicId=${topic.id}`}>
                               <Eye className="w-4 h-4 mr-2" />
                               Preview
                             </Link>
                           </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
+                          <DropdownMenuItem asChild className="dark:hover:bg-gray-800 dark:focus:bg-gray-800">
                             <Link href={`/dashboard/manage-topics/${topic.id}`}>
                               <Edit className="w-4 h-4 mr-2" />
                               Manage
@@ -505,7 +510,7 @@ export default function ManageTopicsPage() {
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDeleteTopic(topic)}
-                            className="text-red-600"
+                            className="text-red-600 dark:text-red-400 dark:hover:bg-gray-800 dark:focus:bg-gray-800"
                           >
                             <Trash2 className="w-4 h-4 mr-2" />
                             Delete
@@ -513,26 +518,28 @@ export default function ManageTopicsPage() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    <div className="absolute bottom-4 left-4 right-4">
-                      <h3 className="text-white font-bold text-lg mb-2 group-hover:text-orange-200 transition-colors">
+                    <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4">
+                      <h3 className="text-white font-bold text-sm sm:text-lg mb-1 sm:mb-2 group-hover:text-orange-200 transition-colors line-clamp-2">
                         {topic.title}
                       </h3>
-                      <div className="flex items-center justify-between text-white/80 text-sm">
-                        <div className="flex items-center space-x-4">
+                      <div className="flex items-center justify-between text-white/80 text-xs sm:text-sm">
+                        <div className="flex items-center space-x-2 sm:space-x-4">
                           <div className="flex items-center space-x-1">
-                            <Users className="w-4 h-4" />
-                            <span>{topic.students}</span>
+                            <Users className="w-3 h-3 sm:w-4 sm:h-4" />
+                            <span className="hidden sm:inline">{topic.students}</span>
+                            <span className="sm:hidden">{topic.students}</span>
                           </div>
                           <div className="flex items-center space-x-1">
-                            <BookOpen className="w-4 h-4" />
-                            <span>{topic.lessons} lessons</span>
+                            <BookOpen className="w-3 h-3 sm:w-4 sm:h-4" />
+                            <span className="hidden sm:inline">{topic.lessons} lessons</span>
+                            <span className="sm:hidden">{topic.lessons}</span>
                           </div>
                         </div>
                         <Badge 
-                          className={`${
+                          className={`text-xs ${
                             topic.status === "Published" 
-                              ? "bg-green-500/80 text-white" 
-                              : "bg-gray-500/80 text-white"
+                              ? "bg-green-500/90 text-white" 
+                              : "bg-gray-500/90 text-white"
                           }`}
                         >
                           {topic.status}
@@ -541,29 +548,30 @@ export default function ManageTopicsPage() {
                     </div>
                   </div>
 
-                  <CardContent className="p-4">
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                  <CardContent className="p-3 sm:p-4">
+                    <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2">
                       {topic.description || "Comprehensive learning material covering essential concepts and practical applications."}
                     </p>
 
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
                       <div className="flex items-center space-x-2">
                         <Link href={`/dashboard/topics/${topic.id}?returnTo=manage&topicId=${topic.id}`}>
                           <Button
                             size="sm"
                             variant="outline"
-                            className="text-blue-500 border-blue-500 bg-transparent hover:bg-blue-50"
+                            className="text-blue-600 border-blue-500 bg-transparent hover:bg-blue-50 dark:text-blue-400 dark:border-blue-400 dark:hover:bg-gray-800 text-xs px-2 py-1 h-7"
                           >
-                            <Eye className="w-4 h-4 mr-1" />
-                            Preview
+                            <Eye className="w-3 h-3 mr-1" />
+                            <span className="hidden sm:inline">Preview</span>
+                            <span className="sm:hidden">View</span>
                           </Button>
                         </Link>
                         <Link href={`/dashboard/manage-topics/${topic.id}`}>
                           <Button
                             size="sm"
-                            className="bg-orange-500 hover:bg-orange-600"
+                            className="bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500 text-xs px-2 py-1 h-7"
                           >
-                            <Edit className="w-4 h-4 mr-1" />
+                            <Edit className="w-3 h-3 mr-1" />
                             Manage
                           </Button>
                         </Link>
@@ -572,9 +580,10 @@ export default function ManageTopicsPage() {
                         size="sm"
                         variant="outline"
                         onClick={() => handleDeleteTopic(topic)}
-                        className="text-red-500 border-red-500 hover:bg-red-50"
+                        className="text-red-600 border-red-500 hover:bg-red-50 dark:text-red-400 dark:border-red-400 dark:hover:bg-gray-800 text-xs px-2 py-1 h-7 self-end sm:self-auto"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3 h-3" />
+                        <span className="ml-1 hidden sm:inline">Delete</span>
                       </Button>
                     </div>
                   </CardContent>
@@ -585,58 +594,62 @@ export default function ManageTopicsPage() {
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Topic</TableHead>
-                    <TableHead className="hidden md:table-cell">Category</TableHead>
-                    <TableHead className="hidden lg:table-cell">Students</TableHead>
-                    <TableHead className="hidden lg:table-cell">Lessons</TableHead>
-                    <TableHead className="hidden sm:table-cell">Status</TableHead>
-                    <TableHead className="w-[70px]">Actions</TableHead>
+                  <TableRow className="dark:border-gray-800">
+                    <TableHead className="dark:text-gray-200">Topic</TableHead>
+                    <TableHead className="hidden md:table-cell dark:text-gray-200">Category</TableHead>
+                    <TableHead className="hidden lg:table-cell dark:text-gray-200">Students</TableHead>
+                    <TableHead className="hidden lg:table-cell dark:text-gray-200">Lessons</TableHead>
+                    <TableHead className="hidden sm:table-cell dark:text-gray-200">Status</TableHead>
+                    <TableHead className="w-[70px] dark:text-gray-200">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredTopics.map((topic) => (
                     <TableRow
                       key={topic.id}
-                      className="cursor-pointer hover:bg-gray-50"
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 dark:border-gray-800"
                       onClick={() => router.push(`/dashboard/manage-topics/${topic.id}`)}
                     >
-                      <TableCell>
+                      <TableCell className="dark:text-gray-100">
                         <div>
                           <p className="font-medium">{topic.title}</p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <Badge variant="outline" className="text-xs">
+                          <div className="flex items-center space-x-2 mt-1 flex-wrap gap-1">
+                            <Badge variant="outline" className="text-xs dark:border-gray-700 dark:text-gray-300">
                               {topic.difficulty}
                             </Badge>
-                            <span className="text-xs text-gray-500 md:hidden">
+                            <span className="text-xs text-gray-500 dark:text-gray-400 md:hidden">
                               {topic.category} • {topic.students} students
                             </span>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        <Badge variant="outline">{topic.category}</Badge>
+                        <Badge variant="outline" className="dark:border-gray-700 dark:text-gray-300">{topic.category}</Badge>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell">{topic.students}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{topic.lessons}</TableCell>
+                      <TableCell className="hidden lg:table-cell dark:text-gray-100">{topic.students}</TableCell>
+                      <TableCell className="hidden lg:table-cell dark:text-gray-100">{topic.lessons}</TableCell>
                       <TableCell className="hidden sm:table-cell">
-                        <Badge variant={topic.status === "Published" ? "default" : "secondary"}>{topic.status}</Badge>
+                        <Badge variant={topic.status === "Published" ? "default" : "secondary"} className="dark:text-gray-100">{topic.status}</Badge>
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="dark:text-gray-300 dark:hover:bg-gray-800 hover:bg-gray-100"
+                            >
                               <MoreHorizontal className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem asChild>
+                          <DropdownMenuContent align="end" className="dark:bg-gray-900 dark:border-gray-800">
+                            <DropdownMenuItem asChild className="dark:hover:bg-gray-800 dark:focus:bg-gray-800">
                               <Link href={`/dashboard/topics/${topic.id}?returnTo=manage&topicId=${topic.id}`}>
                                 <Eye className="w-4 h-4 mr-2" />
                                 Preview
                               </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem asChild>
+                            <DropdownMenuItem asChild className="dark:hover:bg-gray-800 dark:focus:bg-gray-800">
                               <Link href={`/dashboard/manage-topics/${topic.id}`}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Manage
@@ -647,6 +660,7 @@ export default function ManageTopicsPage() {
                                 e.stopPropagation()
                                 handleDeleteTopic(topic)
                               }}
+                              className="text-red-600 dark:text-red-400 dark:hover:bg-gray-800 dark:focus:bg-gray-800"
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
                               Delete
@@ -663,14 +677,14 @@ export default function ManageTopicsPage() {
 
           {filteredTopics.length === 0 && (
             <div className="text-center py-8">
-              <BookOpen className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">No topics found</h3>
-              <p className="text-gray-600 mb-4">
+              <BookOpen className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+              <h3 className="text-lg font-semibold mb-2 dark:text-gray-100">No topics found</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm sm:text-base">
                 {searchTerm ? "Try adjusting your search terms." : "Get started by creating your first topic."}
               </p>
               {!searchTerm && (
                 <Link href="/dashboard/manage-topics/create">
-                  <Button className="bg-orange-500 hover:bg-orange-600">
+                  <Button className="bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500">
                     <Plus className="w-4 h-4 mr-2" />
                     Create First Topic
                   </Button>
@@ -683,19 +697,27 @@ export default function ManageTopicsPage() {
 
       {/* Delete Dialog */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
+        <DialogContent className="dark:bg-gray-900 dark:border-gray-800">
           <DialogHeader>
-            <DialogTitle>Delete Topic</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="dark:text-gray-100">Delete Topic</DialogTitle>
+            <DialogDescription className="dark:text-gray-400">
               Are you sure you want to delete "{topicToDelete?.title}"? This action cannot be undone and will also
               delete all associated lessons and assessments.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setDeleteDialogOpen(false)}
+              className="dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
               Cancel
             </Button>
-            <Button variant="destructive" onClick={confirmDelete}>
+            <Button 
+              variant="destructive" 
+              onClick={confirmDelete}
+              className="dark:bg-red-600 dark:hover:bg-red-500"
+            >
               Delete Topic
             </Button>
           </DialogFooter>

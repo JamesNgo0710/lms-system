@@ -11,6 +11,7 @@ import Link from "next/link"
 import { useTopics, useLessons, useLessonCompletions, useLessonViews, useUsers } from "@/hooks/use-data-store"
 import { apiClient } from "@/lib/api-client"
 import { useSession } from "next-auth/react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface VideoReport {
   lessonId: number
@@ -75,9 +76,12 @@ export default function ReportsPage() {
     try {
       setLoadingReports(true)
       const response = await apiClient.get('/community/reports')
-      setCommunityReports(response.data)
+      // Handle paginated response - extract data array
+      const reports = response.data?.data || response.data || []
+      setCommunityReports(Array.isArray(reports) ? reports : [])
     } catch (error) {
       console.error('Error loading community reports:', error)
+      setCommunityReports([]) // Set empty array on error
     } finally {
       setLoadingReports(false)
     }
@@ -136,7 +140,9 @@ export default function ReportsPage() {
       const avgTimeHours = Math.round(totalTimeSpent / 60) || user.thisWeekHours
 
       return {
+        id: user.id,
         name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
         lastLoggedIn: userViews.length > 0 
           ? new Date(Math.max(...userViews.map(v => new Date(v.viewedAt).getTime()))).toLocaleDateString('en-GB')
           : user.joinedDate,
@@ -144,6 +150,9 @@ export default function ReportsPage() {
         sessionsCompleted: `${userCompletions.length} sessions`,
         assessments: `${userCompletions.length} Assessments`, // Assuming 1:1 for now
         status: userViews.length > 0 ? "Active" : "Inactive",
+        totalCompletions: userCompletions.length,
+        totalViews: userViews.length,
+        joinedDate: user.joinedDate,
       }
     })
   }
@@ -301,8 +310,8 @@ export default function ReportsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {userReports.map((report, index) => (
-                      <TableRow key={index}>
+                    {userReports.map((report) => (
+                      <TableRow key={report.id}>
                         <TableCell className="font-medium">{report.name}</TableCell>
                         <TableCell>{report.lastLoggedIn}</TableCell>
                         <TableCell>{report.averageTime}</TableCell>
@@ -314,15 +323,26 @@ export default function ReportsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Link href={`/dashboard/user-management?user=${encodeURIComponent(report.name)}`}>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="bg-orange-500 text-white border-orange-500 hover:bg-orange-600"
-                            >
-                              View Details
-                            </Button>
-                          </Link>
+                          <div className="flex items-center space-x-2">
+                            <Link href={`/dashboard/user-management`}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="bg-orange-500 text-white border-orange-500 hover:bg-orange-600"
+                              >
+                                Manage Users
+                              </Button>
+                            </Link>
+                            <Link href={`/dashboard/profile?userId=${report.id}&admin=true`}>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-orange-500 border-orange-500 hover:bg-orange-50"
+                              >
+                                View Profile
+                              </Button>
+                            </Link>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -437,6 +457,7 @@ ${report.admin_notes ? `Admin Notes: ${report.admin_notes}` : ''}`)
           </Card>
         </TabsContent>
       </Tabs>
+
     </div>
   )
 }

@@ -320,26 +320,26 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Account Settings</h1>
-        <p className="text-gray-600">Keep your personal information updated.</p>
+        <h1 className="text-3xl font-bold dark:text-gray-100">Account Settings</h1>
+        <p className="text-gray-600 dark:text-gray-400">Keep your personal information updated.</p>
       </div>
 
-      <Card className="max-w-4xl mx-auto">
+      <Card className="max-w-4xl mx-auto dark:bg-gray-900 dark:border-gray-800">
         <CardContent className="p-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <div className="flex">
               {/* Tab Navigation */}
-              <div className="w-48 bg-gray-50 p-4">
+              <div className="w-48 bg-gray-50 dark:bg-gray-800 p-4">
                 <TabsList className="flex flex-col h-auto w-full bg-transparent space-y-2">
                   <TabsTrigger
                     value="profile"
-                    className="w-full justify-start data-[state=active]:bg-orange-500 data-[state=active]:text-white"
+                    className="w-full justify-start data-[state=active]:bg-orange-500 data-[state=active]:text-white dark:text-gray-300 dark:hover:bg-gray-700"
                   >
                     Profile
                   </TabsTrigger>
                   <TabsTrigger
                     value="password"
-                    className="w-full justify-start data-[state=active]:bg-orange-500 data-[state=active]:text-white"
+                    className="w-full justify-start data-[state=active]:bg-orange-500 data-[state=active]:text-white dark:text-gray-300 dark:hover:bg-gray-700"
                   >
                     Change Password
                   </TabsTrigger>
@@ -391,17 +391,17 @@ export default function SettingsPage() {
                             </Button>
                           )}
                         </div>
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-gray-600 dark:text-gray-300">
                           <p className="font-medium">Profile Photo</p>
                           {isCompressing ? (
-                            <p className="text-xs text-blue-600">Compressing image...</p>
+                            <p className="text-xs text-blue-600 dark:text-blue-400">Compressing image...</p>
                           ) : (
                             <p className="text-xs">Click the camera icon to upload a new photo</p>
                           )}
                           {profileImage && !isCompressing && (
-                            <p className="text-xs text-red-600">Click the X to remove your custom photo</p>
+                            <p className="text-xs text-red-600 dark:text-red-400">Click the X to remove your custom photo</p>
                           )}
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
                             Max size: 10MB • Auto-compressed to 200×200px • Formats: JPG, PNG, GIF
                           </p>
                         </div>
@@ -410,43 +410,45 @@ export default function SettingsPage() {
                       {/* Name Fields */}
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="firstName">First Name</Label>
+                          <Label htmlFor="firstName" className="dark:text-gray-200">First Name</Label>
                           <Input
                             id="firstName"
                             value={profileData.firstName}
                             onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
                             placeholder="John"
+                            className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
                           />
                         </div>
                         <div className="space-y-2">
-                          <Label htmlFor="lastName">Last Name</Label>
+                          <Label htmlFor="lastName" className="dark:text-gray-200">Last Name</Label>
                           <Input
                             id="lastName"
                             value={profileData.lastName}
                             onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
                             placeholder="Smith"
+                            className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
                           />
                         </div>
                       </div>
 
                       {/* Email (Read-only) */}
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email" className="dark:text-gray-200">Email</Label>
                         <Input
                           id="email"
                           type="email"
                           value={profileData.email}
                           disabled
-                          className="bg-gray-50 cursor-not-allowed"
+                          className="bg-gray-50 dark:bg-gray-800 cursor-not-allowed dark:border-gray-700 dark:text-gray-400"
                           placeholder="john.smith@example.com"
                         />
-                        <p className="text-xs text-gray-500">Email cannot be changed for security reasons</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Email cannot be changed for security reasons</p>
                       </div>
 
                       {/* Date Joined */}
                       <div className="space-y-2">
-                        <Label>Date Joined</Label>
-                        <div className="text-sm text-gray-600 bg-gray-50 px-3 py-2 rounded-md border">
+                        <Label className="dark:text-gray-200">Date Joined</Label>
+                        <div className="text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 px-3 py-2 rounded-md border dark:border-gray-700">
                           {user.joinedDate ? 
                             new Date(user.joinedDate).toLocaleDateString('en-US', {
                               year: 'numeric',
@@ -467,13 +469,13 @@ export default function SettingsPage() {
                         <Button 
                           onClick={handleProfileSave} 
                           disabled={isProfileSaving}
-                          className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50"
+                          className="bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500 disabled:opacity-50"
                         >
                           {isProfileSaving ? "Saving..." : "Save Changes"}
                         </Button>
                         {imageFile && (
-                          <div className="text-sm text-orange-600 flex items-center">
-                            <span className="w-2 h-2 bg-orange-500 rounded-full mr-2"></span>
+                          <div className="text-sm text-orange-600 dark:text-orange-400 flex items-center">
+                            <span className="w-2 h-2 bg-orange-500 dark:bg-orange-400 rounded-full mr-2"></span>
                             New image selected - Click Save to apply
                           </div>
                         )}
@@ -488,7 +490,7 @@ export default function SettingsPage() {
                       <div className="grid grid-cols-3 gap-4">
                         {/* Current Password */}
                         <div className="space-y-2">
-                          <Label htmlFor="currentPassword">Current Password</Label>
+                          <Label htmlFor="currentPassword" className="dark:text-gray-200">Current Password</Label>
                           <div className="relative">
                             <Input
                               id="currentPassword"
@@ -496,12 +498,13 @@ export default function SettingsPage() {
                               value={passwordData.currentPassword}
                               onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                               placeholder="••••••••"
+                              className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
                             />
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
                               onClick={() => togglePasswordVisibility("current")}
                             >
                               {showPasswords.current ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -511,7 +514,7 @@ export default function SettingsPage() {
 
                         {/* New Password */}
                         <div className="space-y-2">
-                          <Label htmlFor="newPassword">New Password</Label>
+                          <Label htmlFor="newPassword" className="dark:text-gray-200">New Password</Label>
                           <div className="relative">
                             <Input
                               id="newPassword"
@@ -519,12 +522,13 @@ export default function SettingsPage() {
                               value={passwordData.newPassword}
                               onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                               placeholder="••••••••"
+                              className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
                             />
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
                               onClick={() => togglePasswordVisibility("new")}
                             >
                               {showPasswords.new ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -534,7 +538,7 @@ export default function SettingsPage() {
 
                         {/* Confirm Password */}
                         <div className="space-y-2">
-                          <Label htmlFor="confirmPassword">Re-Enter New Password</Label>
+                          <Label htmlFor="confirmPassword" className="dark:text-gray-200">Re-Enter New Password</Label>
                           <div className="relative">
                             <Input
                               id="confirmPassword"
@@ -542,12 +546,13 @@ export default function SettingsPage() {
                               value={passwordData.confirmPassword}
                               onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                               placeholder="••••••••"
+                              className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
                             />
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon"
-                              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8"
+                              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200"
                               onClick={() => togglePasswordVisibility("confirm")}
                             >
                               {showPasswords.confirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -557,9 +562,9 @@ export default function SettingsPage() {
                       </div>
 
                       {/* Password Requirements */}
-                      <div className="text-sm text-gray-600 bg-blue-50 p-4 rounded-lg border border-blue-200">
-                        <p className="font-medium text-blue-800 mb-2">Password requirements:</p>
-                        <ul className="list-disc list-inside space-y-1 text-blue-700">
+                      <div className="text-sm text-gray-600 dark:text-gray-300 bg-blue-50 dark:bg-gray-800 p-4 rounded-lg border border-blue-200 dark:border-gray-700">
+                        <p className="font-medium text-blue-800 dark:text-gray-200 mb-2">Password requirements:</p>
+                        <ul className="list-disc list-inside space-y-1 text-blue-700 dark:text-gray-300">
                           <li>At least 8 characters long</li>
                           <li>Must contain at least one uppercase letter (A-Z)</li>
                           <li>Must contain at least one lowercase letter (a-z)</li>
@@ -572,7 +577,7 @@ export default function SettingsPage() {
                       <Button 
                         onClick={handlePasswordSave} 
                         disabled={isPasswordSaving}
-                        className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50"
+                        className="bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500 disabled:opacity-50"
                       >
                         {isPasswordSaving ? "Updating Password..." : "Save Changes"}
                       </Button>

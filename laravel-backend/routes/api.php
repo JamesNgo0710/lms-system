@@ -157,6 +157,13 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/comments/{id}', [CommunityController::class, 'updateComment']);
         Route::delete('/comments/{id}', [CommunityController::class, 'deleteComment']);
         Route::post('/vote', [CommunityController::class, 'vote']);
+        
+        // Bookmark routes
+        Route::post('/posts/{id}/bookmark', [CommunityController::class, 'toggleBookmark']);
+        Route::get('/bookmarks', [CommunityController::class, 'getUserBookmarks']);
+        
+        // Report routes
+        Route::post('/report', [CommunityController::class, 'reportContent']);
 
         // Admin-only actions
         Route::middleware('role:admin')->group(function () {
@@ -164,6 +171,10 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/posts/{id}/lock', [CommunityController::class, 'toggleLock']);
             Route::post('/posts/{id}/hide', [CommunityController::class, 'toggleHide']);
             Route::post('/comments/{id}/hide', [CommunityController::class, 'hideComment']);
+            
+            // Admin report management
+            Route::get('/reports', [CommunityController::class, 'getReports']);
+            Route::put('/reports/{id}', [CommunityController::class, 'updateReportStatus']);
         });
     });
 });

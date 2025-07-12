@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\CommunityPost;
 use App\Models\CommunityComment;
 use App\Models\CommunityVote;
+use App\Models\CommunityBookmark;
+use App\Models\CommunityReport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -321,6 +323,161 @@ class CommunityController extends Controller
         return response()->json([
             'message' => $comment->is_hidden ? 'Comment hidden' : 'Comment shown',
             'is_hidden' => $comment->is_hidden
+        ]);
+    }
+
+    // Bookmark endpoints
+    public function toggleBookmark($id)
+    {
+        $post = CommunityPost::findOrFail($id);
+        
+        $bookmark = CommunityBookmark::where([
+            'user_id' => Auth::id(),
+            'post_id' => $id
+        ])->first();
+
+        if ($bookmark) {
+            $bookmark->delete();
+            $isBookmarked = false;
+            $message = 'Bookmark removed';
+        } else {
+            CommunityBookmark::create([
+                'user_id' => Auth::id(),
+                'post_id' => $id
+            ]);
+            $isBookmarked = true;
+            $message = 'Post bookmarked';
+        }
+
+        return response()->json([
+            'message' => $message,
+            'is_bookmarked' => $isBookmarked
+        ]);
+    }
+
+    public function getUserBookmarks(Request $request)
+    {
+        $query = CommunityBookmark::where('user_id', Auth::id())
+            ->with(['post' => function($query) {
+                $query->visible()->with(['author', 'votes'])
+                      ->withCount(['comments' => function($query) {
+                          $query->visible();
+                      }]);
+            }]);
+
+        $bookmarks = $query->orderBy('created_at', 'desc')
+                          ->paginate($request->get('per_page', 20));
+
+        // Filter out bookmarks where post was deleted/hidden
+        $bookmarks->getCollection()->transform(function ($bookmark) {
+            if ($bookmark->post) {
+                $bookmark->post->user_vote = $bookmark->post->getUserVote(Auth::id());
+                $bookmark->post->is_bookmarked = true;
+            }
+            return $bookmark;
+        });
+
+        return response()->json($bookmarks);
+    }
+
+    // Report endpoints
+    public function reportContent(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'reportable_type' => 'required|in:post,comment',
+            'reportable_id' => 'required|integer',
+            'reason' => 'required|string|in:spam,harassment,inappropriate_content,misinformation,other',
+            'description' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $reportableType = $request->reportable_type === 'post'
+            ? CommunityPost::class
+            : CommunityComment::class;
+
+        $reportable = $reportableType::findOrFail($request->reportable_id);
+
+        // Check if user already reported this content
+        $existingReport = CommunityReport::where([
+            'reporter_id' => Auth::id(),
+            'reportable_type' => $reportableType,
+            'reportable_id' => $request->reportable_id,
+        ])->first();
+
+        if ($existingReport) {
+            return response()->json(['message' => 'You have already reported this content'], 409);
+        }
+
+        CommunityReport::create([
+            'reporter_id' => Auth::id(),
+            'reportable_type' => $reportableType,
+            'reportable_id' => $request->reportable_id,
+            'reason' => $request->reason,
+            'description' => $request->description,
+            'status' => 'pending',
+        ]);
+
+        return response()->json(['message' => 'Content reported successfully']);
+    }
+
+    public function getReports(Request $request)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $query = CommunityReport::with(['reporter', 'reviewer', 'reportable' => function($morphTo) {
+            $morphTo->morphWith([
+                CommunityPost::class => ['author'],
+                CommunityComment::class => ['author'],
+            ]);
+        }]);
+
+        // Apply filters
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('reason')) {
+            $query->where('reason', $request->reason);
+        }
+
+        $reports = $query->orderBy('created_at', 'desc')
+                        ->paginate($request->get('per_page', 20));
+
+        return response()->json($reports);
+    }
+
+    public function updateReportStatus(Request $request, $id)
+    {
+        if (!Auth::user()->hasRole('admin')) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:pending,reviewed,resolved,dismissed',
+            'admin_notes' => 'nullable|string|max:1000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $report = CommunityReport::findOrFail($id);
+        
+        $report->update([
+            'status' => $request->status,
+            'admin_notes' => $request->admin_notes,
+            'reviewed_by' => Auth::id(),
+            'reviewed_at' => now(),
+        ]);
+
+        return response()->json([
+            'message' => 'Report status updated successfully',
+            'report' => $report->load(['reporter', 'reviewer'])
         ]);
     }
 }

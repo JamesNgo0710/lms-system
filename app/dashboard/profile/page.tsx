@@ -38,8 +38,8 @@ import {
 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useTopics, useLessons, useLessonCompletions, useAssessmentAttempts } from "@/hooks/use-data-store"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useTopics, useLessons, useLessonCompletions, useAssessmentAttempts, useUsers } from "@/hooks/use-data-store"
 import { useToast } from "@/hooks/use-toast"
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
@@ -82,20 +82,34 @@ interface ProfileFormData {
 
 export default function ProfilePage() {
   const { data: session } = useSession()
-  const user = session?.user
   const { toast } = useToast()
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const viewUserId = searchParams.get('userId')
+  const isAdminView = searchParams.get('admin') === 'true'
+  
   const [profileImage, setProfileImage] = useState<string | null>(null)
   const [isExporting, setIsExporting] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
   const [isArchiving, setIsArchiving] = useState(false)
   const [isUploadingImage, setIsUploadingImage] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editForm, setEditForm] = useState<any>({})
   
   // Data store hooks
   const { getTopicById } = useTopics()
   const { getLessonById } = useLessons()
   const { getUserLessonCompletions } = useLessonCompletions()
   const { getTopicAssessmentAttempts } = useAssessmentAttempts()
+  const { users, updateUser } = useUsers()
+  
+  // Determine which user profile to show
+  const currentUser = session?.user
+  const targetUser = viewUserId ? users.find(u => u.id === viewUserId) : currentUser
+  const user = targetUser || currentUser
+  
+  // Check if current user is admin and can edit other profiles
+  const canEdit = !viewUserId || (currentUser?.role === 'admin' && isAdminView)
 
   // Handle hydration
   useEffect(() => {
@@ -111,6 +125,23 @@ export default function ProfilePage() {
       }
     }
   }, [user?.id])
+  
+  // Initialize edit form when user changes
+  useEffect(() => {
+    if (user) {
+      setEditForm({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        role: user.role || 'student',
+        bio: user.bio || 'Passionate learner with a keen interest in technology and innovation.',
+        phone: user.phone || '',
+        location: user.location || '',
+        skills: user.skills || 'Laravel, CSS, PHP',
+        interests: user.interests || 'Web Development, Software Engineering'
+      })
+    }
+  }, [user])
 
   // Listen for profile image updates
   useEffect(() => {
@@ -237,7 +268,55 @@ export default function ProfilePage() {
 
   // Handle Edit button click
   const handleEdit = () => {
-    router.push('/dashboard/settings')
+    if (canEdit) {
+      setIsEditing(true)
+    } else {
+      router.push('/dashboard/settings')
+    }
+  }
+  
+  // Handle save profile changes
+  const handleSaveProfile = () => {
+    if (!user || !canEdit) return
+    
+    try {
+      updateUser(user.id, {
+        ...editForm,
+        profileImage: profileImage || user.profileImage
+      })
+      
+      toast({
+        title: "Success",
+        description: "Profile updated successfully",
+      })
+      
+      setIsEditing(false)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update profile",
+        variant: "destructive",
+      })
+    }
+  }
+  
+  // Handle cancel edit
+  const handleCancelEdit = () => {
+    setIsEditing(false)
+    // Reset form to original values
+    if (user) {
+      setEditForm({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        role: user.role || 'student',
+        bio: user.bio || 'Passionate learner with a keen interest in technology and innovation.',
+        phone: user.phone || '',
+        location: user.location || '',
+        skills: user.skills || 'Laravel, CSS, PHP',
+        interests: user.interests || 'Web Development, Software Engineering'
+      })
+    }
   }
 
   // Handle Archive button click
@@ -364,7 +443,12 @@ export default function ProfilePage() {
           <h1 className="text-3xl font-bold">Profile</h1>
         </div>
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-600">MM</span>
+          {isAdminView && (
+            <Badge variant="outline" className="text-orange-600 border-orange-600">
+              Admin View
+            </Badge>
+          )}
+          <span className="text-sm text-gray-600">{user.role === 'admin' ? 'AD' : user.role === 'creator' ? 'CR' : 'ST'}</span>
           <span className="text-sm font-medium">
             {user.firstName} {user.lastName}
           </span>
@@ -375,13 +459,35 @@ export default function ProfilePage() {
       <Card className="bg-orange-500 text-white">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-white">Profile</CardTitle>
-            <Link href="/dashboard">
-              <Button variant="ghost" size="sm" className="text-white hover:bg-orange-600">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back
-              </Button>
-            </Link>
+            <div className="flex items-center space-x-3">
+              <CardTitle className="text-white">
+                {isAdminView ? `${user.firstName}'s Profile` : 'Profile'}
+              </CardTitle>
+              {isEditing && (
+                <Badge variant="secondary" className="bg-white text-orange-600">
+                  Editing Mode
+                </Badge>
+              )}
+            </div>
+            <div className="flex items-center space-x-2">
+              {isAdminView && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-white hover:bg-orange-600"
+                  onClick={() => router.push('/dashboard/reports')}
+                >
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Back to Reports
+                </Button>
+              )}
+              <Link href="/dashboard">
+                <Button variant="ghost" size="sm" className="text-white hover:bg-orange-600">
+                  <ArrowLeft className="w-4 h-4 mr-2" />
+                  Dashboard
+                </Button>
+              </Link>
+            </div>
           </div>
         </CardHeader>
       </Card>
@@ -421,21 +527,102 @@ export default function ProfilePage() {
                       className="hidden"
                     />
                   </div>
-                  <h2 className="text-xl font-bold">
-                    {user.firstName} {user.lastName}
-                  </h2>
-                  <p className="text-gray-600">Senior Laravel Developer</p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    <strong>Start Date:</strong> {user.joinedDate}
-                  </p>
+                  {isEditing ? (
+                    <div className="space-y-3">
+                      <div className="flex space-x-2">
+                        <Input
+                          value={editForm.firstName}
+                          onChange={(e) => setEditForm({...editForm, firstName: e.target.value})}
+                          placeholder="First Name"
+                          className="text-center"
+                        />
+                        <Input
+                          value={editForm.lastName}
+                          onChange={(e) => setEditForm({...editForm, lastName: e.target.value})}
+                          placeholder="Last Name"
+                          className="text-center"
+                        />
+                      </div>
+                      <Input
+                        value={editForm.email}
+                        onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                        placeholder="Email"
+                        className="text-center"
+                      />
+                      {isAdminView && (
+                        <select 
+                          value={editForm.role} 
+                          onChange={(e) => setEditForm({...editForm, role: e.target.value})}
+                          className="w-full p-2 border rounded text-center"
+                        >
+                          <option value="student">Student</option>
+                          <option value="admin">Admin</option>
+                          <option value="creator">Creator</option>
+                        </select>
+                      )}
+                    </div>
+                  ) : (
+                    <>
+                      <h2 className="text-xl font-bold">
+                        {user.firstName} {user.lastName}
+                      </h2>
+                      <p className="text-gray-600 capitalize">{user.role}</p>
+                      <p className="text-sm text-gray-500">{user.email}</p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        <strong>Start Date:</strong> {user.joinedDate}
+                      </p>
+                    </>
+                  )}
                 </div>
 
                 <div className="mt-6">
                   <h3 className="font-semibold mb-2">Bio:</h3>
-                  <p className="text-sm text-gray-600">
-                    Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore
-                    dolore magna aliquat enim ad minim consectetur.
-                  </p>
+                  {isEditing ? (
+                    <Textarea
+                      value={editForm.bio}
+                      onChange={(e) => setEditForm({...editForm, bio: e.target.value})}
+                      placeholder="Tell us about yourself..."
+                      className="text-sm"
+                      rows={4}
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-600">
+                      {user.bio || 'No bio available.'}
+                    </p>
+                  )}
+                </div>
+                
+                {/* Contact Information */}
+                <div className="mt-6 space-y-3">
+                  <h3 className="font-semibold mb-2">Contact Information:</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <Phone className="w-4 h-4 text-gray-500" />
+                      {isEditing ? (
+                        <Input
+                          value={editForm.phone}
+                          onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                          placeholder="Phone number"
+                          className="text-sm"
+                        />
+                      ) : (
+                        <span className="text-gray-600">{user.phone || 'Not provided'}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="w-4 h-4 text-gray-500" />
+                      {isEditing ? (
+                        <Input
+                          value={editForm.location}
+                          onChange={(e) => setEditForm({...editForm, location: e.target.value})}
+                          placeholder="Location"
+                          className="text-sm"
+                        />
+                      ) : (
+                        <span className="text-gray-600">{user.location || 'Not provided'}</span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -447,14 +634,30 @@ export default function ProfilePage() {
                     <h3 className="text-lg font-semibold mb-4">Skills</h3>
                     <div className="space-y-4">
                       <div>
-                        <h4 className="font-medium">Top Skills/Expertise:</h4>
-                        <p className="text-sm text-gray-300">Laravel, CSS, PHP</p>
+                        <h4 className="font-medium">Skills/Expertise:</h4>
+                        {isEditing ? (
+                          <Input
+                            value={editForm.skills}
+                            onChange={(e) => setEditForm({...editForm, skills: e.target.value})}
+                            placeholder="e.g., Laravel, CSS, PHP"
+                            className="text-sm mt-2 bg-gray-800 border-gray-600 text-white"
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-300">{user.skills || 'No skills listed'}</p>
+                        )}
                       </div>
                       <div>
-                        <h4 className="font-medium">Other Skills:</h4>
-                        <p className="text-sm text-gray-300">
-                          Lorem ipsum dolor sit amet consectetur adipiscing Sed do eiusmod tempor incididunt ut labore
-                        </p>
+                        <h4 className="font-medium">Learning Progress:</h4>
+                        <div className="space-y-2 mt-2">
+                          <div className="flex justify-between text-sm">
+                            <span>Completed Courses</span>
+                            <span>{completedCourses.length}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span>Total Learning Hours</span>
+                            <span>{user.thisWeekHours || 0}h</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -464,17 +667,29 @@ export default function ProfilePage() {
                     <h3 className="text-lg font-semibold mb-4">Professional Interests</h3>
                     <div className="space-y-4">
                       <div>
-                        <h4 className="font-medium">Personal Interests:</h4>
-                        <p className="text-sm text-gray-300">
-                          Lorem ipsum dolor sit amet consectetur adipiscing Sed do eiusmod tempor incididunt ut labore
-                          dolore magna aliquat enim ad minim consectetur.
-                        </p>
+                        <h4 className="font-medium">Professional Interests:</h4>
+                        {isEditing ? (
+                          <Textarea
+                            value={editForm.interests}
+                            onChange={(e) => setEditForm({...editForm, interests: e.target.value})}
+                            placeholder="e.g., Web Development, Machine Learning"
+                            className="text-sm mt-2 bg-gray-800 border-gray-600 text-white"
+                            rows={3}
+                          />
+                        ) : (
+                          <p className="text-sm text-gray-300">{user.interests || 'No interests listed'}</p>
+                        )}
                       </div>
                       <div>
-                        <h4 className="font-medium">Hobbies:</h4>
-                        <p className="text-sm text-gray-300">
-                          Lorem ipsum dolor sit amet consectetur adipiscing Sed do eiusmod tempor incididunt ut labore
-                        </p>
+                        <h4 className="font-medium">Account Status:</h4>
+                        <div className="space-y-2 mt-2">
+                          <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="text-xs">
+                            {user.role?.toUpperCase()}
+                          </Badge>
+                          <div className="text-sm text-gray-300">
+                            Member since: {new Date(user.joinedDate || '').toLocaleDateString()}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -588,46 +803,72 @@ export default function ProfilePage() {
 
       {/* Action Buttons */}
       <div className="flex justify-center space-x-4 pb-8">
-        <Button 
-          className="bg-orange-500 hover:bg-orange-600"
-          onClick={handleEdit}
-        >
-          <Settings className="w-4 h-4 mr-2" />
-          Edit Profile
-        </Button>
-        
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
+        {isEditing ? (
+          <>
+            <Button 
+              className="bg-green-500 hover:bg-green-600"
+              onClick={handleSaveProfile}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              Save Changes
+            </Button>
             <Button 
               variant="outline" 
-              className="border-orange-500 text-orange-500 hover:bg-orange-50"
-              disabled={isArchiving}
+              className="border-gray-500 text-gray-500 hover:bg-gray-50"
+              onClick={handleCancelEdit}
             >
-              <Archive className="w-4 h-4 mr-2" />
-              {isArchiving ? "Archiving..." : "Archive Account"}
+              <X className="w-4 h-4 mr-2" />
+              Cancel
             </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Are you sure you want to archive your account?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action will deactivate your account and hide your profile from other users. 
-                You can reactivate your account at any time by logging in again. 
-                Your data will be preserved.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleArchive}
-                className="bg-red-500 hover:bg-red-600"
-                disabled={isArchiving}
+          </>
+        ) : (
+          <>
+            {canEdit && (
+              <Button 
+                className="bg-orange-500 hover:bg-orange-600"
+                onClick={handleEdit}
               >
-                {isArchiving ? "Archiving..." : "Archive Account"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+                <Settings className="w-4 h-4 mr-2" />
+                {isAdminView ? 'Edit User' : 'Edit Profile'}
+              </Button>
+            )}
+            
+            {!isAdminView && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    className="border-orange-500 text-orange-500 hover:bg-orange-50"
+                    disabled={isArchiving}
+                  >
+                    <Archive className="w-4 h-4 mr-2" />
+                    {isArchiving ? "Archiving..." : "Archive Account"}
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Are you sure you want to archive your account?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This action will deactivate your account and hide your profile from other users. 
+                      You can reactivate your account at any time by logging in again. 
+                      Your data will be preserved.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={handleArchive}
+                      className="bg-red-500 hover:bg-red-600"
+                      disabled={isArchiving}
+                    >
+                      {isArchiving ? "Archiving..." : "Archive Account"}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+                </AlertDialog>
+            )}
+          </>
+        )}
       </div>
     </div>
   )
