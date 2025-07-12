@@ -612,7 +612,8 @@ export function ErrorHandler({ children }: { children: React.ReactNode }) {
 - Check that `withCredentials: true` is set in axios
 
 ### 419 CSRF Token Mismatch
-- Make sure to call `getCsrfCookie()` before making requests
+- For Bearer token authentication, ensure `EnsureFrontendRequestsAreStateful` middleware is not applied to API routes
+- For session-based authentication, call `getCsrfCookie()` before making requests
 - Verify `SESSION_DOMAIN` in Laravel `.env` matches your setup
 
 ### 401 Unauthorized

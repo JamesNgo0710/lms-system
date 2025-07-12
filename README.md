@@ -23,7 +23,7 @@ A comprehensive full-stack Learning Management System built with **Next.js 15**,
 ### Core Functionality
 - **Topic & Lesson Management**: Create, edit, and organize learning content
 - **Assessment System**: Timed quizzes with automatic grading
-
+- **Community Forum**: Discussion forum with posts, comments, and voting system
 - **Progress Tracking**: Detailed analytics and completion tracking
 - **User Management**: Admin controls for user roles and permissions
 - **Content Analytics**: Engagement and performance metrics
@@ -171,6 +171,17 @@ After running the database seeder, you can login with:
 - `GET /api/assessments` - List assessments
 - `POST /api/assessments/{id}/attempt` - Submit assessment attempt
 - `GET /api/assessments/{id}/results` - Get assessment results
+
+### Community Forum
+- `GET /api/community/posts` - List forum posts
+- `POST /api/community/posts` - Create new post
+- `GET /api/community/posts/{id}` - Get specific post
+- `GET /api/community/posts/{id}/comments` - Get post comments
+- `POST /api/community/posts/{id}/comments` - Create comment
+- `POST /api/community/vote` - Vote on posts/comments
+- `POST /api/community/posts/{id}/pin` - Pin/unpin posts (admin)
+- `POST /api/community/posts/{id}/lock` - Lock/unlock posts (admin)
+- `POST /api/community/posts/{id}/hide` - Hide/show posts (admin)
 
 ## 🚀 Deployment
 
