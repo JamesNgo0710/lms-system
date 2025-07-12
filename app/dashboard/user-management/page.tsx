@@ -257,52 +257,62 @@ export default function UserManagementPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">User Management</h1>
-        <Button onClick={handleAddUser} className="bg-orange-500 hover:bg-orange-600">
-          Add New User
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <h1 className="text-2xl sm:text-3xl font-bold dark:text-gray-100">User Management</h1>
+        <Button onClick={handleAddUser} className="bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500 w-full sm:w-auto">
+          <span className="sm:hidden">Add User</span>
+          <span className="hidden sm:inline">Add New User</span>
         </Button>
       </div>
 
-      <Card>
+      <Card className="dark:bg-gray-900 dark:border-gray-800">
         <CardContent className="p-0">
-          <Table>
+          <div className="overflow-x-auto">
+            <Table>
             <TableHeader>
-              <TableRow className="bg-orange-500 hover:bg-orange-500">
-                <TableHead className="text-white">Profile</TableHead>
-                <TableHead className="text-white">Name</TableHead>
-                <TableHead className="text-white">Email</TableHead>
-                <TableHead className="text-white">Role</TableHead>
-                <TableHead className="text-white">Actions</TableHead>
+              <TableRow className="bg-orange-500 hover:bg-orange-500 dark:bg-orange-600">
+                <TableHead className="text-white min-w-[80px]">Profile</TableHead>
+                <TableHead className="text-white min-w-[120px]">Name</TableHead>
+                <TableHead className="text-white min-w-[150px] hidden sm:table-cell">Email</TableHead>
+                <TableHead className="text-white min-w-[80px] hidden md:table-cell">Role</TableHead>
+                <TableHead className="text-white min-w-[120px]">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {users.map((user) => (
-                <TableRow key={user.id}>
+                <TableRow key={user.id} className="dark:border-gray-800">
                   <TableCell>
-                    <Avatar className="w-10 h-10">
+                    <Avatar className="w-8 h-8 sm:w-10 sm:h-10">
                       <AvatarImage src={user.profileImage} alt={`${user.firstName} ${user.lastName}`} />
-                      <AvatarFallback>
+                      <AvatarFallback className="text-xs sm:text-sm">
                         {user.firstName[0]}{user.lastName[0]}
                       </AvatarFallback>
                     </Avatar>
                   </TableCell>
-                  <TableCell className="font-medium">
-                    {user.firstName} {user.lastName}
+                  <TableCell className="font-medium dark:text-gray-200">
+                    <div>
+                      <div className="text-sm sm:text-base">{user.firstName} {user.lastName}</div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 sm:hidden">
+                        {user.email}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 md:hidden">
+                        <span className="capitalize">{user.role}</span>
+                      </div>
+                    </div>
                   </TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <span className="capitalize">{user.role}</span>
+                  <TableCell className="hidden sm:table-cell dark:text-gray-200 text-sm">{user.email}</TableCell>
+                  <TableCell className="hidden md:table-cell dark:text-gray-200">
+                    <span className="capitalize text-sm">{user.role}</span>
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => handleEditUser(user)}
-                        className="text-orange-500 hover:text-orange-700"
+                        className="text-orange-500 hover:text-orange-700 dark:text-orange-400 dark:hover:text-orange-300 text-xs px-2 py-1 h-7"
                       >
-                        <Edit className="w-4 h-4 mr-1" />
+                        <Edit className="w-3 h-3 mr-1" />
                         Edit
                       </Button>
                       {session?.user?.role === "admin" && (
@@ -310,20 +320,22 @@ export default function UserManagementPage() {
                           size="sm"
                           variant="ghost"
                           onClick={() => handleChangePassword(user.id)}
-                          className="text-blue-500 hover:text-blue-700"
+                          className="text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-xs px-2 py-1 h-7"
                         >
-                          <Key className="w-4 h-4 mr-1" />
-                          Password
+                          <Key className="w-3 h-3 mr-1" />
+                          <span className="hidden sm:inline">Password</span>
+                          <span className="sm:hidden">Pwd</span>
                         </Button>
                       )}
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => handleDeleteUser(user.id)}
-                        className="text-red-500 hover:text-red-700"
+                        className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs px-2 py-1 h-7"
                       >
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Delete
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        <span className="hidden sm:inline">Delete</span>
+                        <span className="sm:hidden">Del</span>
                       </Button>
                     </div>
                   </TableCell>
@@ -331,12 +343,13 @@ export default function UserManagementPage() {
               ))}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
       {/* Create/Edit User Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-md bg-gray-800 text-white border-gray-700">
+        <DialogContent className="mx-4 max-w-md sm:max-w-lg bg-gray-800 text-white border-gray-700">
           <DialogHeader className="bg-orange-500 text-center -m-6 mb-6 p-6">
             <DialogTitle>{editingUser ? "Edit User" : "Create / Edit User"}</DialogTitle>
           </DialogHeader>
@@ -462,7 +475,7 @@ export default function UserManagementPage() {
 
       {/* Change Password Dialog */}
       <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
-        <DialogContent className="max-w-md bg-gray-800 text-white border-gray-700">
+        <DialogContent className="mx-4 max-w-md sm:max-w-lg bg-gray-800 text-white border-gray-700">
           <DialogHeader className="bg-orange-500 text-center -m-6 mb-6 p-6">
             <DialogTitle>Change Password</DialogTitle>
           </DialogHeader>

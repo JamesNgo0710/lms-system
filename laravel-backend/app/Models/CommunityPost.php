@@ -56,6 +56,16 @@ class CommunityPost extends Model
         return $this->morphMany(CommunityVote::class, 'voteable');
     }
 
+    public function bookmarks(): HasMany
+    {
+        return $this->hasMany(CommunityBookmark::class, 'post_id');
+    }
+
+    public function reports(): MorphMany
+    {
+        return $this->morphMany(CommunityReport::class, 'reportable');
+    }
+
     // Helper methods
     public function updateVoteCount()
     {

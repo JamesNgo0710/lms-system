@@ -16,8 +16,8 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // Get CSRF cookie first
-          await getCsrfCookie();
+          // Skip CSRF for server-side API calls in NextAuth
+          // Laravel API login doesn't require CSRF for direct API calls
           
           // Make login request using server-safe client
           const response = await serverApiClient.post('/login', {
@@ -79,6 +79,20 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
+    maxAge: 24 * 60 * 60, // 24 hours
+  },
+  useSecureCookies: process.env.NODE_ENV === "production",
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production" ? "__Secure-next-auth.session-token" : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+        domain: process.env.NODE_ENV === "production" ? process.env.NEXTAUTH_URL?.includes('localhost') ? undefined : ".yourdomain.com" : undefined
+      }
+    }
   },
   secret: process.env.NEXTAUTH_SECRET,
 }

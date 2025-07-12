@@ -14,19 +14,20 @@ export function AdminDashboard() {
   return (
     <div className="space-y-6">
       {/* Top Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
         {/* Top Active Users */}
-        <Card className="bg-gray-800 text-white">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-gray-700 rounded-lg">
-                <Users className="w-8 h-8 text-white" />
+        <Card className="bg-gray-800 dark:bg-gray-900 text-white">
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="p-2 sm:p-3 bg-gray-700 dark:bg-gray-800 rounded-lg">
+                <Users className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
               <div>
-                <p className="text-sm text-gray-300">Top Active Users</p>
-                <p className="text-lg font-semibold text-orange-500">This Month</p>
-                <Button size="sm" className="mt-2 bg-orange-500 hover:bg-orange-600 text-xs">
-                  View Users Report
+                <p className="text-xs sm:text-sm text-gray-300">Top Active Users</p>
+                <p className="text-sm sm:text-lg font-semibold text-orange-500">This Month</p>
+                <Button size="sm" className="mt-1 sm:mt-2 bg-orange-500 hover:bg-orange-600 text-xs px-2 py-1">
+                  <span className="hidden sm:inline">View Users Report</span>
+                  <span className="sm:hidden">View Report</span>
                 </Button>
               </div>
             </div>
@@ -34,12 +35,12 @@ export function AdminDashboard() {
         </Card>
 
         {/* Active Users This Month */}
-        <Card className="bg-gray-800 text-white">
-          <CardContent className="p-6">
+        <Card className="bg-gray-800 dark:bg-gray-900 text-white">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-3xl font-bold">{dashboardStats.activeUsersThisMonth}</p>
-                <p className="text-sm text-gray-300">Active Users</p>
+                <p className="text-2xl sm:text-3xl font-bold">{dashboardStats.activeUsersThisMonth}</p>
+                <p className="text-xs sm:text-sm text-gray-300">Active Users</p>
                 <p className="text-xs text-orange-500">This Month</p>
               </div>
             </div>
@@ -47,14 +48,14 @@ export function AdminDashboard() {
         </Card>
 
         {/* Active Users Last Month */}
-        <Card className="bg-gray-800 text-white">
-          <CardContent className="p-6">
+        <Card className="bg-gray-800 dark:bg-gray-900 text-white">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-3xl font-bold">{dashboardStats.activeUsersLastMonth}</p>
-                <p className="text-sm text-gray-300">Active Users</p>
+              <div className="w-full">
+                <p className="text-2xl sm:text-3xl font-bold">{dashboardStats.activeUsersLastMonth}</p>
+                <p className="text-xs sm:text-sm text-gray-300">Active Users</p>
                 <p className="text-xs text-orange-500">Last Month</p>
-                <div className="w-full bg-gray-700 rounded-full h-1 mt-2">
+                <div className="w-full bg-gray-700 dark:bg-gray-800 rounded-full h-1 mt-2">
                   <div className="bg-orange-500 h-1 rounded-full" style={{ width: `${(dashboardStats.activeUsersLastMonth / 100) * 100}%` }}></div>
                 </div>
               </div>
@@ -63,12 +64,12 @@ export function AdminDashboard() {
         </Card>
 
         {/* Actual Users */}
-        <Card className="bg-blue-600 text-white">
-          <CardContent className="p-6">
+        <Card className="bg-blue-600 dark:bg-blue-700 text-white">
+          <CardContent className="p-4 sm:p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-3xl font-bold">{dashboardStats.actualUsers}</p>
-                <p className="text-sm">Actual Users</p>
+                <p className="text-2xl sm:text-3xl font-bold">{dashboardStats.actualUsers}</p>
+                <p className="text-xs sm:text-sm">Actual Users</p>
               </div>
             </div>
           </CardContent>
@@ -76,7 +77,7 @@ export function AdminDashboard() {
       </div>
 
       {/* Second Row Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
         {/* Average Time Weekly This Month */}
         <Card className="bg-gray-800 text-white">
           <CardContent className="p-6">
@@ -119,7 +120,7 @@ export function AdminDashboard() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
             {topVideos.length > 0 ? (
               topVideos.map((video, index) => (
                 <Card key={video.id} className="overflow-hidden hover:shadow-lg transition-shadow">

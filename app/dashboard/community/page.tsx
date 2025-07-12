@@ -2,13 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { Plus, Search, Pin, Lock, MessageSquare, ChevronUp, ChevronDown, Eye } from 'lucide-react';
+import { Plus, Search, Pin, Lock, MessageSquare, ChevronUp, ChevronDown, Eye, Filter, Bookmark, Flag, Paperclip, Calendar, User, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
@@ -29,8 +32,10 @@ export default function CommunityPage() {
   const [filters, setFilters] = useState<PostFilters>({});
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [newPost, setNewPost] = useState({ title: '', content: '' });
+  const [newPost, setNewPost] = useState({ title: '', content: '', attachments: null as FileList | null });
   const [submitting, setSubmitting] = useState(false);
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [bookmarkedPosts, setBookmarkedPosts] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     loadPosts();
@@ -76,8 +81,12 @@ export default function CommunityPage() {
 
     try {
       setSubmitting(true);
-      await CommunityService.createPost(newPost);
-      setNewPost({ title: '', content: '' });
+      await CommunityService.createPost({
+        title: newPost.title,
+        content: newPost.content,
+        attachments: newPost.attachments
+      });
+      setNewPost({ title: '', content: '', attachments: null });
       setIsCreateDialogOpen(false);
       toast({
         title: 'Success',
@@ -159,6 +168,72 @@ export default function CommunityPage() {
     setFilters({ ...filters, page });
   };
 
+  const handleBookmark = async (postId: number) => {
+    if (!session) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to bookmark posts',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      await CommunityService.toggleBookmark(postId);
+      setBookmarkedPosts(prev => {
+        const newSet = new Set(prev);
+        if (newSet.has(postId)) {
+          newSet.delete(postId);
+          toast({ title: 'Success', description: 'Bookmark removed' });
+        } else {
+          newSet.add(postId);
+          toast({ title: 'Success', description: 'Post bookmarked' });
+        }
+        return newSet;
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to bookmark post',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleReport = async (postId: number, reason: string) => {
+    if (!session) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to report posts',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      await CommunityService.reportContent({
+        reportable_type: 'post',
+        reportable_id: postId,
+        reason: reason
+      });
+      toast({
+        title: 'Success',
+        description: 'Post reported successfully'
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to report post',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const clearFilters = () => {
+    setFilters({});
+    setSearchQuery('');
+  };
+
   if (loading && posts.length === 0) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -229,6 +304,21 @@ export default function CommunityPage() {
                       maxLength={10000}
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="attachments">Attachments (optional)</Label>
+                    <Input
+                      id="attachments"
+                      type="file"
+                      multiple
+                      onChange={(e) => setNewPost({ ...newPost, attachments: e.target.files })}
+                      disabled={submitting}
+                      accept="image/*,.pdf,.doc,.docx,.txt"
+                      className="cursor-pointer"
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Support: Images, PDF, Word docs, Text files (max 10MB each)
+                    </p>
+                  </div>
                   <div className="flex justify-end gap-2">
                     <Button
                       type="button"
@@ -248,19 +338,144 @@ export default function CommunityPage() {
           )}
         </div>
 
-        {/* Search */}
-        <form onSubmit={handleSearch} className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-            <Input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search posts..."
-              className="pl-10"
-            />
-          </div>
-          <Button type="submit">Search</Button>
-        </form>
+        {/* Search and Filters */}
+        <div className="space-y-4">
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search posts..."
+                className="pl-10"
+              />
+            </div>
+            <Button type="submit">Search</Button>
+            <Popover open={showAdvancedFilters} onOpenChange={setShowAdvancedFilters}>
+              <PopoverTrigger asChild>
+                <Button variant="outline">
+                  <Filter className="w-4 h-4 mr-2" />
+                  Filters
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-screen max-w-sm sm:w-80 mx-4">
+                <div className="space-y-4">
+                  <h4 className="font-medium">Advanced Filters</h4>
+                  
+                  <div className="space-y-2">
+                    <Label>Sort by</Label>
+                    <Select
+                      value={filters.sort_by || 'latest'}
+                      onValueChange={(value) => setFilters({ ...filters, sort_by: value as any, page: 1 })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="latest">Latest</SelectItem>
+                        <SelectItem value="oldest">Oldest</SelectItem>
+                        <SelectItem value="most_voted">Most Voted</SelectItem>
+                        <SelectItem value="most_commented">Most Commented</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Author</Label>
+                    <Input
+                      value={filters.author || ''}
+                      onChange={(e) => setFilters({ ...filters, author: e.target.value, page: 1 })}
+                      placeholder="Filter by author name"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Minimum Votes</Label>
+                    <Input
+                      type="number"
+                      value={filters.min_votes || ''}
+                      onChange={(e) => setFilters({ ...filters, min_votes: e.target.value ? parseInt(e.target.value) : undefined, page: 1 })}
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Date Range</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <Input
+                        type="date"
+                        value={filters.date_from || ''}
+                        onChange={(e) => setFilters({ ...filters, date_from: e.target.value, page: 1 })}
+                        placeholder="From"
+                      />
+                      <Input
+                        type="date"
+                        value={filters.date_to || ''}
+                        onChange={(e) => setFilters({ ...filters, date_to: e.target.value, page: 1 })}
+                        placeholder="To"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="has_attachments"
+                      checked={filters.has_attachments || false}
+                      onChange={(e) => setFilters({ ...filters, has_attachments: e.target.checked, page: 1 })}
+                      className="rounded"
+                    />
+                    <Label htmlFor="has_attachments">Has attachments</Label>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={clearFilters}
+                      variant="outline"
+                      size="sm"
+                      className="flex-1"
+                    >
+                      Clear
+                    </Button>
+                    <Button
+                      onClick={() => setShowAdvancedFilters(false)}
+                      size="sm"
+                      className="flex-1"
+                    >
+                      Apply
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </form>
+
+          {/* Active filters display */}
+          {(filters.search || filters.author || filters.sort_by !== 'latest' || filters.has_attachments) && (
+            <div className="flex flex-wrap gap-2">
+              {filters.search && (
+                <Badge variant="secondary">Search: {filters.search}</Badge>
+              )}
+              {filters.author && (
+                <Badge variant="secondary">Author: {filters.author}</Badge>
+              )}
+              {filters.sort_by && filters.sort_by !== 'latest' && (
+                <Badge variant="secondary">Sort: {filters.sort_by.replace('_', ' ')}</Badge>
+              )}
+              {filters.has_attachments && (
+                <Badge variant="secondary">Has attachments</Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={clearFilters}
+                className="h-6 px-2"
+              >
+                Clear all
+              </Button>
+            </div>
+          )}
+        </div>
 
         {/* Posts List */}
         <div className="space-y-4">
@@ -305,7 +520,7 @@ export default function CommunityPage() {
                       >
                         {post.title}
                       </Link>
-                      <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
                         <Avatar className="w-6 h-6">
                           <AvatarImage src={post.author.profile_image} />
                           <AvatarFallback>{post.author.first_name[0]}{post.author.last_name[0]}</AvatarFallback>
@@ -319,31 +534,85 @@ export default function CommunityPage() {
                             <span>edited {CommunityService.formatTimeAgo(post.updated_at)}</span>
                           </>
                         )}
+                        {post.attachments && post.attachments.length > 0 && (
+                          <>
+                            <span>•</span>
+                            <div className="flex items-center gap-1">
+                              <Paperclip className="w-3 h-3" />
+                              <span>{post.attachments.length} file{post.attachments.length > 1 ? 's' : ''}</span>
+                            </div>
+                          </>
+                        )}
                       </div>
                     </div>
                     
-                    {/* Vote buttons */}
-                    {session && (
-                      <div className="flex flex-col items-center gap-1 ml-4">
-                        <Button
-                          variant={post.user_vote?.vote_type === 1 ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => handleVote(post, 1)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <ChevronUp className="w-4 h-4" />
-                        </Button>
-                        <span className="font-semibold text-sm">{post.vote_count}</span>
-                        <Button
-                          variant={post.user_vote?.vote_type === -1 ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => handleVote(post, -1)}
-                          className="h-8 w-8 p-0"
-                        >
-                          <ChevronDown className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
+                    {/* Action buttons */}
+                    <div className="flex items-start gap-2 ml-4">
+                      {/* Vote buttons */}
+                      {session && (
+                        <div className="flex flex-col items-center gap-1">
+                          <Button
+                            variant={post.user_vote?.vote_type === 1 ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => handleVote(post, 1)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronUp className="w-4 h-4" />
+                          </Button>
+                          <span className="font-semibold text-sm">{post.vote_count}</span>
+                          <Button
+                            variant={post.user_vote?.vote_type === -1 ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => handleVote(post, -1)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <ChevronDown className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                      
+                      {/* Bookmark and Report */}
+                      {session && (
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            variant={bookmarkedPosts.has(post.id) ? "default" : "ghost"}
+                            size="sm"
+                            onClick={() => handleBookmark(post.id)}
+                            className="h-8 w-8 p-0"
+                            title="Bookmark post"
+                          >
+                            <Bookmark className="w-4 h-4" />
+                          </Button>
+                          
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0"
+                                title="Report post"
+                              >
+                                <Flag className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent>
+                              <DropdownMenuItem onClick={() => handleReport(post.id, 'spam')}>
+                                Report as Spam
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleReport(post.id, 'inappropriate')}>
+                                Inappropriate Content
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleReport(post.id, 'harassment')}>
+                                Harassment
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleReport(post.id, 'other')}>
+                                Other
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent>

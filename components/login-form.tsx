@@ -23,9 +23,9 @@ export function LoginForm() {
 
   // Demo accounts that match Laravel backend
   const demoAccounts = [
-    { email: "admin@lms.com", password: "admin123", role: "admin" },
-    { email: "teacher@lms.com", password: "teacher123", role: "teacher" },
-    { email: "student@lms.com", password: "student123", role: "student" }
+    { email: "admin@example.com", password: "admin123", role: "admin" },
+    { email: "teacher@example.com", password: "teacher123", role: "teacher" },
+    { email: "test@example.com", password: "password123", role: "student" }
   ]
 
   const handleSubmit = async (e: React.FormEvent) => {

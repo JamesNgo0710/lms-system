@@ -55,6 +55,11 @@ class CommunityComment extends Model
         return $this->morphMany(CommunityVote::class, 'voteable');
     }
 
+    public function reports(): MorphMany
+    {
+        return $this->morphMany(CommunityReport::class, 'reportable');
+    }
+
     // Helper methods
     public function updateVoteCount()
     {

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft, ChevronUp, ChevronDown, MessageSquare, Pin, Lock, Eye, EyeOff, Edit, Trash2, Reply, MoreVertical } from 'lucide-react';
+import { ArrowLeft, ChevronUp, ChevronDown, MessageSquare, Pin, Lock, Eye, EyeOff, Edit, Trash2, Reply, MoreVertical, Bookmark, Flag, Paperclip, Download, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,9 +24,10 @@ interface CommentThreadProps {
   onCommentUpdate: (updatedComment: CommunityComment) => void;
   onCommentDelete: (commentId: number) => void;
   onReplySubmit: (parentId: number, content: string) => Promise<void>;
+  onCommentReport: (commentId: number, reason: string) => Promise<void>;
 }
 
-function CommentThread({ comment, postId, currentUserId, isAdmin, onCommentUpdate, onCommentDelete, onReplySubmit }: CommentThreadProps) {
+function CommentThread({ comment, postId, currentUserId, isAdmin, onCommentUpdate, onCommentDelete, onReplySubmit, onCommentReport }: CommentThreadProps) {
   const { toast } = useToast();
   const [isReplying, setIsReplying] = useState(false);
   const [replyContent, setReplyContent] = useState('');
@@ -162,35 +163,62 @@ function CommentThread({ comment, postId, currentUserId, isAdmin, onCommentUpdat
               )}
               
               {/* Actions menu */}
-              {(canEdit || canDelete || canModerate) && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                      <MoreVertical className="w-3 h-3" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {canEdit && (
-                      <DropdownMenuItem>
-                        <Edit className="w-4 h-4 mr-2" />
-                        Edit
+              <div className="flex items-center gap-1">
+                {/* Report button for comments */}
+                {currentUserId && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" title="Report comment">
+                        <Flag className="w-3 h-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => onCommentReport(comment.id, 'spam')}>
+                        Report as Spam
                       </DropdownMenuItem>
-                    )}
-                    {canDelete && (
-                      <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Delete
+                      <DropdownMenuItem onClick={() => onCommentReport(comment.id, 'inappropriate')}>
+                        Inappropriate Content
                       </DropdownMenuItem>
-                    )}
-                    {canModerate && (
-                      <DropdownMenuItem onClick={() => CommunityService.hideComment(comment.id)}>
-                        {comment.is_hidden ? <Eye className="w-4 h-4 mr-2" /> : <EyeOff className="w-4 h-4 mr-2" />}
-                        {comment.is_hidden ? 'Show' : 'Hide'}
+                      <DropdownMenuItem onClick={() => onCommentReport(comment.id, 'harassment')}>
+                        Harassment
                       </DropdownMenuItem>
-                    )}
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+                      <DropdownMenuItem onClick={() => onCommentReport(comment.id, 'other')}>
+                        Other
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+                
+                {(canEdit || canDelete || canModerate) && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                        <MoreVertical className="w-3 h-3" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      {canEdit && (
+                        <DropdownMenuItem>
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit
+                        </DropdownMenuItem>
+                      )}
+                      {canDelete && (
+                        <DropdownMenuItem onClick={() => setShowDeleteDialog(true)}>
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Delete
+                        </DropdownMenuItem>
+                      )}
+                      {canModerate && (
+                        <DropdownMenuItem onClick={() => CommunityService.hideComment(comment.id)}>
+                          {comment.is_hidden ? <Eye className="w-4 h-4 mr-2" /> : <EyeOff className="w-4 h-4 mr-2" />}
+                          {comment.is_hidden ? 'Show' : 'Hide'}
+                        </DropdownMenuItem>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -255,6 +283,7 @@ function CommentThread({ comment, postId, currentUserId, isAdmin, onCommentUpdat
               onCommentUpdate={onCommentUpdate}
               onCommentDelete={onCommentDelete}
               onReplySubmit={onReplySubmit}
+              onCommentReport={onCommentReport}
             />
           ))}
         </div>
@@ -289,6 +318,7 @@ export default function PostPage() {
   const [loading, setLoading] = useState(true);
   const [newCommentContent, setNewCommentContent] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [isBookmarked, setIsBookmarked] = useState(false);
 
   const postId = parseInt(params.id as string);
   const currentUserId = session?.user?.id;
@@ -446,6 +476,118 @@ export default function PostPage() {
     setComments(removeCommentRecursively(comments));
   };
 
+  const handleBookmark = async () => {
+    if (!session || !post) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to bookmark posts',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      await CommunityService.toggleBookmark(post.id);
+      setIsBookmarked(!isBookmarked);
+      toast({
+        title: 'Success',
+        description: isBookmarked ? 'Bookmark removed' : 'Post bookmarked'
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to bookmark post',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleReport = async (reason: string) => {
+    if (!session || !post) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to report posts',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      await CommunityService.reportContent({
+        reportable_type: 'post',
+        reportable_id: post.id,
+        reason: reason
+      });
+      toast({
+        title: 'Success',
+        description: 'Post reported successfully'
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to report post',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleCommentReport = async (commentId: number, reason: string) => {
+    if (!session) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to report comments',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    try {
+      await CommunityService.reportContent({
+        reportable_type: 'comment',
+        reportable_id: commentId,
+        reason: reason
+      });
+      toast({
+        title: 'Success',
+        description: 'Comment reported successfully'
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to report comment',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const downloadAttachment = async (attachment: any) => {
+    try {
+      const response = await fetch(attachment.download_url, {
+        headers: {
+          'Authorization': `Bearer ${session?.accessToken}`
+        }
+      });
+      
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = attachment.filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to download file',
+        variant: 'destructive'
+      });
+    }
+  };
+
   if (!post) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -555,6 +697,100 @@ export default function PostPage() {
           </CardContent>
         </Card>
 
+        {/* Post Actions */}
+        {session && (
+          <Card>
+            <CardContent className="py-4">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant={isBookmarked ? "default" : "outline"}
+                  size="sm"
+                  onClick={handleBookmark}
+                >
+                  <Bookmark className="w-4 h-4 mr-2" />
+                  {isBookmarked ? 'Bookmarked' : 'Bookmark'}
+                </Button>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Flag className="w-4 h-4 mr-2" />
+                      Report
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem onClick={() => handleReport('spam')}>
+                      Report as Spam
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleReport('inappropriate')}>
+                      Inappropriate Content
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleReport('harassment')}>
+                      Harassment
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => handleReport('other')}>
+                      Other
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Attachments */}
+        {post.attachments && post.attachments.length > 0 && (
+          <Card>
+            <CardHeader>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Paperclip className="w-5 h-5" />
+                Attachments ({post.attachments.length})
+              </h3>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {post.attachments.map((attachment: any) => (
+                  <div key={attachment.id} className="border rounded-lg p-4 hover:bg-muted/50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="bg-primary/10 p-2 rounded-md">
+                          <Paperclip className="w-4 h-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium truncate">{attachment.filename}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {attachment.file_size_human} • {attachment.mime_type}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {attachment.is_image && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => window.open(attachment.url, '_blank')}
+                            title="View image"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => downloadAttachment(attachment)}
+                          title="Download file"
+                        >
+                          <Download className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         {/* Comment form */}
         {session && !post.is_locked && (
           <Card>
@@ -630,6 +866,7 @@ export default function PostPage() {
                   onCommentUpdate={handleCommentUpdate}
                   onCommentDelete={handleCommentDelete}
                   onReplySubmit={handleReplySubmit}
+                  onCommentReport={handleCommentReport}
                 />
               ))}
             </div>
