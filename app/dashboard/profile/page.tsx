@@ -700,7 +700,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* External Courses */}
-        <Card>
+        <Card className="shadow-sm border border-gray-200 dark:border-gray-800">
           <CardHeader className="bg-gray-900 text-white">
             <CardTitle className="flex items-center">
               <span className="mr-2">📚</span>
@@ -708,29 +708,31 @@ export default function ProfilePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-orange-500 hover:bg-orange-500">
-                  <TableHead className="text-white">Course</TableHead>
-                  <TableHead className="text-white">Location</TableHead>
-                  <TableHead className="text-white">Month/Year</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {externalCourses.map((course, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{course.course}</TableCell>
-                    <TableCell>{course.location}</TableCell>
-                    <TableCell>{course.monthYear}</TableCell>
+            <div className="border-t border-gray-200 dark:border-gray-800 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-orange-500 hover:bg-orange-500 dark:bg-orange-600 border-b-0">
+                    <TableHead className="text-white font-semibold py-4">Course</TableHead>
+                    <TableHead className="text-white font-semibold py-4">Location</TableHead>
+                    <TableHead className="text-white font-semibold py-4">Month/Year</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {externalCourses.map((course, index) => (
+                    <TableRow key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800">
+                      <TableCell className="font-semibold text-gray-900 dark:text-gray-100 py-4">{course.course}</TableCell>
+                      <TableCell className="py-4 text-gray-600 dark:text-gray-400">{course.location}</TableCell>
+                      <TableCell className="py-4 text-gray-600 dark:text-gray-400">{course.monthYear}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
 
         {/* Completed Courses */}
-        <Card>
+        <Card className="shadow-sm border border-gray-200 dark:border-gray-800">
           <CardHeader className="bg-gray-900 text-white">
             <CardTitle className="flex items-center">
               <span className="mr-2">✅</span>
@@ -738,52 +740,54 @@ export default function ProfilePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-orange-500 hover:bg-orange-500">
-                  <TableHead className="text-white">Course</TableHead>
-                  <TableHead className="text-white">Completed Date</TableHead>
-                  <TableHead className="text-white">Lessons Completed</TableHead>
-                  <TableHead className="text-white">Assessment Score</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {completedCourses.length > 0 ? (
-                  completedCourses.map((course, index) => (
-                    <TableRow key={index}>
-                      <TableCell className="font-medium">{course.course}</TableCell>
-                      <TableCell>{course.completedDate}</TableCell>
-                      <TableCell>{course.lessonsCompleted}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <span className={`font-medium ${
-                            course.assessmentScore === 'Not taken' 
-                              ? 'text-gray-500' 
-                              : course.assessmentPassed 
-                                ? 'text-green-600' 
-                                : 'text-red-600'
-                          }`}>
-                            {course.assessmentScore}
-                          </span>
-                          {course.assessmentPassed && (
-                            <Badge variant="outline" className="text-green-600 border-green-600">
-                              <Award className="w-3 h-3 mr-1" />
-                              Passed
-                            </Badge>
-                          )}
-                        </div>
+            <div className="border-t border-gray-200 dark:border-gray-800 overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-orange-500 hover:bg-orange-500 dark:bg-orange-600 border-b-0">
+                    <TableHead className="text-white font-semibold py-4">Course</TableHead>
+                    <TableHead className="text-white font-semibold py-4">Completed Date</TableHead>
+                    <TableHead className="text-white font-semibold py-4">Lessons Completed</TableHead>
+                    <TableHead className="text-white font-semibold py-4">Assessment Score</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {completedCourses.length > 0 ? (
+                    completedCourses.map((course, index) => (
+                      <TableRow key={index} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800">
+                        <TableCell className="font-semibold text-gray-900 dark:text-gray-100 py-4">{course.course}</TableCell>
+                        <TableCell className="py-4 text-gray-600 dark:text-gray-400">{course.completedDate}</TableCell>
+                        <TableCell className="py-4 font-medium text-gray-900 dark:text-gray-100">{course.lessonsCompleted}</TableCell>
+                        <TableCell className="py-4">
+                          <div className="flex items-center space-x-2">
+                            <span className={`font-medium ${
+                              course.assessmentScore === 'Not taken' 
+                                ? 'text-gray-500' 
+                                : course.assessmentPassed 
+                                  ? 'text-green-600' 
+                                  : 'text-red-600'
+                            }`}>
+                              {course.assessmentScore}
+                            </span>
+                            {course.assessmentPassed && (
+                              <Badge variant="outline" className="text-green-600 border-green-600 bg-green-50 dark:bg-green-900/20">
+                                <Award className="w-3 h-3 mr-1" />
+                                Passed
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-gray-500 dark:text-gray-400">
+                        {isHydrated ? "No courses completed yet" : "Loading..."}
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                      {isHydrated ? "No courses completed yet" : "Loading..."}
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
           </CardContent>
         </Card>
       </div>

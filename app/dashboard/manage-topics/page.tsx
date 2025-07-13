@@ -591,45 +591,52 @@ export default function ManageTopicsPage() {
               ))}
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden shadow-sm">
               <Table>
                 <TableHeader>
-                  <TableRow className="dark:border-gray-800">
-                    <TableHead className="dark:text-gray-200">Topic</TableHead>
-                    <TableHead className="hidden md:table-cell dark:text-gray-200">Category</TableHead>
-                    <TableHead className="hidden lg:table-cell dark:text-gray-200">Students</TableHead>
-                    <TableHead className="hidden lg:table-cell dark:text-gray-200">Lessons</TableHead>
-                    <TableHead className="hidden sm:table-cell dark:text-gray-200">Status</TableHead>
-                    <TableHead className="w-[70px] dark:text-gray-200">Actions</TableHead>
+                  <TableRow className="bg-orange-500 hover:bg-orange-500 dark:bg-orange-600 border-b-0">
+                    <TableHead className="text-white font-semibold py-4">Topic</TableHead>
+                    <TableHead className="hidden md:table-cell text-white font-semibold py-4">Category</TableHead>
+                    <TableHead className="hidden lg:table-cell text-white font-semibold py-4">Students</TableHead>
+                    <TableHead className="hidden lg:table-cell text-white font-semibold py-4">Lessons</TableHead>
+                    <TableHead className="hidden sm:table-cell text-white font-semibold py-4">Status</TableHead>
+                    <TableHead className="w-[70px] text-white font-semibold py-4">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredTopics.map((topic) => (
                     <TableRow
                       key={topic.id}
-                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 dark:border-gray-800"
+                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800"
                       onClick={() => router.push(`/dashboard/manage-topics/${topic.id}`)}
                     >
-                      <TableCell className="dark:text-gray-100">
-                        <div>
-                          <p className="font-medium">{topic.title}</p>
-                          <div className="flex items-center space-x-2 mt-1 flex-wrap gap-1">
-                            <Badge variant="outline" className="text-xs dark:border-gray-700 dark:text-gray-300">
-                              {topic.difficulty}
-                            </Badge>
-                            <span className="text-xs text-gray-500 dark:text-gray-400 md:hidden">
-                              {topic.category} • {topic.students} students
-                            </span>
+                      <TableCell className="py-4">
+                        <div className="flex items-center space-x-3">
+                          <img 
+                            src={topic.image || "/placeholder.svg?height=48&width=48"} 
+                            alt={topic.title}
+                            className="w-12 h-12 rounded-lg object-cover"
+                          />
+                          <div>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100">{topic.title}</p>
+                            <div className="flex items-center space-x-2 mt-1 flex-wrap gap-1">
+                              <Badge variant="outline" className="text-xs bg-gray-100 dark:bg-gray-700 dark:border-gray-600">
+                                {topic.difficulty}
+                              </Badge>
+                              <span className="text-xs text-gray-500 dark:text-gray-400 md:hidden">
+                                {topic.category} • {topic.students} students
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="hidden md:table-cell">
-                        <Badge variant="outline" className="dark:border-gray-700 dark:text-gray-300">{topic.category}</Badge>
+                      <TableCell className="hidden md:table-cell py-4">
+                        <Badge variant="outline" className="bg-gray-100 dark:bg-gray-700 dark:border-gray-600">{topic.category}</Badge>
                       </TableCell>
-                      <TableCell className="hidden lg:table-cell dark:text-gray-100">{topic.students}</TableCell>
-                      <TableCell className="hidden lg:table-cell dark:text-gray-100">{topic.lessons}</TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        <Badge variant={topic.status === "Published" ? "default" : "secondary"} className="dark:text-gray-100">{topic.status}</Badge>
+                      <TableCell className="hidden lg:table-cell py-4 font-medium text-gray-900 dark:text-gray-100">{topic.students}</TableCell>
+                      <TableCell className="hidden lg:table-cell py-4 font-medium text-gray-900 dark:text-gray-100">{topic.lessons}</TableCell>
+                      <TableCell className="hidden sm:table-cell py-4">
+                        <Badge variant={topic.status === "Published" ? "default" : "secondary"} className={topic.status === "Published" ? "bg-green-500" : ""}>{topic.status}</Badge>
                       </TableCell>
                       <TableCell>
                         <DropdownMenu>

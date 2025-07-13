@@ -307,12 +307,12 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-blue-100 rounded-full">
-                    <Users className="w-6 h-6 text-blue-600" />
+                  <div className="p-3 bg-blue-100 dark:bg-blue-900/20 rounded-full">
+                    <Users className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Students Enrolled</p>
-                    <p className="text-2xl font-bold">{topic.students}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Students Enrolled</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{topic.students}</p>
                   </div>
                 </div>
               </CardContent>
@@ -321,12 +321,12 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-green-100 rounded-full">
-                    <BookOpen className="w-6 h-6 text-green-600" />
+                  <div className="p-3 bg-green-100 dark:bg-green-900/20 rounded-full">
+                    <BookOpen className="w-6 h-6 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Total Lessons</p>
-                    <p className="text-2xl font-bold">{lessons.length}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Total Lessons</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{lessons.length}</p>
                   </div>
                 </div>
               </CardContent>
@@ -335,12 +335,12 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center space-x-4">
-                  <div className="p-3 bg-orange-100 rounded-full">
-                    <Calendar className="w-6 h-6 text-orange-600" />
+                  <div className="p-3 bg-orange-100 dark:bg-orange-900/20 rounded-full">
+                    <Calendar className="w-6 h-6 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Created</p>
-                    <p className="text-2xl font-bold">{topic.createdAt}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">Created</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{topic.createdAt}</p>
                   </div>
                 </div>
               </CardContent>
@@ -354,23 +354,23 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <p className="text-sm text-gray-600">Description</p>
-                <p className="text-gray-900">{topic.description}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Description</p>
+                <p className="text-gray-900 dark:text-gray-100">{topic.description}</p>
               </div>
               <div className="flex items-center space-x-4">
                 <div>
-                  <p className="text-sm text-gray-600">Category</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Category</p>
                   <Badge variant="secondary">{topic.category}</Badge>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Difficulty</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Difficulty</p>
                   <Badge className={getDifficultyColor(topic.difficulty)}>
                     {topic.difficulty}
                   </Badge>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Duration</p>
-                  <p className="text-gray-900">{topic.duration}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Duration</p>
+                  <p className="text-gray-900 dark:text-gray-100 font-medium">{topic.duration || "Duration not specified"}</p>
                 </div>
               </div>
             </CardContent>
@@ -416,8 +416,8 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
               {lessons.length === 0 ? (
                 <div className="text-center py-8">
                   <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900 mb-2">No lessons yet</h3>
-                  <p className="text-gray-600 mb-4">Create your first lesson to get started</p>
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No lessons yet</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4">Create your first lesson to get started</p>
                   <Button asChild>
                     <Link href={`/dashboard/manage-topics/${topic.id}/lessons/create`}>
                       <Plus className="w-4 h-4 mr-2" />
@@ -484,7 +484,7 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                           <div className="flex items-center justify-between text-white/80 text-sm">
                             <div className="flex items-center space-x-1">
                               <Clock className="w-4 h-4" />
-                              <span>{lesson.duration}</span>
+                              <span>{lesson.duration || "Not specified"}</span>
                             </div>
                             <Badge className={`${getStatusColor(lesson.status)} bg-white/90 text-gray-800`}>
                               {lesson.status}
@@ -552,75 +552,77 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                   ))}
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Lesson</TableHead>
-                      <TableHead>Duration</TableHead>
-                      <TableHead>Difficulty</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {lessons.map((lesson) => (
-                      <TableRow key={lesson.id}>
-                        <TableCell>
-                          <div>
-                            <p className="font-medium">{lesson.title}</p>
-                            <p className="text-sm text-gray-600">{lesson.description}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center">
-                            <Clock className="w-4 h-4 mr-1 text-gray-400" />
-                            {lesson.duration}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getDifficultyColor(lesson.difficulty)}>
-                            {lesson.difficulty}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(lesson.status)}>
-                            {lesson.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon">
-                                <MoreVertical className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild>
-                                <Link href={`/dashboard/topics/${topic.id}/lessons/${lesson.id}?returnTo=manage&topicId=${topic.id}`}>
-                                  <Eye className="w-4 h-4 mr-2" />
-                                  Preview
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem asChild>
-                                <Link href={`/dashboard/manage-topics/${topic.id}/lessons/${lesson.id}/edit`}>
-                                  <Edit className="w-4 h-4 mr-2" />
-                                  Edit
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleDeleteLesson(lesson)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
+                <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden shadow-sm">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-orange-500 hover:bg-orange-500 dark:bg-orange-600 border-b-0">
+                        <TableHead className="text-white font-semibold py-4">Lesson</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Duration</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Difficulty</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Status</TableHead>
+                        <TableHead className="text-right text-white font-semibold py-4">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {lessons.map((lesson) => (
+                        <TableRow key={lesson.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800">
+                          <TableCell className="py-4">
+                            <div>
+                              <p className="font-semibold text-gray-900 dark:text-gray-100">{lesson.title}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{lesson.description}</p>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <div className="flex items-center">
+                              <Clock className="w-4 h-4 mr-1 text-gray-400 dark:text-gray-500" />
+                              <span className="text-gray-900 dark:text-gray-100">{lesson.duration || "Not specified"}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <Badge className={getDifficultyColor(lesson.difficulty)}>
+                              {lesson.difficulty}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <Badge className={getStatusColor(lesson.status)}>
+                              {lesson.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right py-4">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="hover:bg-gray-100 dark:hover:bg-gray-700">
+                                  <MoreVertical className="w-4 h-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="dark:bg-gray-900 dark:border-gray-800">
+                                <DropdownMenuItem asChild className="dark:hover:bg-gray-800 dark:focus:bg-gray-800">
+                                  <Link href={`/dashboard/topics/${topic.id}/lessons/${lesson.id}?returnTo=manage&topicId=${topic.id}`}>
+                                    <Eye className="w-4 h-4 mr-2" />
+                                    Preview
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild className="dark:hover:bg-gray-800 dark:focus:bg-gray-800">
+                                  <Link href={`/dashboard/manage-topics/${topic.id}/lessons/${lesson.id}/edit`}>
+                                    <Edit className="w-4 h-4 mr-2" />
+                                    Edit
+                                  </Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleDeleteLesson(lesson)}
+                                  className="text-red-600 dark:text-red-400 dark:hover:bg-gray-800 dark:focus:bg-gray-800"
+                                >
+                                  <Trash2 className="w-4 h-4 mr-2" />
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -631,7 +633,7 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
                 <CardTitle>Topic Settings</CardTitle>
-                <p className="text-sm text-gray-600 mt-1">Manage topic information and configuration</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">Manage topic information and configuration</p>
               </div>
               {!isEditing && (
                 <Button onClick={() => setIsEditing(true)}>
@@ -802,28 +804,28 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <Label className="text-sm font-medium text-gray-600">Title</Label>
-                      <p className="text-lg font-semibold">{topic.title}</p>
+                      <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Title</Label>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{topic.title}</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-gray-600">Category</Label>
+                      <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Category</Label>
                       <div className="mt-1">
                         <Badge variant="outline">{topic.category}</Badge>
                       </div>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-gray-600">Difficulty</Label>
+                      <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Difficulty</Label>
                       <div className="mt-1">
                         <Badge variant="outline">{topic.difficulty}</Badge>
                       </div>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-gray-600">Total Duration</Label>
-                      <p className="text-lg font-semibold text-orange-600">{calculateTotalDuration()}</p>
-                      <p className="text-xs text-gray-500">Calculated from {lessons.length} lesson(s)</p>
+                      <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Duration</Label>
+                      <p className="text-lg font-semibold text-orange-600 dark:text-orange-400">{calculateTotalDuration()}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Calculated from {lessons.length} lesson(s)</p>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-gray-600">Status</Label>
+                      <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</Label>
                       <div className="mt-1">
                         <Badge variant={topic.status === "Published" ? "default" : "secondary"}>
                           {topic.status}
@@ -831,19 +833,19 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                       </div>
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-gray-600">Students Enrolled</Label>
-                      <p className="text-lg font-semibold">{topic.students}</p>
+                      <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Students Enrolled</Label>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-gray-100">{topic.students}</p>
                     </div>
                   </div>
                   {topic.description && (
                     <div>
-                      <Label className="text-sm font-medium text-gray-600">Description</Label>
-                      <p className="text-gray-700 mt-1">{topic.description}</p>
+                      <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Description</Label>
+                      <p className="text-gray-700 dark:text-gray-300 mt-1">{topic.description}</p>
                     </div>
                   )}
                   {topic.image && (
                     <div>
-                      <Label className="text-sm font-medium text-gray-600">Topic Image</Label>
+                      <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Topic Image</Label>
                       <div className="mt-2 border rounded-lg p-4">
                         <img 
                           src={topic.image} 

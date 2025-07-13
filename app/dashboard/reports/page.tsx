@@ -215,56 +215,60 @@ export default function ReportsPage() {
                   </Link>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-orange-500 hover:bg-orange-500">
-                      <TableHead className="text-white">Lesson</TableHead>
-                      <TableHead className="text-white">Topic Category</TableHead>
-                      <TableHead className="text-white">Number Of Views</TableHead>
-                      <TableHead className="text-white">Average Of Views</TableHead>
-                      <TableHead className="text-white">Completion Rate</TableHead>
-                      <TableHead className="text-white">Date Active</TableHead>
-                      <TableHead className="text-white">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {videoReports.map((report) => (
-                      <TableRow key={report.lessonId}>
-                        <TableCell className="font-medium">{report.lesson}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{report.category}</Badge>
-                        </TableCell>
-                        <TableCell>{report.views}</TableCell>
-                        <TableCell>{report.avgViews}</TableCell>
-                        <TableCell>{report.completionRate}%</TableCell>
-                        <TableCell>{report.dateActive}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Link href={`/dashboard/topics/${report.topicId}/lessons/${report.lessonId}`}>
-                              <Button size="sm" variant="outline" className="text-orange-500 border-orange-500">
-                                <Play className="w-3 h-3 mr-1" />
-                                View
-                              </Button>
-                            </Link>
-                            {report.videoUrl && (
-                              <a 
-                                href={report.videoUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="inline-flex"
-                              >
-                                <Button size="sm" variant="outline">
-                                  <ExternalLink className="w-3 h-3 mr-1" />
-                                  Video
-                                </Button>
-                              </a>
-                            )}
-                          </div>
-                        </TableCell>
+                <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden shadow-sm">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-orange-500 hover:bg-orange-500 dark:bg-orange-600 border-b-0">
+                        <TableHead className="text-white font-semibold py-4">Lesson</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Topic Category</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Number Of Views</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Average Of Views</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Completion Rate</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Date Active</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {videoReports.map((report) => (
+                        <TableRow key={report.lessonId} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800">
+                          <TableCell className="font-semibold text-gray-900 dark:text-gray-100 py-4">{report.lesson}</TableCell>
+                          <TableCell className="py-4">
+                            <Badge variant="outline" className="bg-gray-100 dark:bg-gray-700">{report.category}</Badge>
+                          </TableCell>
+                          <TableCell className="py-4 font-medium">{report.views}</TableCell>
+                          <TableCell className="py-4 font-medium">{report.avgViews}</TableCell>
+                          <TableCell className="py-4">
+                            <span className="font-medium">{report.completionRate}%</span>
+                          </TableCell>
+                          <TableCell className="py-4 text-gray-600 dark:text-gray-400">{report.dateActive}</TableCell>
+                          <TableCell className="py-4">
+                            <div className="flex items-center space-x-2">
+                              <Link href={`/dashboard/topics/${report.topicId}/lessons/${report.lessonId}`}>
+                                <Button size="sm" variant="outline" className="text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-600 dark:hover:bg-orange-900/20">
+                                  <Play className="w-3 h-3 mr-1" />
+                                  View
+                                </Button>
+                              </Link>
+                              {report.videoUrl && (
+                                <a 
+                                  href={report.videoUrl} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="inline-flex"
+                                >
+                                  <Button size="sm" variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-600 dark:hover:bg-blue-900/20">
+                                    <ExternalLink className="w-3 h-3 mr-1" />
+                                    Video
+                                  </Button>
+                                </a>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -297,57 +301,59 @@ export default function ReportsPage() {
                   </Link>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-orange-500 hover:bg-orange-500">
-                      <TableHead className="text-white">Name</TableHead>
-                      <TableHead className="text-white">Last Logged In</TableHead>
-                      <TableHead className="text-white">Average Time Spent</TableHead>
-                      <TableHead className="text-white">Sessions Completed</TableHead>
-                      <TableHead className="text-white">Number of Assessments Taken</TableHead>
-                      <TableHead className="text-white">Status</TableHead>
-                      <TableHead className="text-white">Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {userReports.map((report) => (
-                      <TableRow key={report.id}>
-                        <TableCell className="font-medium">{report.name}</TableCell>
-                        <TableCell>{report.lastLoggedIn}</TableCell>
-                        <TableCell>{report.averageTime}</TableCell>
-                        <TableCell>{report.sessionsCompleted}</TableCell>
-                        <TableCell>{report.assessments}</TableCell>
-                        <TableCell>
-                          <Badge variant={report.status === 'Active' ? "default" : "secondary"}>
-                            {report.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Link href={`/dashboard/user-management`}>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="bg-orange-500 text-white border-orange-500 hover:bg-orange-600"
-                              >
-                                Manage Users
-                              </Button>
-                            </Link>
-                            <Link href={`/dashboard/profile?userId=${report.id}&admin=true`}>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="text-orange-500 border-orange-500 hover:bg-orange-50"
-                              >
-                                View Profile
-                              </Button>
-                            </Link>
-                          </div>
-                        </TableCell>
+                <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden shadow-sm">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="bg-orange-500 hover:bg-orange-500 dark:bg-orange-600 border-b-0">
+                        <TableHead className="text-white font-semibold py-4">Name</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Last Logged In</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Average Time Spent</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Sessions Completed</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Number of Assessments Taken</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Status</TableHead>
+                        <TableHead className="text-white font-semibold py-4">Actions</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {userReports.map((report) => (
+                        <TableRow key={report.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800">
+                          <TableCell className="font-semibold text-gray-900 dark:text-gray-100 py-4">{report.name}</TableCell>
+                          <TableCell className="py-4 text-gray-600 dark:text-gray-400">{report.lastLoggedIn}</TableCell>
+                          <TableCell className="py-4 font-medium">{report.averageTime}</TableCell>
+                          <TableCell className="py-4 font-medium">{report.sessionsCompleted}</TableCell>
+                          <TableCell className="py-4 font-medium">{report.assessments}</TableCell>
+                          <TableCell className="py-4">
+                            <Badge variant={report.status === 'Active' ? "default" : "secondary"} className={report.status === 'Active' ? "bg-green-500" : ""}>
+                              {report.status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="py-4">
+                            <div className="flex items-center space-x-2">
+                              <Link href={`/dashboard/user-management`}>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-orange-600 border-orange-200 hover:bg-orange-50 dark:border-orange-600 dark:hover:bg-orange-900/20"
+                                >
+                                  Manage Users
+                                </Button>
+                              </Link>
+                              <Link href={`/dashboard/profile?userId=${report.id}&admin=true`}>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-blue-600 border-blue-200 hover:bg-blue-50 dark:border-blue-600 dark:hover:bg-blue-900/20"
+                                >
+                                  View Profile
+                                </Button>
+                              </Link>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>
