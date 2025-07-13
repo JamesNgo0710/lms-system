@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Search, Edit, Trash2, Eye, History, User, Calendar, FileText, ChevronLeft, ChevronRight } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Eye, History, User, Calendar, FileText, ChevronLeft, ChevronRight, Grid3X3, List } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 
@@ -15,6 +16,7 @@ export default function ManageAssessmentsPage() {
   const { topics } = useTopics()
   const { assessments, addAssessment, deleteAssessment, getRecentAssessmentHistory } = useAssessments()
   const [searchTerm, setSearchTerm] = useState("")
+  const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
 
   const { toast } = useToast()
 
@@ -65,8 +67,8 @@ export default function ManageAssessmentsPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Assessments</h1>
-        <p className="text-gray-600">Select Topic below to Create Assessment</p>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Assessments</h1>
+        <p className="text-gray-600 dark:text-gray-400">Select Topic below to Create Assessment</p>
       </div>
 
       {/* Recently Edited Assessments */}
@@ -74,7 +76,7 @@ export default function ManageAssessmentsPage() {
         <CardHeader>
           <div className="flex items-center space-x-2">
             <History className="w-5 h-5 text-orange-500" />
-            <h2 className="text-xl font-semibold">Recently Edited Assessments</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Recently Edited Assessments</h2>
           </div>
         </CardHeader>
         <CardContent>
@@ -82,109 +84,233 @@ export default function ManageAssessmentsPage() {
         </CardContent>
       </Card>
 
-      {/* Search */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center space-x-4">
-            <div className="relative flex-1 max-w-sm">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="Search topics..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-            </div>
+      {/* Search and View Controls */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="relative flex-1 max-w-sm">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <Input
+            placeholder="Search topics..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600 dark:text-gray-400">View:</span>
+          <div className="flex items-center border border-gray-200 dark:border-gray-700 rounded-lg p-1 bg-white dark:bg-gray-800">
+            <Button
+              variant={viewMode === "grid" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("grid")}
+              className={`px-3 ${viewMode === "grid" ? "bg-orange-500 hover:bg-orange-600 text-white" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+            >
+              <Grid3X3 className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={viewMode === "list" ? "default" : "ghost"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+              className={`px-3 ${viewMode === "list" ? "bg-orange-500 hover:bg-orange-600 text-white" : "hover:bg-gray-100 dark:hover:bg-gray-700"}`}
+            >
+              <List className="w-4 h-4" />
+            </Button>
           </div>
-        </CardHeader>
-      </Card>
+        </div>
+      </div>
 
-      {/* Topics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Create New Topic Card */}
-        <Card className="border-2 border-dashed border-orange-300 hover:border-orange-500 transition-colors cursor-pointer">
-          <Link href="/dashboard/manage-topics">
-            <CardContent className="flex flex-col items-center justify-center h-64 text-center">
-              <div className="w-16 h-16 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
-                <Plus className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-lg font-semibold text-orange-500 mb-2">Create</h3>
-              <p className="text-sm text-gray-600">Create New Topic First</p>
-            </CardContent>
-          </Link>
-        </Card>
+      {/* Topics Section */}
+      {viewMode === "grid" ? (
+        // Grid View
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Create New Topic Card */}
+          <Card className="border-2 border-dashed border-orange-300 hover:border-orange-500 transition-colors cursor-pointer">
+            <Link href="/dashboard/manage-topics">
+              <CardContent className="flex flex-col items-center justify-center h-64 text-center">
+                <div className="w-16 h-16 bg-orange-500 rounded-lg flex items-center justify-center mb-4">
+                  <Plus className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold text-orange-500 mb-2">Create</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-400">Create New Topic First</p>
+              </CardContent>
+            </Link>
+          </Card>
 
-        {/* Existing Topics */}
-        {filteredTopics.map((topic) => {
-          const hasAssessment = topicHasAssessment(topic.id)
-          return (
-            <Card key={topic.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-              <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">
-                <img
-                  src={topic.image || "/placeholder.svg"}
-                  alt={topic.title}
-                  className="w-full h-full object-cover opacity-80"
-                />
-                <div className="absolute inset-0 bg-black/20" />
-                <div className="absolute bottom-4 left-4 right-4">
-                  <h3 className="text-white font-semibold text-lg mb-2">{topic.title}</h3>
-                  <div className="flex items-center justify-between">
-                    <Badge variant="secondary" className="bg-white/20 text-white">
-                      {topic.category}
-                    </Badge>
-                    <Badge
-                      variant={hasAssessment ? "default" : "secondary"}
-                      className={hasAssessment ? "bg-green-500" : "bg-gray-500"}
-                    >
-                      {hasAssessment ? "Has Assessment" : "No Assessment"}
-                    </Badge>
+          {/* Existing Topics */}
+          {filteredTopics.map((topic) => {
+            const hasAssessment = topicHasAssessment(topic.id)
+            return (
+              <Card key={topic.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">
+                  <img
+                    src={topic.image || "/placeholder.svg"}
+                    alt={topic.title}
+                    className="w-full h-full object-cover opacity-80"
+                  />
+                  <div className="absolute inset-0 bg-black/20" />
+                  <div className="absolute bottom-4 left-4 right-4">
+                    <h3 className="text-white font-semibold text-lg mb-2">{topic.title}</h3>
+                    <div className="flex items-center justify-between">
+                      <Badge variant="secondary" className="bg-white/20 text-white">
+                        {topic.category}
+                      </Badge>
+                      <Badge
+                        variant={hasAssessment ? "default" : "secondary"}
+                        className={hasAssessment ? "bg-green-500" : "bg-gray-500"}
+                      >
+                        {hasAssessment ? "Has Assessment" : "No Assessment"}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  {hasAssessment ? (
-                    <div className="flex items-center space-x-2">
-                      <Link href={`/dashboard/manage-assessments/edit/${topic.id}`}>
-                        <Button size="sm" variant="outline">
-                          <Edit className="w-4 h-4 mr-1" />
-                          Edit
-                        </Button>
-                      </Link>
-                      <Link href={`/dashboard/manage-assessments/preview/${topic.id}`}>
-                        <Button size="sm" variant="outline">
-                          <Eye className="w-4 h-4 mr-1" />
-                          Preview
-                        </Button>
-                      </Link>
-                    </div>
-                  ) : (
-                    <Button
-                      size="sm"
-                      onClick={() => handleCreateAssessment(topic)}
-                      className="bg-orange-500 hover:bg-orange-600"
-                    >
-                      <Plus className="w-4 h-4 mr-1" />
-                      Create Assessment
-                    </Button>
-                  )}
-                  {hasAssessment && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => handleDeleteAssessment(topic.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </div>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    {hasAssessment ? (
+                      <div className="flex items-center space-x-2">
+                        <Link href={`/dashboard/manage-assessments/edit/${topic.id}`}>
+                          <Button size="sm" variant="outline">
+                            <Edit className="w-4 h-4 mr-1" />
+                            Edit
+                          </Button>
+                        </Link>
+                        <Link href={`/dashboard/manage-assessments/preview/${topic.id}`}>
+                          <Button size="sm" variant="outline">
+                            <Eye className="w-4 h-4 mr-1" />
+                            Preview
+                          </Button>
+                        </Link>
+                      </div>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => handleCreateAssessment(topic)}
+                        className="bg-orange-500 hover:bg-orange-600"
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Create Assessment
+                      </Button>
+                    )}
+                    {hasAssessment && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => handleDeleteAssessment(topic.id)}
+                        className="text-red-500 hover:text-red-700"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      ) : (
+        // List View
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Topic</TableHead>
+                  <TableHead>Category</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {/* Create New Topic Row */}
+                <TableRow className="border-2 border-dashed border-orange-300 hover:border-orange-500 cursor-pointer">
+                  <TableCell colSpan={4}>
+                    <Link href="/dashboard/manage-topics" className="flex items-center justify-center py-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 bg-orange-500 rounded-lg flex items-center justify-center">
+                          <Plus className="w-5 h-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="font-semibold text-orange-500">Create New Topic First</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Add a topic before creating assessments</p>
+                        </div>
+                      </div>
+                    </Link>
+                  </TableCell>
+                </TableRow>
+
+                {/* Existing Topics */}
+                {filteredTopics.map((topic) => {
+                  const hasAssessment = topicHasAssessment(topic.id)
+                  return (
+                    <TableRow key={topic.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <img
+                            src={topic.image || "/placeholder.svg"}
+                            alt={topic.title}
+                            className="w-12 h-12 rounded-lg object-cover"
+                          />
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-gray-100">{topic.title}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{topic.description}</p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{topic.category}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={hasAssessment ? "default" : "secondary"}
+                          className={hasAssessment ? "bg-green-500" : "bg-gray-500"}
+                        >
+                          {hasAssessment ? "Has Assessment" : "No Assessment"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end space-x-2">
+                          {hasAssessment ? (
+                            <>
+                              <Link href={`/dashboard/manage-assessments/edit/${topic.id}`}>
+                                <Button size="sm" variant="outline">
+                                  <Edit className="w-4 h-4 mr-1" />
+                                  Edit
+                                </Button>
+                              </Link>
+                              <Link href={`/dashboard/manage-assessments/preview/${topic.id}`}>
+                                <Button size="sm" variant="outline">
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  Preview
+                                </Button>
+                              </Link>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleDeleteAssessment(topic.id)}
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <Button
+                              size="sm"
+                              onClick={() => handleCreateAssessment(topic)}
+                              className="bg-orange-500 hover:bg-orange-600"
+                            >
+                              <Plus className="w-4 h-4 mr-1" />
+                              Create Assessment
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
 
     </div>
@@ -204,7 +330,7 @@ function RecentlyEditedAssessments({ getRecentAssessmentHistory }: { getRecentAs
 
   if (allHistory.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500">
+      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
         <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
         <p>No recent assessment activity</p>
       </div>
@@ -249,19 +375,19 @@ function RecentlyEditedAssessments({ getRecentAssessmentHistory }: { getRecentAs
       {/* Grid Layout - 2 columns */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 min-h-[320px]">
         {currentPageHistory.map((entry) => (
-          <div key={entry.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors h-fit">
+          <div key={entry.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors h-fit">
             <div className="flex items-center space-x-3 flex-1 min-w-0">
               <div className={`p-2 rounded-lg flex-shrink-0 ${getActionColor(entry.action)}`}>
                 {getActionIcon(entry.action)}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center space-x-2 mb-1">
-                  <span className="font-medium text-sm truncate">{entry.topicTitle}</span>
+                  <span className="font-medium text-sm truncate text-gray-900 dark:text-gray-100">{entry.topicTitle}</span>
                   <Badge variant="outline" className={`${getActionColor(entry.action)} text-xs flex-shrink-0`}>
                     {entry.action}
                   </Badge>
                 </div>
-                <div className="flex items-center space-x-3 text-xs text-gray-600">
+                <div className="flex items-center space-x-3 text-xs text-gray-600 dark:text-gray-400">
                   <div className="flex items-center space-x-1">
                     <User className="w-3 h-3 flex-shrink-0" />
                     <span className="truncate">{entry.actionByName}</span>
@@ -272,7 +398,7 @@ function RecentlyEditedAssessments({ getRecentAssessmentHistory }: { getRecentAs
                   </div>
                 </div>
                 {entry.details && (
-                  <p className="text-xs text-gray-500 mt-1 truncate">{entry.details}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">{entry.details}</p>
                 )}
               </div>
             </div>
@@ -290,7 +416,7 @@ function RecentlyEditedAssessments({ getRecentAssessmentHistory }: { getRecentAs
       {/* Pagination Controls */}
       {totalPages > 1 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t">
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 dark:text-gray-400">
             Showing {startIndex + 1}-{Math.min(startIndex + itemsPerPage, allHistory.length)} of {allHistory.length} activities
           </div>
           <div className="flex items-center space-x-1">

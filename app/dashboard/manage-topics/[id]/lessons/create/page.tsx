@@ -323,7 +323,7 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Topic Not Found</h2>
+          <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">Topic Not Found</h2>
           <Link href="/dashboard/manage-topics">
             <Button>Back to Topics</Button>
           </Link>
@@ -343,7 +343,7 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
         </Link>
         <div>
           <h1 className="text-3xl font-bold text-orange-500">Add New Lesson</h1>
-          <p className="text-gray-600">Topic: {topic.title}</p>
+          <p className="text-gray-600 dark:text-gray-400">Topic: {topic.title}</p>
         </div>
       </div>
 
@@ -445,7 +445,7 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
                   step={1}
                   className="w-full"
                 />
-                <div className="flex justify-between text-sm text-gray-500">
+                <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400">
                   <span>Beginner</span>
                   <span>Intermediate</span>
                   <span>Advanced</span>
@@ -466,14 +466,14 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
               
               {/* Video Preview */}
               {isLoadingPreview && (
-                <div className="flex items-center space-x-2 text-sm text-gray-500">
+                <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-500"></div>
                   <span>Loading preview...</span>
                 </div>
               )}
               
               {videoPreview && (
-                <div className="border rounded-lg p-4 bg-gray-50">
+                <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-800 dark:border-gray-700">
                   <div className="flex items-start space-x-4">
                     <div className="relative">
                       <img 
@@ -489,10 +489,10 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
                       </div>
                     </div>
                     <div>
-                      <p className="font-medium text-sm">{videoPreview.title}</p>
-                      <p className="text-xs text-gray-500">Platform: {videoPreview.platform}</p>
+                      <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{videoPreview.title}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Platform: {videoPreview.platform}</p>
                       {videoPreview.duration && (
-                        <p className="text-xs text-gray-500">Duration: {videoPreview.duration}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Duration: {videoPreview.duration}</p>
                       )}
                     </div>
                   </div>
@@ -505,13 +505,13 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
               <Label htmlFor="content">Content *</Label>
               
               {/* Rich Text Toolbar */}
-              <div className="border border-gray-300 rounded-t-lg p-2 bg-gray-50 flex items-center space-x-1 flex-wrap">
+              <div className="border border-gray-300 dark:border-gray-600 rounded-t-lg p-2 bg-gray-50 dark:bg-gray-700 flex items-center space-x-1 flex-wrap">
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => formatText('bold')}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   <Bold className="h-4 w-4" />
                 </Button>
@@ -520,7 +520,7 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
                   variant="ghost"
                   size="sm"
                   onClick={() => formatText('italic')}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   <Italic className="h-4 w-4" />
                 </Button>
@@ -529,17 +529,17 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
                   variant="ghost"
                   size="sm"
                   onClick={() => formatText('underline')}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   <Underline className="h-4 w-4" />
                 </Button>
-                <div className="w-px h-6 bg-gray-300 mx-1" />
+                <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => formatText('justifyLeft')}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   <AlignLeft className="h-4 w-4" />
                 </Button>
@@ -548,7 +548,7 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
                   variant="ghost"
                   size="sm"
                   onClick={() => formatText('justifyCenter')}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   <AlignCenter className="h-4 w-4" />
                 </Button>
@@ -557,17 +557,17 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
                   variant="ghost"
                   size="sm"
                   onClick={() => formatText('justifyRight')}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   <AlignRight className="h-4 w-4" />
                 </Button>
-                <div className="w-px h-6 bg-gray-300 mx-1" />
+                <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => formatText('insertUnorderedList')}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   <List className="h-4 w-4" />
                 </Button>
@@ -576,17 +576,17 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
                   variant="ghost"
                   size="sm"
                   onClick={() => formatText('insertOrderedList')}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   <ListOrdered className="h-4 w-4" />
                 </Button>
-                <div className="w-px h-6 bg-gray-300 mx-1" />
+                <div className="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1" />
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   onClick={() => formatText('undo')}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   <Undo2 className="h-4 w-4" />
                 </Button>
@@ -595,7 +595,7 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
                   variant="ghost"
                   size="sm"
                   onClick={() => formatText('redo')}
-                  className="h-8 w-8 p-0"
+                  className="h-8 w-8 p-0 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
                 >
                   <Redo2 className="h-4 w-4" />
                 </Button>
@@ -605,7 +605,7 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
               <div
                 ref={contentEditorRef}
                 contentEditable
-                className="min-h-[200px] p-4 border border-gray-300 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="min-h-[200px] p-4 border border-gray-300 dark:border-gray-600 rounded-b-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
                 style={{ minHeight: '200px' }}
                 onInput={(e) => {
                   setFormData(prev => ({ ...prev, content: e.currentTarget.innerHTML }))
@@ -685,10 +685,10 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
               />
 
               {formData.downloads.length === 0 ? (
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8 text-center">
                   <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-500 mb-2">No files added yet</p>
-                  <p className="text-xs text-gray-400 mb-4">Supported formats: PDF, DOC, DOCX, XLS, XLSX (Max 10MB)</p>
+                  <p className="text-gray-500 dark:text-gray-400 mb-2">No files added yet</p>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mb-4">Supported formats: PDF, DOC, DOCX, XLS, XLSX (Max 10MB)</p>
                   <Button onClick={() => fileInputRef.current?.click()} variant="outline">
                     <Plus className="w-4 h-4 mr-2" />
                     Add First File
@@ -697,12 +697,12 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
               ) : (
                 <div className="space-y-2">
                   {formData.downloads.map((download) => (
-                    <div key={download.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div key={download.id} className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg">
                       <div className="flex items-center space-x-3">
                         {getFileIcon(download.name)}
                         <div>
-                          <p className="font-medium text-sm">{download.name}</p>
-                          <p className="text-xs text-gray-500">{download.size}</p>
+                          <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{download.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{download.size}</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">

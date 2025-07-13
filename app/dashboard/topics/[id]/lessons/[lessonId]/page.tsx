@@ -96,7 +96,7 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Lesson Not Found</h2>
+          <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">Lesson Not Found</h2>
           <Link href="/dashboard/topics">
             <Button>Back to Topics</Button>
           </Link>
@@ -122,8 +122,8 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">{lesson.title}</h1>
-          <p className="text-gray-600">{topic.title}</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{lesson.title}</h1>
+          <p className="text-gray-600 dark:text-gray-400">{topic.title}</p>
           {returnTo === 'manage' && (
             <Badge variant="outline" className="mt-2">
               Preview Mode
@@ -175,7 +175,7 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
               </div>
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-semibold">{lesson.title}</h2>
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{lesson.title}</h2>
                   <div className="flex items-center space-x-2">
                     {isHydrated && (
                       <Button
@@ -190,15 +190,15 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
                     )}
                   </div>
                 </div>
-                <p className="text-gray-600 mb-4">{lesson.description}</p>
+                <p className="text-gray-600 dark:text-gray-400 mb-4">{lesson.description}</p>
                 <RichContentRenderer content={lesson.content} />
 
                 {/* Social Links */}
                 {(lesson.socialLinks.youtube || lesson.socialLinks.twitter) && (
                   <div className="mt-6 space-y-2">
-                    <h3 className="font-medium">Additional Resources:</h3>
+                    <h3 className="font-medium text-gray-900 dark:text-gray-100">Additional Resources:</h3>
                     {lesson.socialLinks.youtube && (
-                      <p className="font-medium">
+                      <p className="font-medium text-gray-900 dark:text-gray-100">
                         YouTube:{" "}
                         <a
                           href={lesson.socialLinks.youtube}
@@ -211,7 +211,7 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
                       </p>
                     )}
                     {lesson.socialLinks.twitter && (
-                      <p className="font-medium">
+                      <p className="font-medium text-gray-900 dark:text-gray-100">
                         Twitter:{" "}
                         <a
                           href={lesson.socialLinks.twitter}
@@ -238,12 +238,12 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {lesson.downloads.map((download) => (
-                    <div key={download.id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div key={download.id} className="flex items-center justify-between p-3 border dark:border-gray-700 rounded-lg">
                       <div className="flex items-center space-x-3">
                         <FileText className="w-5 h-5 text-red-500" />
                         <div>
-                          <p className="font-medium text-sm">{download.name}</p>
-                          <p className="text-xs text-gray-500">{download.size}</p>
+                          <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{download.name}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{download.size}</p>
                         </div>
                       </div>
                       <Button size="sm" variant="outline">
@@ -295,15 +295,15 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
             <CardContent className="p-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Duration</span>
-                  <span className="font-medium">{lesson.duration}</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Duration</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{lesson.duration}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Difficulty</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Difficulty</span>
                   <Badge variant="outline">{lesson.difficulty}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Status</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Status</span>
                   <Badge
                     variant={isHydrated && isCompleted ? "default" : "secondary"}
                     className={isHydrated && isCompleted ? "bg-green-500" : ""}
@@ -314,19 +314,19 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
                 <Separator />
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span>Lesson Progress</span>
-                    <span className="font-medium">{isHydrated ? (isCompleted ? "100%" : "0%") : "0%"}</span>
+                    <span className="text-gray-900 dark:text-gray-100">Lesson Progress</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{isHydrated ? (isCompleted ? "100%" : "0%") : "0%"}</span>
                   </div>
                   <Progress value={isHydrated && isCompleted ? 100 : 0} className="h-2" />
                 </div>
                 <Separator />
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span>Topic Progress</span>
-                    <span className="font-medium">{topicProgress.percentage}%</span>
+                    <span className="text-gray-900 dark:text-gray-100">Topic Progress</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{topicProgress.percentage}%</span>
                   </div>
                   <Progress value={topicProgress.percentage} className="h-2" />
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
                     {topicProgress.completed} of {topicProgress.total} lessons completed
                   </p>
                 </div>
@@ -343,9 +343,9 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
               <CardContent>
                 <div className="space-y-2">
                   {lesson.prerequisites.map((prereq, index) => (
-                    <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 rounded">
+                    <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
                       <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span className="text-sm">{prereq}</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">{prereq}</span>
                     </div>
                   ))}
                 </div>
@@ -365,7 +365,7 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
                   return (
                     <Link key={l.id} href={`/dashboard/topics/${topicId}/lessons/${l.id}${returnTo ? `?returnTo=${returnTo}&topicId=${manageTopicId || topicId}` : ''}`}>
                       <div
-                        className={`flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer ${l.id === lessonId ? "bg-orange-50 border border-orange-200" : ""}`}
+                        className={`flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer ${l.id === lessonId ? "bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700" : ""}`}
                       >
                         <div
                           className={`flex-shrink-0 w-6 h-6 rounded-full text-xs flex items-center justify-center font-medium ${isHydrated && lessonCompleted ? "bg-green-500 text-white" : "bg-orange-500 text-white"}`}
@@ -374,11 +374,11 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
                         </div>
                         <div className="flex-1">
                           <p
-                            className={`text-sm font-medium ${isHydrated && lessonCompleted ? "line-through text-gray-500" : ""}`}
+                            className={`text-sm font-medium ${isHydrated && lessonCompleted ? "line-through text-gray-500 dark:text-gray-400" : "text-gray-900 dark:text-gray-100"}`}
                           >
                             {l.title}
                           </p>
-                          <p className="text-xs text-gray-500">{l.duration}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{l.duration}</p>
                         </div>
                         {l.id === lessonId && (
                           <Badge variant="default" className="bg-orange-500">
