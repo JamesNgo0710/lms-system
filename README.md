@@ -1,6 +1,25 @@
-# Learning Management System (LMS)
+# 🎓 Learning Management System (LMS)
 
-A comprehensive full-stack Learning Management System built with **Next.js 15**, **Laravel 11**, **TypeScript**, and **Tailwind CSS**. Features a modern, responsive design with complete dark mode support and mobile-first approach.
+> **A modern, full-stack Learning Management System built with Next.js 15 & Laravel 11**
+
+[![Next.js](https://img.shields.io/badge/Next.js-15-black)](https://nextjs.org/)
+[![Laravel](https://img.shields.io/badge/Laravel-11-red)](https://laravel.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3-cyan)](https://tailwindcss.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A comprehensive Learning Management System featuring role-based dashboards, community forums, assessment tools, and real-time progress tracking. Built with modern web technologies and designed for scalability, accessibility, and cross-device compatibility.
+
+## ✨ Key Highlights
+
+- 🏗️ **Full-Stack Architecture**: Next.js frontend with Laravel API backend
+- 👥 **Role-Based Access**: Admin, Teacher, and Student interfaces with granular permissions
+- 📱 **Mobile-First Design**: Responsive across all devices with touch-optimized interactions
+- 🌙 **Dark Mode Support**: Complete dark/light theme implementation with system preference detection
+- 💬 **Community Forum**: Reddit-style discussion forum with voting, bookmarks, and moderation
+- 📊 **Analytics Dashboard**: Comprehensive reporting for users, content, and community engagement
+- 🔐 **Secure Authentication**: Laravel Sanctum with NextAuth.js integration
+- 🚀 **Production Ready**: Optimized for deployment with comprehensive documentation
 
 ## 🚀 Features
 
@@ -22,15 +41,15 @@ A comprehensive full-stack Learning Management System built with **Next.js 15**,
 - **API Documentation**: Well-documented endpoints
 
 ### Core Functionality
-- **Topic & Lesson Management**: Create, edit, and organize learning content with rich media support
-- **Assessment System**: Timed quizzes with automatic grading and detailed feedback
-- **Community Forum**: Full-featured discussion forum with posts, comments, voting, and moderation
-- **Bookmark & Report System**: Users can bookmark posts and report inappropriate content
-- **Progress Tracking**: Detailed analytics, completion tracking, and learning insights
-- **User Management**: Admin controls for user roles, permissions, and profile management
-- **Content Analytics**: Comprehensive engagement metrics and performance dashboards
-- **Advanced Reporting**: Detailed reports for videos, users, and community activity
-- **Mobile-Responsive Interface**: Optimized for all devices with touch-friendly interactions
+- 📚 **Content Management**: Create, edit, and organize topics and lessons with rich media support
+- 📝 **Assessment System**: Timed quizzes with automatic grading and detailed feedback
+- 💬 **Community Forum**: Reddit-style forum with posts, comments, voting, and moderation tools
+- 🔖 **Bookmark & Report**: Users can save content and report inappropriate posts
+- 📈 **Progress Tracking**: Real-time analytics, completion tracking, and learning insights
+- 👥 **User Management**: Admin controls for roles, permissions, and profile management
+- 📊 **Analytics Dashboard**: Engagement metrics, performance reports, and usage statistics
+- 📱 **Cross-Platform**: Optimized for desktop, tablet, and mobile devices
+- 🔍 **Advanced Search**: Filter and search across topics, lessons, and forum content
 
 ## 🏗️ Architecture
 
@@ -77,40 +96,43 @@ lms-system/
 - **MySQL** 8.0 or **PostgreSQL** 13+
 - **Git**
 
-## 🛠️ Installation
+## ⚡ Quick Start
 
-### Step 1: Clone and Setup Frontend
+### Option 1: Automated Setup (Recommended)
 
 ```bash
+# Clone the repository
 git clone https://github.com/your-username/lms-system.git
 cd lms-system
 
+# Run automated setup script
+# Windows:
+setup.bat
+
+# Linux/Mac:
+chmod +x setup.sh
+./setup.sh
+```
+
+### Option 2: Manual Setup
+
+<details>
+<summary>Click to expand manual setup instructions</summary>
+
+#### Step 1: Frontend Setup
+```bash
 # Install dependencies
 npm install
 
 # Create environment file
-cp env.example .env.local
+cp .env.example .env.local
+
+# Generate NextAuth secret
+openssl rand -base64 32
+# Add this to .env.local as NEXTAUTH_SECRET
 ```
 
-### Step 2: Configure Environment Variables
-
-Update `.env.local`:
-
-```bash
-# Next.js Configuration
-NEXT_PUBLIC_APP_NAME="LMS System"
-NEXT_PUBLIC_API_URL="http://localhost:8000"
-
-# NextAuth Configuration
-NEXTAUTH_SECRET="your-super-secret-key-for-production"
-NEXTAUTH_URL="http://localhost:3000"
-
-# Laravel Backend URL
-NEXT_PUBLIC_LARAVEL_API_URL="http://localhost:8000/api"
-```
-
-### Step 3: Setup Laravel Backend
-
+#### Step 2: Backend Setup
 ```bash
 cd laravel-backend
 
@@ -123,58 +145,38 @@ cp .env.example .env
 # Generate application key
 php artisan key:generate
 
-# Configure database in .env
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=lms_system
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
-
-# Configure CORS and Sanctum
-SANCTUM_STATEFUL_DOMAINS=localhost:3000,127.0.0.1:3000
-SESSION_DOMAIN=localhost
-```
-
-### Step 4: Database Setup
-
-```bash
-# Create database
-mysql -u root -p -e "CREATE DATABASE lms_system;"
-
-# Run migrations and seeders
+# Run migrations and seed database
 php artisan migrate --seed
-
-# Publish Sanctum configuration
-php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
 ```
 
-### Step 5: Start Development Servers
-
-**Terminal 1 - Laravel Backend:**
+#### Step 3: Start Servers
 ```bash
-cd laravel-backend
-php artisan serve
-```
-Backend runs at: http://localhost:8000
+# Terminal 1 - Backend
+cd laravel-backend && php artisan serve
 
-**Terminal 2 - Next.js Frontend:**
-```bash
-# From project root
+# Terminal 2 - Frontend  
 npm run dev
 ```
-Frontend runs at: http://localhost:3000
+
+</details>
+
+### 🌐 Access the Application
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/api (shows available endpoints)
 
 ## 🔑 Demo Accounts
 
 After running the database seeder, you can login with:
 
-- **Admin**: `admin@lms.com` / `admin123`
-  - Full system access, user management, content moderation
-- **Creator**: `creator@lms.com` / `creator123`
-  - Content creation, topic management, analytics access
-- **Student**: `student@lms.com` / `student123`
-  - Learning access, community participation, progress tracking
+| Role | Email | Password | Access Level |
+|------|-------|----------|--------------|
+| 👑 **Admin** | `admin@lms.com` | `admin123` | Full system access, user management, content moderation |
+| 👨‍🏫 **Teacher** | `teacher@lms.com` | `teacher123` | Content creation, topic management, analytics access |
+| 👨‍🎓 **Student** | `student@lms.com` | `student123` | Learning access, community participation, progress tracking |
+
+⚠️ **Important**: These are the ONLY valid test credentials. Always use `@lms.com` emails across all development environments.
 
 ### Account Features by Role:
 
@@ -268,25 +270,41 @@ DB_PASSWORD=your-db-password
 3. Set up SSL certificates
 4. Configure CORS for your frontend domain
 
+## 📚 Project Documentation
+
+### Essential Reading
+- 📖 **[Setup Guide](SETUP_GUIDE.md)** - Comprehensive setup and troubleshooting
+- 🏗️ **[Architecture Overview](ARCHITECTURE_OVERVIEW.md)** - System design and structure  
+- 🔧 **[Cross-PC Troubleshooting](CROSS_PC_TROUBLESHOOTING.md)** - Multi-environment issues
+- 🚀 **[Laravel Backend Setup](LARAVEL_BACKEND_SETUP.md)** - Backend configuration guide
+- 🔗 **[Next.js Integration](NEXTJS_LARAVEL_INTEGRATION.md)** - Frontend-backend integration
+- 📡 **[API Documentation](API_DOCUMENTATION.md)** - Complete API reference
+- 🤝 **[Contributing Guide](CONTRIBUTING.md)** - How to contribute to the project
+- 🌍 **[Deployment Guide](DEPLOYMENT.md)** - Production deployment instructions
+
 ## 🔧 Development
 
 ### Available Scripts
 
 **Frontend:**
 ```bash
-npm run dev          # Development server
+npm run dev          # Development server (http://localhost:3000)
 npm run build        # Production build
 npm run start        # Start production server
-npm run lint         # ESLint
-npm run type-check   # TypeScript checking
+npm run lint         # ESLint checking
+npm run type-check   # TypeScript validation
+npm run dev:alt      # Alternative dev server (port 3001)
 ```
 
 **Backend:**
 ```bash
-php artisan serve    # Development server
-php artisan migrate  # Run migrations
-php artisan db:seed  # Seed database
-php artisan test     # Run tests
+php artisan serve              # Development server (http://localhost:8000)
+php artisan migrate           # Run database migrations
+php artisan migrate:fresh     # Fresh migration (drops all tables)
+php artisan db:seed          # Seed database with test data
+php artisan migrate:status   # Check migration status
+php artisan test            # Run PHPUnit tests
+php artisan route:list      # Show all API routes
 ```
 
 ### Adding New Features
@@ -334,50 +352,69 @@ php artisan test
 4. Push to branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
 
-## 🔍 Troubleshooting
+## 🔍 Common Issues & Quick Fixes
 
-### Common Issues
+<details>
+<summary><strong>🚨 Environment & Setup Issues</strong></summary>
 
-**Port Already in Use:**
+### Missing NEXTAUTH_SECRET
 ```bash
-# Kill process using port 3000
-npx kill-port 3000
-
-# Or use different port
-npm run dev:alt  # Uses port 3001
-
-# Or manually specify port
-npm run dev -- --port 3001
+# Generate secure secret
+openssl rand -base64 32
+# Add to .env.local: NEXTAUTH_SECRET=generated-secret
 ```
 
-**CORS Errors:**
-- Check `config/cors.php` in Laravel backend
-- Ensure frontend URL is in `SANCTUM_STATEFUL_DOMAINS`
-- Verify `SESSION_DOMAIN` matches your domain
+### Database Migration Errors
+```bash
+cd laravel-backend
+php artisan migrate:status      # Check status
+php artisan migrate            # Run pending migrations
+php artisan migrate:fresh --seed  # Nuclear option: reset everything
+```
 
-**Database Connection:**
-- Verify database credentials in Laravel `.env`
-- Ensure MySQL/PostgreSQL is running
-- Check if database exists
-- Run `php artisan migrate:fresh --seed` to reset database
+### Port Already in Use
+```bash
+npx kill-port 3000           # Kill port 3000
+npm run dev:alt              # Use port 3001 instead
+```
 
-**Authentication Issues:**
-- Clear browser cookies and localStorage
-- Verify `NEXTAUTH_SECRET` is set
-- Check Laravel session configuration
-- Ensure API endpoints are properly authenticated
+### CORS/Authentication Errors
+- Verify `SANCTUM_STATEFUL_DOMAINS=localhost:3000` in Laravel `.env`
+- Check `NEXT_PUBLIC_API_URL=http://localhost:8000` in `.env.local`
+- Clear browser cookies and restart servers
 
-**Mobile Display Issues:**
-- Check for missing responsive classes
-- Verify table overflow is handled with `overflow-x-auto`
-- Test on actual mobile devices, not just browser dev tools
-- Ensure touch targets meet minimum size requirements
+</details>
 
-**Dark Mode Problems:**
+<details>
+<summary><strong>💻 Cross-PC Development Issues</strong></summary>
+
+### Wrong Login Credentials
+- ✅ **ALWAYS use**: `admin@lms.com` / `admin123`
+- ❌ **NEVER use**: `admin@example.com` or other variations
+
+### New PC Setup Problems
+1. Run automated setup: `setup.bat` (Windows) or `./setup.sh` (Linux/Mac)
+2. If manual setup, ensure all migrations run: `php artisan migrate`
+3. Check [Cross-PC Troubleshooting Guide](CROSS_PC_TROUBLESHOOTING.md)
+
+</details>
+
+<details>
+<summary><strong>🎨 UI/UX Issues</strong></summary>
+
+### Mobile Display Problems
+- Ensure responsive classes: `sm:`, `md:`, `lg:`, `xl:`
+- Check table overflow: use `overflow-x-auto`
+- Test on real devices, not just browser dev tools
+
+### Dark Mode Issues  
 - Verify all components have `dark:` classes
-- Check color contrast ratios for accessibility
-- Ensure consistent color palette usage
-- Test theme switching functionality
+- Check color contrast for accessibility
+- Use consistent color palette: `gray-900`, `gray-800`, `gray-700`
+
+</details>
+
+For comprehensive troubleshooting, see **[Setup Guide](SETUP_GUIDE.md)** and **[Cross-PC Troubleshooting](CROSS_PC_TROUBLESHOOTING.md)**.
 
 ## 📚 Additional Resources
 
