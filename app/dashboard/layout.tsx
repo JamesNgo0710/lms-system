@@ -2,6 +2,7 @@
 
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { DashboardHeader } from "@/components/dashboard-header"
+import { Footer } from "@/components/ui/footer"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
@@ -34,15 +35,18 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="relative h-screen bg-gray-100 dark:bg-neutral-800 w-full">
+    <div className="relative min-h-screen bg-gray-100 dark:bg-neutral-800 w-full flex flex-col">
       <DashboardSidebar />
-      <div className="flex flex-col h-full overflow-hidden md:pl-[60px]">
+      <div className="flex flex-col flex-1 md:pl-[60px]">
         <div className="hidden md:block">
           <DashboardHeader />
         </div>
-        <main className="flex-1 overflow-auto p-2 md:p-6 bg-white dark:bg-neutral-900 m-2 rounded-tl-2xl border border-neutral-200 dark:border-neutral-700">
+        <main className="flex-1 p-2 md:p-6 bg-white dark:bg-neutral-900 m-2 rounded-tl-2xl border border-neutral-200 dark:border-neutral-700">
           {children}
         </main>
+        <div className="md:ml-2">
+          <Footer />
+        </div>
       </div>
     </div>
   )
