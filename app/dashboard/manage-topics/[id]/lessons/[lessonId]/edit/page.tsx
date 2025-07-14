@@ -159,15 +159,62 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
         videoId = youtubeMatch[1]
         platform = "youtube"
         
-        // Mock preview data (in real app, you'd use YouTube API)
-        setVideoPreview({
-          title: "Video Preview Available",
-          thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
-          duration: "Unknown",
-          platform: "YouTube"
-        })
+        // Try to fetch video metadata using YouTube oEmbed API
+        try {
+          const oEmbedResponse = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`)
+          if (oEmbedResponse.ok) {
+            const oEmbedData = await oEmbedResponse.json()
+            setVideoPreview({
+              title: oEmbedData.title || "YouTube Video",
+              thumbnail: oEmbedData.thumbnail_url || `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+              duration: "Loading...",
+              platform: "YouTube"
+            })
+          } else {
+            throw new Error("oEmbed failed")
+          }
+        } catch (oEmbedError) {
+          // Fallback to basic preview if oEmbed fails
+          setVideoPreview({
+            title: "YouTube Video",
+            thumbnail: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`,
+            duration: "Video duration available after upload",
+            platform: "YouTube"
+          })
+        }
       } else {
-        setVideoPreview(null)
+        // Check for other video platforms
+        const vimeoRegex = /vimeo\.com\/(?:channels\/|groups\/|album\/\d+\/video\/|video\/|)(\d+)/
+        const vimeoMatch = url.match(vimeoRegex)
+        
+        if (vimeoMatch) {
+          videoId = vimeoMatch[1]
+          platform = "vimeo"
+          
+          try {
+            const vimeoResponse = await fetch(`https://vimeo.com/api/oembed.json?url=https://vimeo.com/${videoId}`)
+            if (vimeoResponse.ok) {
+              const vimeoData = await vimeoResponse.json()
+              setVideoPreview({
+                title: vimeoData.title || "Vimeo Video",
+                thumbnail: vimeoData.thumbnail_url || "/placeholder.svg?height=180&width=320",
+                duration: vimeoData.duration ? `${Math.floor(vimeoData.duration / 60)}:${(vimeoData.duration % 60).toString().padStart(2, '0')}` : "Video duration available after upload",
+                platform: "Vimeo"
+              })
+            } else {
+              throw new Error("Vimeo oEmbed failed")
+            }
+          } catch (vimeoError) {
+            setVideoPreview({
+              title: "Vimeo Video",
+              thumbnail: "/placeholder.svg?height=180&width=320",
+              duration: "Video duration available after upload",
+              platform: "Vimeo"
+            })
+          }
+        } else {
+          setVideoPreview(null)
+        }
       }
     } catch (error) {
       console.error("Error loading video preview:", error)
