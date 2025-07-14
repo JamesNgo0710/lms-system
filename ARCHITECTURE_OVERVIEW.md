@@ -13,6 +13,24 @@
 - **UI Framework**: shadcn/ui + Radix UI
 - **State Management**: React hooks + API client
 
+### 🚧 Beta Components in Development
+
+The following architectural components are currently in beta status:
+
+**Advanced CMS Architecture (Beta)**
+- Admin dashboard management system
+- User analytics processing pipeline
+- Content management workflow automation
+- Real-time dashboard customization engine
+
+**Enhanced Analytics Pipeline (Beta)**  
+- Gamification data tracking system
+- Achievement calculation algorithms
+- Progress visualization rendering engine
+- Advanced metrics aggregation services
+
+> **Note**: Beta components are functional but undergoing active development for performance optimization and feature enhancement.
+
 ## 🎯 System Architecture
 
 ```mermaid

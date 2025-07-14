@@ -48,8 +48,32 @@ A comprehensive Learning Management System featuring role-based dashboards, comm
 - 📈 **Progress Tracking**: Real-time analytics, completion tracking, and learning insights
 - 👥 **User Management**: Admin controls for roles, permissions, and profile management
 - 📊 **Analytics Dashboard**: Engagement metrics, performance reports, and usage statistics
+- 🚧 **Advanced CMS System** (Beta): Comprehensive content management system with admin dashboard, user analytics, and dashboard customization tools
+- 🚧 **Detailed Progress Analytics** (Beta): Enhanced progress tracking with gamification, achievements, learning streaks, and advanced visualization
 - 📱 **Cross-Platform**: Optimized for desktop, tablet, and mobile devices
 - 🔍 **Advanced Search**: Filter and search across topics, lessons, and forum content
+
+## 🚧 Beta Features
+
+The following features are currently in beta development. They are functional but may have incomplete functionality or be subject to changes:
+
+### Advanced CMS System (Beta)
+- **Admin CMS Dashboard**: Comprehensive content management interface for administrators
+- **User Analytics**: Detailed user behavior tracking and engagement metrics
+- **Content Management Tools**: Advanced content creation and organization features
+- **Dashboard Customization**: Configurable admin dashboard layouts and widgets
+
+*Status*: Core functionality implemented, advanced features and UI improvements ongoing
+
+### Detailed Progress Analytics (Beta)
+- **Enhanced Progress Tracking**: Visual progress indicators with completion percentages
+- **Gamification System**: Experience points, achievement badges, and learning streaks
+- **Learning Journey Visualization**: Interactive progress maps and milestone celebrations
+- **Advanced Metrics**: Detailed learning analytics and performance insights
+
+*Status*: Basic implementation complete, advanced visualizations and AI-powered insights in development
+
+> 💡 **Note**: Beta features are actively being improved based on user feedback. If you encounter issues or have suggestions, please let us know!
 
 ## 🏗️ Architecture
 

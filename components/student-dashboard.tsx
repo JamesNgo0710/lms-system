@@ -7,11 +7,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { BookOpen, Calendar, Trophy, TrendingUp, Clock, CheckCircle, PlayCircle, Target, Award } from "lucide-react"
+import { BookOpen, Calendar, Trophy, TrendingUp, Clock, CheckCircle, PlayCircle, Target, Award, BarChart3 } from "lucide-react"
 import Link from "next/link"
 import { useTopics, useLessons, useLessonCompletions, useLessonViews, useAssessments, useAssessmentAttempts } from "@/hooks/use-data-store"
 import { UI_TEXT } from "@/lib/constants"
 import { CooldownTimer } from "@/components/ui/cooldown-timer"
+import { EnhancedProgressTracker } from "@/components/enhanced-progress-tracker"
 
 export function StudentDashboard() {
   const { data: session } = useSession()
@@ -23,6 +24,7 @@ export function StudentDashboard() {
   const { assessments } = useAssessments()
   const { attempts, canTakeAssessment } = useAssessmentAttempts()
   const [isHydrated, setIsHydrated] = useState(false)
+  const [showEnhancedProgress, setShowEnhancedProgress] = useState(false)
 
   useEffect(() => {
     setIsHydrated(true)
@@ -419,6 +421,34 @@ export function StudentDashboard() {
             )}
           </div>
         </CardContent>
+      </Card>
+
+      {/* Enhanced Progress Tracker Toggle */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CardTitle>Detailed Progress Analytics</CardTitle>
+              <Badge variant="secondary" className="bg-amber-100 text-amber-800 dark:bg-amber-800/20 dark:text-amber-200">
+                Beta
+              </Badge>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowEnhancedProgress(!showEnhancedProgress)}
+              className="flex items-center space-x-2"
+            >
+              <BarChart3 className="w-4 h-4" />
+              <span>{showEnhancedProgress ? "Hide" : "Show"} Analytics</span>
+            </Button>
+          </div>
+        </CardHeader>
+        {showEnhancedProgress && (
+          <CardContent className="pt-0">
+            <EnhancedProgressTracker />
+          </CardContent>
+        )}
       </Card>
     </div>
   )

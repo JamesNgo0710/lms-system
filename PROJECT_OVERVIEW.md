@@ -118,6 +118,32 @@ The LMS System is a modern, full-stack Learning Management System designed to pr
 - **Teacher**: Class analytics, student progress, content performance
 - **Student**: Personal progress, achievements, learning insights
 
+## 🚧 Beta Features (Work in Progress)
+
+The following advanced features are currently in beta development and actively being improved:
+
+### Advanced CMS System (Beta)
+**Comprehensive Admin Management Platform**
+- Full-featured content management system with admin dashboard
+- Advanced user analytics and engagement tracking
+- Real-time user behavior monitoring and insights
+- Customizable dashboard layouts and configuration options
+- Content performance metrics and optimization tools
+
+*Current Status*: Core functionality implemented, UI enhancements and advanced features in development
+
+### Enhanced Progress Analytics (Beta)  
+**Next-Generation Learning Insights**
+- Gamified progress tracking with achievements and badges
+- Learning streak tracking and milestone celebrations
+- Advanced progress visualization and journey mapping
+- Experience point system with leveling mechanics
+- Personalized learning insights and recommendations
+
+*Current Status*: Basic implementation complete, advanced AI-powered analytics and visualizations in development
+
+> **🔄 Active Development**: These beta features are being continuously improved based on user feedback and usage patterns. Expect regular updates and enhancements!
+
 ## 🏗️ Technical Architecture
 
 ### Frontend Architecture (Next.js)
