@@ -55,7 +55,7 @@ export default function ManageTopicsPage() {
   const { data: session } = useSession()
   const user = session?.user
   const router = useRouter()
-  const { topics, deleteTopic } = useTopics()
+  const { topics, deleteTopic, updateTopic } = useTopics()
   const { getLessonsByTopicId, deleteLesson } = useLessons()
   const { isLessonCompleted } = useLessonCompletions()
   const { toast } = useToast()
@@ -81,6 +81,16 @@ export default function ManageTopicsPage() {
   const handleDeleteTopic = (topic: any) => {
     setTopicToDelete(topic)
     setDeleteDialogOpen(true)
+  }
+
+  const handleTogglePublish = (topic: any) => {
+    const newStatus = topic.status === "Published" ? "Draft" : "Published"
+    updateTopic(topic.id, { status: newStatus })
+    
+    toast({
+      title: "Success",
+      description: `Topic ${newStatus === "Published" ? "published" : "unpublished"} successfully`,
+    })
   }
 
   const confirmDelete = () => {
@@ -144,6 +154,19 @@ export default function ManageTopicsPage() {
                     <Eye className="w-4 h-4 mr-2" />
                     Preview Topic
                   </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleTogglePublish(selectedTopic)}>
+                  {selectedTopic.status === "Published" ? (
+                    <>
+                      <AlertCircle className="w-4 h-4 mr-2" />
+                      Unpublish Topic
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Publish Topic
+                    </>
+                  )}
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => handleDeleteTopic(selectedTopic)}>
                   <Trash2 className="w-4 h-4 mr-2" />
@@ -509,6 +532,26 @@ export default function ManageTopicsPage() {
                             </Link>
                           </DropdownMenuItem>
                           <DropdownMenuItem
+                            onClick={() => handleTogglePublish(topic)}
+                            className={`${
+                              topic.status === "Published" 
+                                ? "text-orange-600 dark:text-orange-400" 
+                                : "text-green-600 dark:text-green-400"
+                            } dark:hover:bg-gray-800 dark:focus:bg-gray-800`}
+                          >
+                            {topic.status === "Published" ? (
+                              <>
+                                <AlertCircle className="w-4 h-4 mr-2" />
+                                Unpublish
+                              </>
+                            ) : (
+                              <>
+                                <CheckCircle className="w-4 h-4 mr-2" />
+                                Publish
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
                             onClick={() => handleDeleteTopic(topic)}
                             className="text-red-600 dark:text-red-400 dark:hover:bg-gray-800 dark:focus:bg-gray-800"
                           >
@@ -661,6 +704,29 @@ export default function ManageTopicsPage() {
                                 <Edit className="w-4 h-4 mr-2" />
                                 Manage
                               </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleTogglePublish(topic)
+                              }}
+                              className={`${
+                                topic.status === "Published" 
+                                  ? "text-orange-600 dark:text-orange-400" 
+                                  : "text-green-600 dark:text-green-400"
+                              } dark:hover:bg-gray-800 dark:focus:bg-gray-800`}
+                            >
+                              {topic.status === "Published" ? (
+                                <>
+                                  <AlertCircle className="w-4 h-4 mr-2" />
+                                  Unpublish
+                                </>
+                              ) : (
+                                <>
+                                  <CheckCircle className="w-4 h-4 mr-2" />
+                                  Publish
+                                </>
+                              )}
                             </DropdownMenuItem>
                             <DropdownMenuItem
                               onClick={(e) => {
