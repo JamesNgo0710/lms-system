@@ -147,11 +147,11 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
   // Loading or no assessment
   if (!topic || !assessment || questions.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Assessment Not Available</h2>
-            <p className="text-gray-600 mb-4">
+            <h2 className="text-2xl font-bold mb-4 dark:text-white">Assessment Not Available</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
               {!topic
                 ? "Topic not found"
                 : !assessment
@@ -170,26 +170,26 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
   // Check if student has completed all lessons
   if (user?.role === "student" && isHydrated && !allLessonsCompleted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-8 text-center">
             <div className="flex justify-center mb-4">
               <Lock className="w-16 h-16 text-orange-500" />
             </div>
             <h2 className="text-2xl font-bold mb-4 text-orange-600">Assessment Locked</h2>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
               You must complete all lessons in this topic before taking the assessment.
             </p>
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+            <div className="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-lg p-4 mb-6">
               <div className="flex items-center justify-between text-sm mb-2">
-                <span className="font-medium">Progress</span>
-                <span className="font-bold text-orange-600">{topicProgress.percentage}%</span>
+                <span className="font-medium dark:text-gray-200">Progress</span>
+                <span className="font-bold text-orange-600 dark:text-orange-400">{topicProgress.percentage}%</span>
               </div>
               <Progress value={topicProgress.percentage} className="h-2 mb-2" />
-              <p className="text-xs text-orange-700">
+              <p className="text-xs text-orange-700 dark:text-orange-300">
                 {topicProgress.completed} of {topicProgress.total} lessons completed
               </p>
-              <p className="text-xs text-orange-600 mt-1 font-medium">
+              <p className="text-xs text-orange-600 dark:text-orange-400 mt-1 font-medium">
                 {topicProgress.total - topicProgress.completed} lesson(s) remaining
               </p>
             </div>
@@ -205,22 +205,22 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
   // Check cooldown period for students
   if (user?.role === "student" && isHydrated && !cooldownCheck.canTake) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-8 text-center">
             <div className="flex justify-center mb-4">
               <Clock className="w-16 h-16 text-red-500" />
             </div>
             <h2 className="text-2xl font-bold mb-4 text-red-600">Assessment Cooldown Active</h2>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
               You must wait before retaking this assessment.
             </p>
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-sm text-red-700 font-medium">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
+              <p className="text-sm text-red-700 dark:text-red-300 font-medium">
                 {cooldownCheck.message}
               </p>
               {cooldownCheck.timeRemaining && (
-                <p className="text-xs text-red-600 mt-2">
+                <p className="text-xs text-red-600 dark:text-red-400 mt-2">
                   Time remaining: {Math.floor(cooldownCheck.timeRemaining / 60)}h {cooldownCheck.timeRemaining % 60}m
                 </p>
               )}
@@ -236,11 +236,11 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
 
   if (isCompleted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Card className="max-w-md">
           <CardContent className="p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Assessment Submitted!</h2>
-            <p className="text-gray-600">Processing your results...</p>
+            <h2 className="text-2xl font-bold mb-4 dark:text-white">Assessment Submitted!</h2>
+            <p className="text-gray-600 dark:text-gray-300">Processing your results...</p>
           </CardContent>
         </Card>
       </div>
@@ -248,9 +248,9 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white border-b px-6 py-4">
+      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
           <div className="flex items-center space-x-4">
             <Link href="/dashboard/topics">
@@ -259,7 +259,7 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold">{topic.title} Assessment</h1>
+              <h1 className="text-2xl font-bold dark:text-white">{topic.title} Assessment</h1>
             </div>
           </div>
           <div className="flex items-center space-x-4">
@@ -272,13 +272,13 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
       </div>
 
       {/* Progress */}
-      <div className="bg-white px-6 py-4 border-b">
+      <div className="bg-white dark:bg-gray-800 px-6 py-4 border-b dark:border-gray-700">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-600 dark:text-gray-300">
               Question {currentQuestion + 1} of {questions.length}
             </span>
-            <span className="text-sm text-gray-600">{Math.round(progress)}% Complete</span>
+            <span className="text-sm text-gray-600 dark:text-gray-300">{Math.round(progress)}% Complete</span>
           </div>
           <Progress value={progress} className="h-2" />
         </div>
@@ -293,7 +293,7 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
               <CardContent className="p-8">
                 <h2 className="text-xl font-semibold mb-6 text-orange-500">Question {currentQuestion + 1}</h2>
 
-                <p className="text-lg mb-8 leading-relaxed">{question.question}</p>
+                <p className="text-lg mb-8 leading-relaxed dark:text-white">{question.question}</p>
 
                 {/* Answer Options */}
                 <div className="space-y-3">
@@ -304,8 +304,8 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
                         onClick={() => handleAnswerSelect(index)}
                         className={`w-full p-4 text-left border-2 rounded-lg transition-colors ${
                           selectedAnswer === index
-                            ? "border-orange-500 bg-orange-50"
-                            : "border-gray-200 hover:border-gray-300"
+                            ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                            : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 dark:text-white"
                         }`}
                       >
                         {option}
@@ -317,8 +317,8 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
                         onClick={() => handleAnswerSelect("true")}
                         className={`px-8 py-3 rounded-lg border-2 transition-colors ${
                           selectedAnswer === "true"
-                            ? "border-orange-500 bg-orange-50"
-                            : "border-gray-200 hover:border-gray-300"
+                            ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                            : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 dark:text-white"
                         }`}
                       >
                         True
@@ -327,8 +327,8 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
                         onClick={() => handleAnswerSelect("false")}
                         className={`px-8 py-3 rounded-lg border-2 transition-colors ${
                           selectedAnswer === "false"
-                            ? "border-orange-500 bg-orange-50"
-                            : "border-gray-200 hover:border-gray-300"
+                            ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                            : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 dark:text-white"
                         }`}
                       >
                         False

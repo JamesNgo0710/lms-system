@@ -1,6 +1,6 @@
 import NextAuth, { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
-import { serverApiClient, getCsrfCookie } from "@/lib/api-client"
+import axios from "axios"
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -16,13 +16,18 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
-          // Skip CSRF for server-side API calls in NextAuth
-          // Laravel API login doesn't require CSRF for direct API calls
+          // Create server-only API client for NextAuth
+          const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:8000'
           
-          // Make login request using server-safe client
-          const response = await serverApiClient.post('/login', {
+          // Make login request directly with axios
+          const response = await axios.post(`${API_URL}/api/login`, {
             email: credentials.email,
             password: credentials.password,
+          }, {
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
           });
 
           const { user, token } = response.data;
