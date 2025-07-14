@@ -1,35 +1,7 @@
-import { DEMO_CONFIG, APP_CONFIG, SOCIAL_MEDIA, SUBJECT_AREAS, DEFAULT_VALUES } from './constants'
+import { APP_CONFIG, SOCIAL_MEDIA, SUBJECT_AREAS, DEFAULT_VALUES } from './constants'
 
-// Demo Users Configuration
-export const getDemoUsers = () => [
-  {
-    id: "1",
-    email: DEMO_CONFIG.adminEmail,
-    password: DEMO_CONFIG.adminPassword,
-    name: "Admin User",
-    firstName: "Admin",
-    lastName: "User",
-    role: "admin" as const
-  },
-  {
-    id: "2", 
-    email: DEMO_CONFIG.studentEmail,
-    password: DEMO_CONFIG.studentPassword,
-    name: "Student User",
-    firstName: "Student",
-    lastName: "User", 
-    role: "student" as const
-  },
-  {
-    id: "3",
-    email: "learner@lms.com", 
-    password: "learner123",
-    name: "Alex Johnson",
-    firstName: "Alex",
-    lastName: "Johnson",
-    role: "student" as const
-  }
-]
+// Note: User authentication is now handled by Laravel backend
+// Demo users are seeded in the Laravel database, not in frontend code
 
 // Demo Topics Configuration
 export const getDemoTopics = () => [

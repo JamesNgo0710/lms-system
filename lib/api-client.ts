@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { getSession } from 'next-auth/react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:8000';
 
@@ -41,6 +40,8 @@ export const initializeApiClient = async () => {
       await getCsrfCookie();
     } catch (error) {
       console.warn('Failed to initialize CSRF token:', error);
+      // Don't block app initialization if CSRF fails
+      return;
     }
   }
 };
@@ -48,9 +49,11 @@ export const initializeApiClient = async () => {
 // Add request interceptor to include token and handle CSRF
 apiClient.interceptors.request.use(
   async (config) => {
-    // Get token from NextAuth session for authenticated endpoints
+    // Get token from NextAuth session for authenticated endpoints (client-side only)
     if (typeof window !== 'undefined') {
       try {
+        // Dynamically import getSession only on client-side
+        const { getSession } = await import('next-auth/react');
         const session = await getSession();
         console.log('🔍 Debug session:', session);
         if (session?.accessToken) {

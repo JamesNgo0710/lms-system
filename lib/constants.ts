@@ -9,14 +9,6 @@ export const APP_CONFIG = {
   placeholderImageUrl: process.env.NEXT_PUBLIC_PLACEHOLDER_IMAGE_URL || "https://via.placeholder.com/400x225/f97316/ffffff?text=LMS+Content",
 }
 
-// Demo Mode Configuration
-export const DEMO_CONFIG = {
-  enabled: process.env.NEXT_PUBLIC_DEMO_MODE === "true",
-  adminEmail: process.env.DEMO_ADMIN_EMAIL || "admin@lms.com",
-  adminPassword: process.env.DEMO_ADMIN_PASSWORD || "admin123",
-  studentEmail: process.env.DEMO_STUDENT_EMAIL || "student@lms.com",
-  studentPassword: process.env.DEMO_STUDENT_PASSWORD || "student123",
-}
 
 // Social Media Templates
 export const SOCIAL_MEDIA = {
