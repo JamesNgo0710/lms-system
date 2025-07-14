@@ -16,7 +16,6 @@ class DatabaseSeeder extends Seeder
     {
         // Create roles
         Role::create(['name' => 'admin']);
-        Role::create(['name' => 'teacher']);
         Role::create(['name' => 'student']);
 
         // Create admin user
@@ -27,15 +26,6 @@ class DatabaseSeeder extends Seeder
             'password' => Hash::make('admin123'),
         ]);
         $admin->assignRole('admin');
-
-        // Create teacher user
-        $teacher = User::create([
-            'first_name' => 'Teacher',
-            'last_name' => 'User',
-            'email' => 'teacher@lms.com',
-            'password' => Hash::make('teacher123'),
-        ]);
-        $teacher->assignRole('teacher');
 
         // Create student user
         $student = User::create([
