@@ -25,10 +25,12 @@ export function AdminDashboard() {
               <div>
                 <p className="text-xs sm:text-sm text-gray-300">Top Active Users</p>
                 <p className="text-sm sm:text-lg font-semibold text-orange-500">This Month</p>
-                <Button size="sm" className="mt-1 sm:mt-2 bg-orange-500 hover:bg-orange-600 text-xs px-2 py-1">
-                  <span className="hidden sm:inline">View Users Report</span>
-                  <span className="sm:hidden">View Report</span>
-                </Button>
+                <Link href="/dashboard/reports?tab=users">
+                  <Button size="sm" className="mt-1 sm:mt-2 bg-orange-500 hover:bg-orange-600 text-xs px-2 py-1">
+                    <span className="hidden sm:inline">View Users Report</span>
+                    <span className="sm:hidden">View Report</span>
+                  </Button>
+                </Link>
               </div>
             </div>
           </CardContent>

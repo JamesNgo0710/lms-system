@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -54,7 +55,9 @@ interface CommunityReport {
 }
 
 export default function ReportsPage() {
-  const [activeTab, setActiveTab] = useState("videos")
+  const searchParams = useSearchParams()
+  const tabParam = searchParams.get('tab')
+  const [activeTab, setActiveTab] = useState(tabParam || "videos")
   const { topics } = useTopics()
   const { lessons } = useLessons()
   const { completions } = useLessonCompletions()
@@ -68,7 +71,10 @@ export default function ReportsPage() {
   useEffect(() => {
     setIsHydrated(true)
     loadCommunityReports()
-  }, [])
+    if (tabParam) {
+      setActiveTab(tabParam)
+    }
+  }, [tabParam])
 
   const loadCommunityReports = async () => {
     if (!session?.accessToken) return

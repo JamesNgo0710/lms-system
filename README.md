@@ -376,6 +376,20 @@ php artisan test
 4. Push to branch: `git push origin feature/amazing-feature`
 5. Open a Pull Request
 
+## 🔍 Recent Fixes & Improvements
+
+### Latest Updates (July 2025)
+- ✅ **Fixed View Users Report Button**: Dashboard "View Users Report" button now properly navigates to `/dashboard/reports?tab=users`
+- ✅ **Fixed AdminSystemHealth Component**: Resolved import error with `Memory` icon - replaced with `MemoryStick` from lucide-react
+- ✅ **Enhanced Reports Page**: Added URL parameter support for direct tab navigation
+- ✅ **Improved Navigation**: Better linking between dashboard sections and reports
+
+### System Health Dashboard
+- **Real-time Monitoring**: Live system metrics with CPU, memory, storage, and network usage
+- **Service Status**: Monitor API server, database, cache, and file storage health
+- **Alert System**: Comprehensive alerting for system issues with different severity levels
+- **Performance Metrics**: Track response times, active connections, and error rates
+
 ## 🔍 Common Issues & Quick Fixes
 
 <details>
@@ -495,4 +509,4 @@ For questions and support:
 
 **Built with ❤️ using Next.js and Laravel**
 
-*Last Updated: July 2025* 
+*Last Updated: July 14, 2025* 
