@@ -6,10 +6,14 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 import { SyncIndicator } from "./sync-status"
-import { LogOut, Home } from "lucide-react"
+import { LogOut, Home, Search, Command } from "lucide-react"
 import Link from "next/link"
 
-const DashboardHeader = memo(function DashboardHeader() {
+interface DashboardHeaderProps {
+  onOpenSearch?: () => void
+}
+
+const DashboardHeader = memo(function DashboardHeader({ onOpenSearch }: DashboardHeaderProps) {
   const { data: session } = useSession()
   const user = session?.user
   const pathname = usePathname()
@@ -43,6 +47,19 @@ const DashboardHeader = memo(function DashboardHeader() {
         )}
       </div>
       <div className="flex items-center gap-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={onOpenSearch}
+          className="flex items-center gap-2"
+        >
+          <Search className="h-4 w-4" />
+          <span className="hidden sm:inline">Search</span>
+          <div className="hidden sm:flex items-center gap-1 text-xs text-gray-500">
+            <Command className="h-3 w-3" />
+            <span>K</span>
+          </div>
+        </Button>
         <SyncIndicator />
         <ThemeToggle />
         <Button variant="outline" size="sm" onClick={handleLogout}>

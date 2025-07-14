@@ -3,6 +3,8 @@
 import { DashboardSidebar } from "@/components/dashboard-sidebar"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Footer } from "@/components/ui/footer"
+import { CommandPalette } from "@/components/command-palette"
+import { useCommandPalette } from "@/hooks/use-command-palette"
 import { useSession } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { useEffect } from "react"
@@ -14,6 +16,7 @@ export default function DashboardLayout({
 }) {
   const { data: session, status } = useSession()
   const router = useRouter()
+  const { isOpen, openCommandPalette, closeCommandPalette } = useCommandPalette()
 
   useEffect(() => {
     if (status === "loading") return // Still loading
@@ -39,7 +42,7 @@ export default function DashboardLayout({
       <DashboardSidebar />
       <div className="flex flex-col flex-1 md:pl-[60px]">
         <div className="hidden md:block">
-          <DashboardHeader />
+          <DashboardHeader onOpenSearch={openCommandPalette} />
         </div>
         <main className="flex-1 p-2 md:p-6 bg-white dark:bg-neutral-900 m-2 rounded-tl-2xl border border-neutral-200 dark:border-neutral-700">
           {children}
@@ -48,6 +51,7 @@ export default function DashboardLayout({
           <Footer />
         </div>
       </div>
+      <CommandPalette isOpen={isOpen} onClose={closeCommandPalette} />
     </div>
   )
 }

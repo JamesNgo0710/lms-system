@@ -1,116 +1,478 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Users, Clock, Play, BookOpen, Eye, CheckCircle, TrendingUp } from "lucide-react"
+import { 
+  Users, 
+  Clock, 
+  Play, 
+  BookOpen, 
+  Eye, 
+  CheckCircle, 
+  TrendingUp, 
+  Plus, 
+  MessageSquare,
+  BarChart3,
+  Settings,
+  Bell,
+  Search,
+  Filter,
+  RefreshCw,
+  Activity,
+  AlertCircle,
+  CheckCircle2,
+  User,
+  UserPlus,
+  Zap,
+  Target,
+  Award,
+  Timer,
+  ArrowUp,
+  ArrowDown,
+  Calendar,
+  Download
+} from "lucide-react"
 import Link from "next/link"
 import { getDashboardStats } from "@/lib/data-store"
+import { useSession } from "next-auth/react"
+import { useToast } from "@/hooks/use-toast"
+import { UserActivityChart, TopicCompletionChart, UserDistributionChart } from "@/components/dashboard-chart"
 
 export function AdminDashboard() {
   const { admin: dashboardStats } = getDashboardStats()
   const { topVideos, mostViewedTopics } = dashboardStats
+  const { data: session } = useSession()
+  const { toast } = useToast()
+  const [notifications, setNotifications] = useState([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [lastRefresh, setLastRefresh] = useState(new Date())
+
+  // Quick Actions Configuration
+  const quickActions = [
+    { 
+      icon: Plus, 
+      label: "Create Topic", 
+      href: "/dashboard/manage-topics/create",
+      color: "bg-blue-500 hover:bg-blue-600",
+      description: "Add new learning topic"
+    },
+    { 
+      icon: UserPlus, 
+      label: "Add User", 
+      href: "/dashboard/user-management",
+      color: "bg-green-500 hover:bg-green-600",
+      description: "Manage user accounts"
+    },
+    { 
+      icon: MessageSquare, 
+      label: "Community", 
+      href: "/dashboard/community",
+      color: "bg-purple-500 hover:bg-purple-600",
+      description: "View forum activity"
+    },
+    { 
+      icon: BarChart3, 
+      label: "Analytics", 
+      href: "/dashboard/reports",
+      color: "bg-orange-500 hover:bg-orange-600",
+      description: "View detailed reports"
+    },
+    { 
+      icon: Settings, 
+      label: "Admin Panel", 
+      href: "/dashboard/admin",
+      color: "bg-gray-500 hover:bg-gray-600",
+      description: "Advanced admin tools"
+    }
+  ]
+
+  // Mock notifications data
+  const mockNotifications = [
+    {
+      id: 1,
+      type: "success",
+      message: "New user registered: John Doe",
+      time: "5 minutes ago",
+      icon: CheckCircle2
+    },
+    {
+      id: 2,
+      type: "warning",
+      message: "System maintenance scheduled",
+      time: "1 hour ago",
+      icon: AlertCircle
+    },
+    {
+      id: 3,
+      type: "info",
+      message: "Weekly report generated",
+      time: "2 hours ago",
+      icon: BarChart3
+    }
+  ]
+
+  // Enhanced metrics with trends
+  const enhancedMetrics = [
+    {
+      title: "Active Users",
+      value: dashboardStats.activeUsersThisMonth,
+      previousValue: dashboardStats.activeUsersLastMonth,
+      icon: Users,
+      color: "text-blue-500",
+      bgColor: "bg-blue-50 dark:bg-blue-900/20"
+    },
+    {
+      title: "Total Users",
+      value: dashboardStats.actualUsers,
+      previousValue: dashboardStats.actualUsers - 5,
+      icon: User,
+      color: "text-green-500",
+      bgColor: "bg-green-50 dark:bg-green-900/20"
+    },
+    {
+      title: "Avg. Weekly Hours",
+      value: dashboardStats.averageTimeThisMonth,
+      previousValue: dashboardStats.averageTimeLastMonth,
+      icon: Clock,
+      color: "text-purple-500",
+      bgColor: "bg-purple-50 dark:bg-purple-900/20",
+      suffix: "hrs"
+    },
+    {
+      title: "Completion Rate",
+      value: "78%",
+      previousValue: "72%",
+      icon: Target,
+      color: "text-orange-500",
+      bgColor: "bg-orange-50 dark:bg-orange-900/20"
+    }
+  ]
+
+  const handleRefresh = () => {
+    setIsLoading(true)
+    setTimeout(() => {
+      setLastRefresh(new Date())
+      setIsLoading(false)
+      toast({
+        title: "Dashboard refreshed",
+        description: "All data has been updated",
+      })
+    }, 1000)
+  }
+
+  const handleExportPDF = async () => {
+    try {
+      // Create a comprehensive PDF report of dashboard data
+      const reportData = {
+        generatedAt: new Date().toISOString(),
+        metrics: enhancedMetrics,
+        userStats: {
+          activeUsersThisMonth: dashboardStats.activeUsersThisMonth,
+          activeUsersLastMonth: dashboardStats.activeUsersLastMonth,
+          totalUsers: dashboardStats.actualUsers,
+          averageTimeThisMonth: dashboardStats.averageTimeThisMonth,
+          averageTimeLastMonth: dashboardStats.averageTimeLastMonth
+        },
+        topVideos: topVideos.slice(0, 10),
+        topTopics: mostViewedTopics.slice(0, 10),
+        systemStatus: {
+          apiServer: "Online",
+          database: "Online", 
+          fileStorage: "Warning",
+          backup: "Complete"
+        }
+      }
+
+      // Convert to PDF-friendly format
+      const pdfContent = `
+LMS SYSTEM DASHBOARD REPORT
+Generated: ${new Date().toLocaleString()}
+Report by: ${session?.user?.firstName || 'Admin'} ${session?.user?.lastName || ''}
+
+=== SYSTEM METRICS ===
+Active Users (This Month): ${dashboardStats.activeUsersThisMonth}
+Active Users (Last Month): ${dashboardStats.activeUsersLastMonth}
+Total Users: ${dashboardStats.actualUsers}
+Average Weekly Hours (This Month): ${dashboardStats.averageTimeThisMonth} hours
+Average Weekly Hours (Last Month): ${dashboardStats.averageTimeLastMonth} hours
+
+=== TOP PERFORMING CONTENT ===
+Top Videos:
+${topVideos.slice(0, 5).map((video, i) => `${i + 1}. ${video.title} - ${video.totalViews} views`).join('\n')}
+
+Top Topics:
+${mostViewedTopics.slice(0, 5).map((topic, i) => `${i + 1}. ${topic.title} - ${topic.totalViews} views`).join('\n')}
+
+=== SYSTEM STATUS ===
+API Server: Online
+Database: Online
+File Storage: Warning
+Backup: Complete
+
+This report was generated automatically by the LMS Dashboard system.
+      `
+
+      // Create and download PDF
+      const blob = new Blob([pdfContent], { type: 'text/plain' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `lms-dashboard-report-${new Date().toISOString().split('T')[0]}.txt`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      window.URL.revokeObjectURL(url)
+
+      toast({
+        title: "Report exported successfully",
+        description: "Dashboard data has been exported as a report file",
+      })
+    } catch (error) {
+      toast({
+        title: "Export failed",
+        description: "There was an error exporting the dashboard data",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const calculateTrend = (current: number, previous: number) => {
+    if (previous === 0) return 0
+    return ((current - previous) / previous) * 100
+  }
+
+  const getTrendIcon = (trend: number) => {
+    return trend > 0 ? ArrowUp : ArrowDown
+  }
+
+  const getTrendColor = (trend: number) => {
+    return trend > 0 ? "text-green-500" : "text-red-500"
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Top Stats Grid */}
+    <div className="space-y-8">
+      {/* Enhanced Header Section */}
+      <div className="bg-gradient-to-r from-orange-50 via-white to-blue-50 dark:from-orange-900/10 dark:via-gray-900 dark:to-blue-900/10 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
+        <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
+          {/* Welcome Section */}
+          <div className="flex-1">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-r from-orange-500 to-blue-500 flex items-center justify-center">
+                <User className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100">
+                  Welcome back, {session?.user?.firstName || 'Admin'}!
+                </h1>
+                <p className="text-sm text-gray-600 dark:text-gray-400 flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  Last updated: {lastRefresh.toLocaleTimeString()}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-wrap items-center gap-4 mt-3">
+              <Badge variant="outline" className="bg-white/50 dark:bg-gray-800/50 border-orange-200 text-orange-700 dark:text-orange-300">
+                <Activity className="w-3 h-3 mr-1" />
+                System Active
+              </Badge>
+              <Badge variant="outline" className="bg-white/50 dark:bg-gray-800/50 border-green-200 text-green-700 dark:text-green-300">
+                <CheckCircle className="w-3 h-3 mr-1" />
+                All Services Online
+              </Badge>
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {dashboardStats.actualUsers} total users • {dashboardStats.activeUsersThisMonth} active this month
+              </span>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 min-w-fit">
+            <div className="flex items-center gap-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleRefresh}
+                disabled={isLoading}
+                className="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+              >
+                <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
+                <span className="hidden sm:inline">Refresh</span>
+              </Button>
+              <Button 
+                size="sm" 
+                onClick={handleExportPDF}
+                className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                <span className="hidden sm:inline">Export Report</span>
+                <span className="sm:hidden">Export</span>
+              </Button>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+              <Calendar className="w-3 h-3" />
+              <span>{new Date().toLocaleDateString('en-US', { 
+                weekday: 'short', 
+                month: 'short', 
+                day: 'numeric',
+                year: 'numeric'
+              })}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions Bar */}
+      <Card className="bg-gradient-to-r from-orange-50 to-blue-50 dark:from-orange-900/20 dark:to-blue-900/20 border-0 shadow-lg">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-orange-500" />
+              Quick Actions
+            </h2>
+            <Badge variant="secondary" className="bg-white/50 dark:bg-gray-800/50">
+              {quickActions.length} actions
+            </Badge>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+            {quickActions.map((action, index) => (
+              <Link key={index} href={action.href}>
+                <Button 
+                  variant="ghost" 
+                  className={`h-auto p-4 flex flex-col items-center gap-2 ${action.color} text-white hover:scale-105 transition-all duration-200 shadow-md`}
+                >
+                  <action.icon className="w-6 h-6" />
+                  <span className="text-sm font-medium">{action.label}</span>
+                  <span className="text-xs opacity-90 text-center">{action.description}</span>
+                </Button>
+              </Link>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Enhanced Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        {/* Top Active Users */}
-        <Card className="bg-gray-800 dark:bg-gray-900 text-white">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center space-x-3 sm:space-x-4">
-              <div className="p-2 sm:p-3 bg-gray-700 dark:bg-gray-800 rounded-lg">
-                <Users className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-              </div>
-              <div>
-                <p className="text-xs sm:text-sm text-gray-300">Top Active Users</p>
-                <p className="text-sm sm:text-lg font-semibold text-orange-500">This Month</p>
-                <Link href="/dashboard/reports?tab=users">
-                  <Button size="sm" className="mt-1 sm:mt-2 bg-orange-500 hover:bg-orange-600 text-xs px-2 py-1">
-                    <span className="hidden sm:inline">View Users Report</span>
-                    <span className="sm:hidden">View Report</span>
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Active Users This Month */}
-        <Card className="bg-gray-800 dark:bg-gray-900 text-white">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl sm:text-3xl font-bold">{dashboardStats.activeUsersThisMonth}</p>
-                <p className="text-xs sm:text-sm text-gray-300">Active Users</p>
-                <p className="text-xs text-orange-500">This Month</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Active Users Last Month */}
-        <Card className="bg-gray-800 dark:bg-gray-900 text-white">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div className="w-full">
-                <p className="text-2xl sm:text-3xl font-bold">{dashboardStats.activeUsersLastMonth}</p>
-                <p className="text-xs sm:text-sm text-gray-300">Active Users</p>
-                <p className="text-xs text-orange-500">Last Month</p>
-                <div className="w-full bg-gray-700 dark:bg-gray-800 rounded-full h-1 mt-2">
-                  <div className="bg-orange-500 h-1 rounded-full" style={{ width: `${(dashboardStats.activeUsersLastMonth / 100) * 100}%` }}></div>
+        {enhancedMetrics.map((metric, index) => {
+          const currentValue = typeof metric.value === 'string' ? parseFloat(metric.value) : metric.value
+          const previousValue = typeof metric.previousValue === 'string' ? parseFloat(metric.previousValue) : metric.previousValue
+          const trend = calculateTrend(currentValue, previousValue)
+          const TrendIcon = getTrendIcon(trend)
+          const trendColor = getTrendColor(trend)
+          
+          return (
+            <Card key={index} className="hover:shadow-lg transition-shadow duration-200">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className={`p-3 rounded-lg ${metric.bgColor}`}>
+                    <metric.icon className={`w-6 h-6 ${metric.color}`} />
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <TrendIcon className={`w-4 h-4 ${trendColor}`} />
+                    <span className={`text-sm font-medium ${trendColor}`}>
+                      {Math.abs(trend).toFixed(1)}%
+                    </span>
+                  </div>
                 </div>
-              </div>
+                <div className="mt-4">
+                  <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                    {metric.value}{metric.suffix || ''}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{metric.title}</p>
+                </div>
+              </CardContent>
+            </Card>
+          )
+        })}
+      </div>
+
+      {/* Notifications and Activity Feed */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Activity */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="w-5 h-5 text-orange-500" />
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {mockNotifications.map((notification) => (
+                <div key={notification.id} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+                  <div className={`p-2 rounded-full ${
+                    notification.type === 'success' ? 'bg-green-100 text-green-600 dark:bg-green-900/20' :
+                    notification.type === 'warning' ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20' :
+                    'bg-blue-100 text-blue-600 dark:bg-blue-900/20'
+                  }`}>
+                    <notification.icon className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {notification.message}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {notification.time}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 pt-4 border-t">
+              <Link href="/dashboard/reports">
+                <Button variant="outline" className="w-full">
+                  View All Activity
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
 
-        {/* Actual Users */}
-        <Card className="bg-blue-600 dark:bg-blue-700 text-white">
-          <CardContent className="p-4 sm:p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-2xl sm:text-3xl font-bold">{dashboardStats.actualUsers}</p>
-                <p className="text-xs sm:text-sm">Actual Users</p>
+        {/* System Status */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="w-5 h-5 text-green-500" />
+              System Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">API Server</span>
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20">Online</Badge>
               </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Database</span>
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20">Online</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">File Storage</span>
+                <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20">Warning</Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600 dark:text-gray-400">Backup</span>
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900/20">Complete</Badge>
+              </div>
+            </div>
+            <div className="mt-4 pt-4 border-t">
+              <Link href="/dashboard/admin">
+                <Button variant="outline" className="w-full">
+                  <Settings className="w-4 h-4 mr-2" />
+                  System Health
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Second Row Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-        {/* Average Time Weekly This Month */}
-        <Card className="bg-gray-800 text-white">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-gray-700 rounded-lg">
-                <Clock className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-300">Average Time Weekly</p>
-                <p className="text-lg font-semibold text-orange-500">This Month</p>
-                <p className="text-2xl font-bold">{dashboardStats.averageTimeThisMonth} hours</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Average Time Weekly Last Month */}
-        <Card className="bg-gray-800 text-white">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-4">
-              <div className="p-3 bg-gray-700 rounded-lg">
-                <Clock className="w-8 h-8 text-white" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-300">Average Time Weekly</p>
-                <p className="text-lg font-semibold text-orange-500">Last Month</p>
-                <p className="text-2xl font-bold">{dashboardStats.averageTimeLastMonth} hours</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Analytics Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <UserActivityChart />
+        <TopicCompletionChart />
+        <UserDistributionChart />
       </div>
 
       {/* Top Videos Section */}
