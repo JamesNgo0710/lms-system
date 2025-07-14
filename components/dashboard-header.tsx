@@ -5,7 +5,6 @@ import { useCallback, memo } from "react"
 import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
-import { SyncIndicator } from "./sync-status"
 import { LogOut, Home, Search, Command } from "lucide-react"
 import Link from "next/link"
 
@@ -37,34 +36,54 @@ const DashboardHeader = memo(function DashboardHeader({ onOpenSearch }: Dashboar
   }, [])
 
   return (
-    <header className="flex h-16 items-center justify-between border-b px-6">
-      <div>
+    <header className="h-14 bg-gray-900 dark:bg-gray-950 border-b border-gray-700 dark:border-gray-800 px-4 flex items-center justify-between">
+      {/* Left side - Logo/Home if not on dashboard */}
+      <div className="flex items-center">
         {!isOnDashboard && (
-          <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
-            <Home className="h-5 w-5 text-orange-500" />
-            <h1 className="text-xl font-semibold">Back to home page</h1>
+          <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity text-white">
+            <Home className="h-4 w-4" />
+            <span className="text-sm font-medium">Dashboard</span>
           </Link>
         )}
       </div>
-      <div className="flex items-center gap-2">
+
+      {/* Right side - Actions */}
+      <div className="flex items-center gap-3">
+        {/* Search Button */}
         <Button 
-          variant="outline" 
+          variant="ghost" 
           size="sm" 
           onClick={onOpenSearch}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 text-gray-300 hover:text-white hover:bg-gray-800 border-0 h-8 px-3"
         >
           <Search className="h-4 w-4" />
-          <span className="hidden sm:inline">Search</span>
-          <div className="hidden sm:flex items-center gap-1 text-xs text-gray-500">
+          <span className="text-sm">Search</span>
+          <div className="hidden sm:flex items-center gap-1 text-xs bg-gray-700 px-1.5 py-0.5 rounded">
             <Command className="h-3 w-3" />
             <span>K</span>
           </div>
         </Button>
-        <SyncIndicator />
-        <ThemeToggle />
-        <Button variant="outline" size="sm" onClick={handleLogout}>
-          <LogOut className="mr-2 h-4 w-4" />
-          Logout
+
+        {/* Live Indicator */}
+        <div className="flex items-center gap-2 text-green-400 text-sm">
+          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <span className="hidden sm:inline">Live</span>
+        </div>
+
+        {/* Theme Toggle */}
+        <div className="text-gray-300 hover:text-white">
+          <ThemeToggle />
+        </div>
+
+        {/* Logout */}
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          onClick={handleLogout}
+          className="text-gray-300 hover:text-white hover:bg-gray-800 border-0 h-8 px-3"
+        >
+          <LogOut className="h-4 w-4 mr-2" />
+          <span className="text-sm">Logout</span>
         </Button>
       </div>
     </header>

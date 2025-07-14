@@ -252,8 +252,8 @@ This report was generated automatically by the LMS Dashboard system.
   }
 
   return (
-    <div className="space-y-8">
-      {/* Enhanced Header Section */}
+    <div className="space-y-6">
+      {/* Dashboard Welcome Section */}
       <div className="bg-gradient-to-r from-orange-50 via-white to-blue-50 dark:from-orange-900/10 dark:via-gray-900 dark:to-blue-900/10 rounded-xl border border-gray-200 dark:border-gray-700 p-6 shadow-sm">
         <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between">
           {/* Welcome Section */}
