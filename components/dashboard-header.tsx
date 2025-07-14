@@ -15,8 +15,21 @@ const DashboardHeader = memo(function DashboardHeader() {
   const pathname = usePathname()
   const isOnDashboard = pathname === "/dashboard"
 
-  const handleLogout = useCallback(() => {
-    signOut({ callbackUrl: "/" })
+  const handleLogout = useCallback(async () => {
+    try {
+      // Clear any localStorage data
+      localStorage.clear()
+      
+      // Clear any sessionStorage data
+      sessionStorage.clear()
+      
+      // Sign out with redirect
+      await signOut({ callbackUrl: "/" })
+    } catch (error) {
+      console.error('Logout error:', error)
+      // Force redirect even if signOut fails
+      window.location.href = "/"
+    }
   }, [])
 
   return (

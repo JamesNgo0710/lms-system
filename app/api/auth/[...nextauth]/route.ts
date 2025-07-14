@@ -46,6 +46,7 @@ export const authOptions: NextAuthOptions = {
               location: user.location,
               skills: user.skills,
               interests: user.interests,
+              joinedDate: user.joined_date,
               token: token,
             }
           }
@@ -53,6 +54,10 @@ export const authOptions: NextAuthOptions = {
           return null
         } catch (error) {
           console.error('Login error:', error.response?.data?.message || error.message);
+          // Clear any potentially problematic headers or data
+          if (error.response?.status === 413 || error.message?.includes('headers')) {
+            console.error('Large response detected, clearing cache');
+          }
           return null
         }
       }
@@ -71,6 +76,7 @@ export const authOptions: NextAuthOptions = {
         token.location = user.location
         token.skills = user.skills
         token.interests = user.interests
+        token.joinedDate = user.joinedDate
         token.accessToken = user.token
       }
       return token
@@ -86,12 +92,27 @@ export const authOptions: NextAuthOptions = {
         session.user.location = token.location as string
         session.user.skills = token.skills as string
         session.user.interests = token.interests as string
+        session.user.joinedDate = token.joinedDate as string
         if (token.image) {
           session.user.image = token.image as string
         }
       }
       session.accessToken = token.accessToken as string
       return session
+    },
+    async signOut({ token }) {
+      // Clear any server-side session data
+      if (token?.accessToken) {
+        try {
+          // You could call a Laravel logout endpoint here if needed
+          // await axios.post(`${API_URL}/api/logout`, {}, {
+          //   headers: { Authorization: `Bearer ${token.accessToken}` }
+          // })
+        } catch (error) {
+          console.error('Server logout error:', error)
+        }
+      }
+      return true
     },
   },
   pages: {
@@ -110,7 +131,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
-        domain: process.env.NODE_ENV === "production" ? process.env.NEXTAUTH_URL?.includes('localhost') ? undefined : ".yourdomain.com" : undefined
+        maxAge: 24 * 60 * 60 // 24 hours
       }
     }
   },

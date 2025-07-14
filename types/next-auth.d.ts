@@ -15,6 +15,7 @@ declare module "next-auth" {
       location?: string
       skills?: string
       interests?: string
+      joinedDate?: string
     }
     accessToken?: string
   }
@@ -32,6 +33,7 @@ declare module "next-auth" {
     location?: string
     skills?: string
     interests?: string
+    joinedDate?: string
     token?: string
   }
 }
@@ -48,6 +50,7 @@ declare module "next-auth/jwt" {
     location?: string
     skills?: string
     interests?: string
+    joinedDate?: string
     accessToken?: string
   }
 } 
