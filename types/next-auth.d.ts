@@ -44,13 +44,6 @@ declare module "next-auth/jwt" {
     role: string
     firstName: string
     lastName: string
-    image?: string
-    bio?: string
-    phone?: string
-    location?: string
-    skills?: string
-    interests?: string
-    joinedDate?: string
     accessToken?: string
   }
 } 

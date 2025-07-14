@@ -66,36 +66,24 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        // Store only essential data in JWT to avoid large headers
         token.id = user.id
         token.role = user.role
         token.firstName = user.firstName
         token.lastName = user.lastName
-        token.image = user.image
-        token.bio = user.bio
-        token.phone = user.phone
-        token.location = user.location
-        token.skills = user.skills
-        token.interests = user.interests
-        token.joinedDate = user.joinedDate
         token.accessToken = user.token
       }
       return token
     },
     async session({ session, token }) {
-      if (session.user) {
+      if (session.user && token.id) {
+        // Store only essential data in session to avoid large headers
         session.user.id = token.id as string
         session.user.role = token.role as string
         session.user.firstName = token.firstName as string
         session.user.lastName = token.lastName as string
-        session.user.bio = token.bio as string
-        session.user.phone = token.phone as string
-        session.user.location = token.location as string
-        session.user.skills = token.skills as string
-        session.user.interests = token.interests as string
-        session.user.joinedDate = token.joinedDate as string
-        if (token.image) {
-          session.user.image = token.image as string
-        }
+        session.user.name = `${token.firstName} ${token.lastName}`
+        session.user.email = session.user.email // Keep email from default
       }
       session.accessToken = token.accessToken as string
       return session
@@ -120,7 +108,8 @@ export const authOptions: NextAuthOptions = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 24 * 60 * 60, // 24 hours
+    maxAge: 8 * 60 * 60, // 8 hours (shorter session)
+    updateAge: 2 * 60 * 60, // Update session every 2 hours
   },
   useSecureCookies: process.env.NODE_ENV === "production",
   cookies: {
@@ -131,7 +120,7 @@ export const authOptions: NextAuthOptions = {
         sameSite: "lax",
         path: "/",
         secure: process.env.NODE_ENV === "production",
-        maxAge: 24 * 60 * 60 // 24 hours
+        maxAge: 8 * 60 * 60 // 8 hours (match session maxAge)
       }
     }
   },
