@@ -16,7 +16,7 @@ import { useToast } from "@/hooks/use-toast"
 import { compressImage, validateImageFile, debounce } from "@/lib/image-utils"
 
 export default function SettingsPage() {
-  const { data: session } = useSession()
+  const { data: session, update } = useSession()
   const user = session?.user
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("profile")
@@ -223,8 +223,21 @@ export default function SettingsPage() {
 
       if (refreshResponse.ok) {
         const refreshData = await refreshResponse.json()
-        // Force page reload to ensure session is updated
-        window.location.reload()
+        // Update the session with new user data
+        await update({
+          ...session,
+          user: {
+            ...session?.user,
+            ...refreshData.user
+          }
+        })
+        
+        // Update local state to reflect changes immediately
+        setProfileData({
+          firstName: refreshData.user.firstName || "",
+          lastName: refreshData.user.lastName || "",
+          email: refreshData.user.email || "",
+        })
       }
 
       toast({
@@ -244,7 +257,7 @@ export default function SettingsPage() {
     } finally {
       setIsProfileSaving(false)
     }
-  }, [profileData, profileImage, imageFile, user?.id, debouncedStorageUpdate, toast])
+  }, [profileData, profileImage, imageFile, user?.id, debouncedStorageUpdate, toast, session, update])
 
   const handlePasswordSave = useCallback(async () => {
     // Validate passwords
