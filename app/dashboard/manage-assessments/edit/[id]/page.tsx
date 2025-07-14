@@ -433,8 +433,16 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
                     max="168"
                     value={cooldownPeriod}
                     onChange={(e) => {
-                      setCooldownPeriod(Number(e.target.value))
+                      // Only allow numeric values within the specified range
+                      const value = Math.max(1, Math.min(168, Number(e.target.value) || 1))
+                      setCooldownPeriod(value)
                       setHasUnsavedChanges(true)
+                    }}
+                    onKeyDown={(e) => {
+                      // Block non-numeric characters except control keys
+                      if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+                        e.preventDefault()
+                      }
                     }}
                     className="w-20"
                   />

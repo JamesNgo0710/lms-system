@@ -362,9 +362,19 @@ export function DashboardCustomizer() {
                           <Input 
                             type="number" 
                             value={widget.settings.maxItems || 5}
-                            onChange={(e) => updateWidget(widget.id, {
-                              settings: { ...widget.settings, maxItems: parseInt(e.target.value) }
-                            })}
+                            onChange={(e) => {
+                              // Only allow numeric values within the specified range
+                              const value = Math.max(1, Math.min(10, parseInt(e.target.value) || 1))
+                              updateWidget(widget.id, {
+                                settings: { ...widget.settings, maxItems: value }
+                              })
+                            }}
+                            onKeyDown={(e) => {
+                              // Block non-numeric characters except control keys
+                              if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+                                e.preventDefault()
+                              }
+                            }}
                             className="w-16 h-6 text-xs"
                             min="1"
                             max="10"

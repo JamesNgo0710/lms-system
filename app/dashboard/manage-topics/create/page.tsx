@@ -128,9 +128,14 @@ export default function CreateTopicPage() {
               <Input
                 id="title"
                 value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                onChange={(e) => {
+                  // Allow letters, numbers, spaces, and common punctuation for titles
+                  const value = e.target.value.replace(/[^a-zA-Z0-9\s\'\-\.\,\:\;\!\?\(\)]/g, '')
+                  setFormData({ ...formData, title: value })
+                }}
                 placeholder="Enter topic name"
                 className="text-lg"
+                maxLength={100}
               />
             </div>
 

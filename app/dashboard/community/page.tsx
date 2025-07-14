@@ -394,8 +394,19 @@ export default function CommunityPage() {
                     <Input
                       type="number"
                       value={filters.min_votes || ''}
-                      onChange={(e) => setFilters({ ...filters, min_votes: e.target.value ? parseInt(e.target.value) : undefined, page: 1 })}
+                      onChange={(e) => {
+                        // Only allow positive integers
+                        const value = e.target.value ? Math.max(0, parseInt(e.target.value) || 0) : undefined
+                        setFilters({ ...filters, min_votes: value, page: 1 })
+                      }}
+                      onKeyDown={(e) => {
+                        // Block non-numeric characters except control keys
+                        if (!/[0-9]/.test(e.key) && !['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key)) {
+                          e.preventDefault()
+                        }
+                      }}
                       placeholder="0"
+                      min="0"
                     />
                   </div>
 

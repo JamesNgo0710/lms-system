@@ -99,7 +99,11 @@ export function LoginForm() {
               id="email" 
               type="email" 
               value={email} 
-              onChange={(e) => setEmail(e.target.value)} 
+              onChange={(e) => {
+                // Basic email validation - allow common email characters
+                const value = e.target.value.replace(/[^a-zA-Z0-9@\.\-_]/g, '')
+                setEmail(value)
+              }} 
               placeholder="Enter your email"
               required 
             />

@@ -717,14 +717,22 @@ export default function ProfilePage() {
                       <div className="flex space-x-2">
                         <Input
                           value={editForm.firstName}
-                          onChange={(e) => setEditForm({...editForm, firstName: e.target.value})}
+                          onChange={(e) => {
+                            // Only allow letters, spaces, apostrophes, and hyphens for names
+                            const value = e.target.value.replace(/[^a-zA-Z\s\'\-]/g, '')
+                            setEditForm({...editForm, firstName: value})
+                          }}
                           placeholder="First Name"
                           className="text-center"
                           maxLength={50}
                         />
                         <Input
                           value={editForm.lastName}
-                          onChange={(e) => setEditForm({...editForm, lastName: e.target.value})}
+                          onChange={(e) => {
+                            // Only allow letters, spaces, apostrophes, and hyphens for names
+                            const value = e.target.value.replace(/[^a-zA-Z\s\'\-]/g, '')
+                            setEditForm({...editForm, lastName: value})
+                          }}
                           placeholder="Last Name"
                           className="text-center"
                           maxLength={50}
@@ -789,7 +797,11 @@ export default function ProfilePage() {
                       {isEditing ? (
                         <Input
                           value={editForm.phone}
-                          onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                          onChange={(e) => {
+                            // Only allow numbers, spaces, dashes, parentheses, and + symbol
+                            const value = e.target.value.replace(/[^0-9\s\-\(\)\+]/g, '')
+                            setEditForm({...editForm, phone: value})
+                          }}
                           placeholder="Phone number"
                           className="text-sm"
                           maxLength={20}

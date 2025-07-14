@@ -40,13 +40,7 @@ export const authOptions: NextAuthOptions = {
               firstName: user.first_name,
               lastName: user.last_name,
               role: user.role,
-              image: user.profile_image,
-              bio: user.bio,
-              phone: user.phone,
-              location: user.location,
-              skills: user.skills,
-              interests: user.interests,
-              joinedDate: user.joined_date,
+              // Don't include large profile_image to avoid header size issues
               token: token,
             }
           }

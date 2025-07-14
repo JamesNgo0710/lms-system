@@ -456,7 +456,11 @@ export default function SettingsPage() {
                           <Input
                             id="firstName"
                             value={profileData.firstName}
-                            onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
+                            onChange={(e) => {
+                              // Only allow letters, spaces, apostrophes, and hyphens for names
+                              const value = e.target.value.replace(/[^a-zA-Z\s\'\-]/g, '')
+                              setProfileData({ ...profileData, firstName: value })
+                            }}
                             placeholder="John"
                             className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
                             maxLength={50}
@@ -467,7 +471,11 @@ export default function SettingsPage() {
                           <Input
                             id="lastName"
                             value={profileData.lastName}
-                            onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
+                            onChange={(e) => {
+                              // Only allow letters, spaces, apostrophes, and hyphens for names
+                              const value = e.target.value.replace(/[^a-zA-Z\s\'\-]/g, '')
+                              setProfileData({ ...profileData, lastName: value })
+                            }}
                             placeholder="Smith"
                             className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
                             maxLength={50}
