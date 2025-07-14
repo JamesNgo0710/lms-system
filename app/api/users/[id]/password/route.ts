@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
+const LARAVEL_BASE_URL = process.env.LARAVEL_BASE_URL || 'http://localhost:8000'
+
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -45,14 +47,38 @@ export async function PUT(
 
     console.log("Password change validated for user:", id)
     
-    // Since this app's users are managed by Laravel backend and the server data store
-    // is empty, we should integrate with Laravel API here or return a success.
-    // For now, returning success since the actual password change would need Laravel integration.
-    console.log("Password change request processed for user:", id)
-    return NextResponse.json({ 
-      success: true,
-      message: "Password change request processed. Note: Integration with Laravel backend needed for actual password change." 
+    // Update password via Laravel API
+    const response = await fetch(`${LARAVEL_BASE_URL}/api/users/${id}/password`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${session.user.laravelToken}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        password: newPassword,
+        password_confirmation: newPassword,
+      }),
     })
+
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Laravel API error:', errorData)
+      
+      // Handle validation errors
+      if (response.status === 422) {
+        return NextResponse.json({ 
+          error: 'Validation failed', 
+          details: errorData.errors 
+        }, { status: 422 })
+      }
+
+      return NextResponse.json({ error: 'Failed to change password' }, { status: response.status })
+    }
+
+    const result = await response.json()
+    console.log("Password change successful for user:", id)
+    return NextResponse.json(result)
   } catch (error) {
     console.error("Error changing password:", error)
     console.error("Error stack:", error instanceof Error ? error.stack : 'No stack trace')

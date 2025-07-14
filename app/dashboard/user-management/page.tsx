@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -25,7 +25,7 @@ interface UserFormData {
 }
 
 export default function UserManagementPage() {
-  const { users, addUser, updateUser, deleteUser } = useUsers()
+  const { users, addUser, updateUser, deleteUser, syncUsersFromAPI } = useUsers()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false)
   const [editingUser, setEditingUser] = useState<UserFormData | null>(null)
@@ -42,6 +42,13 @@ export default function UserManagementPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { toast } = useToast()
   const { data: session } = useSession()
+
+  // Sync users from API when component loads
+  useEffect(() => {
+    if (session?.user?.role === 'admin') {
+      syncUsersFromAPI()
+    }
+  }, [session?.user?.role])
 
   const handleAddUser = () => {
     setEditingUser(null)
@@ -149,13 +156,15 @@ export default function UserManagementPage() {
     if (!formData.firstName || !formData.lastName || !formData.email) {
       toast({
         title: "Error",
-        description: "Please fill in all required fields",
+        description: "Please fill in all required fields (First Name, Last Name, and Email)",
         variant: "destructive",
       })
       return
     }
 
-    if (!editingUser && !formData.password) {
+    let processedData = { ...formData }
+
+    if (!editingUser && !processedData.password) {
       toast({
         title: "Error",
         description: "Password is required for new users",
@@ -164,81 +173,150 @@ export default function UserManagementPage() {
       return
     }
 
-    if (editingUser) {
-      // Update existing user
-      updateUser(editingUser.id, {
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        role: formData.role,
-        profileImage: formData.profileImage,
-      })
+    try {
+      if (editingUser) {
+        // Update existing user via API
+        const response = await fetch(`/api/users/${editingUser.id}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firstName: processedData.firstName,
+            lastName: processedData.lastName,
+            email: processedData.email,
+            role: processedData.role,
+          }),
+        })
 
-      // If profile image was changed, update via API
-      if (formData.profileImage && formData.profileImage !== editingUser.profileImage) {
-        try {
-          const response = await fetch(`/api/users/${editingUser.id}/profile-image`, {
-            method: "PUT",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ imageData: formData.profileImage }),
-          })
-
-          if (!response.ok) {
-            throw new Error("Failed to update profile image")
-          }
-        } catch (error) {
-          toast({
-            title: "Warning",
-            description: "User updated but profile image upload failed",
-            variant: "destructive",
-          })
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || "Failed to update user")
         }
+
+        // Update local state
+        updateUser(editingUser.id, {
+          firstName: processedData.firstName,
+          lastName: processedData.lastName,
+          email: processedData.email,
+          role: processedData.role,
+          profileImage: processedData.profileImage,
+        })
+
+        // If profile image was changed, update via API
+        if (processedData.profileImage && processedData.profileImage !== editingUser.profileImage) {
+          try {
+            const imageResponse = await fetch(`/api/users/${editingUser.id}/profile-image`, {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ imageData: processedData.profileImage }),
+            })
+
+            if (!imageResponse.ok) {
+              throw new Error("Failed to update profile image")
+            }
+          } catch (error) {
+            toast({
+              title: "Warning",
+              description: "User updated but profile image upload failed",
+              variant: "destructive",
+            })
+          }
+        }
+
+        toast({
+          title: "Success",
+          description: "User updated successfully",
+        })
+      } else {
+        // Create new user via API
+        const response = await fetch("/api/users", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            firstName: processedData.firstName,
+            lastName: processedData.lastName,
+            email: processedData.email,
+            password: processedData.password!,
+            role: processedData.role,
+          }),
+        })
+
+        if (!response.ok) {
+          const error = await response.json()
+          throw new Error(error.error || "Failed to create user")
+        }
+
+        const newUser = await response.json()
+
+        // Add to local state for immediate UI update
+        addUser({
+          id: newUser.id.toString(),
+          username: processedData.email.split("@")[0],
+          firstName: processedData.firstName,
+          lastName: processedData.lastName,
+          email: processedData.email,
+          password: processedData.password!,
+          role: processedData.role,
+          joinedDate: new Date().toLocaleDateString(),
+          completedTopics: 0,
+          totalTopics: 12,
+          weeklyHours: 0,
+          thisWeekHours: 0,
+          profileImage: processedData.profileImage,
+        })
+
+        toast({
+          title: "Success",
+          description: "User created successfully",
+        })
       }
 
-      toast({
-        title: "Success",
-        description: "User updated successfully",
+      setIsDialogOpen(false)
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        role: "student",
+        password: "",
       })
-    } else {
-      // Add new user
-      addUser({
-        username: formData.email.split("@")[0],
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        password: formData.password!,
-        role: formData.role,
-        joinedDate: new Date().toLocaleDateString(),
-        completedTopics: 0,
-        totalTopics: 12,
-        weeklyHours: 0,
-        thisWeekHours: 0,
-        profileImage: formData.profileImage,
-      })
+    } catch (error) {
       toast({
-        title: "Success",
-        description: "User created successfully",
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to save user",
+        variant: "destructive",
       })
     }
-
-    setIsDialogOpen(false)
-    setFormData({
-      firstName: "",
-      lastName: "",
-      email: "",
-      role: "student",
-      password: "",
-    })
   }
 
-  const handleDeleteUser = (userId: string) => {
-    deleteUser(userId)
-    toast({
-      title: "Success",
-      description: "User deleted successfully",
-    })
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/users/${userId}`, {
+        method: "DELETE",
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to delete user")
+      }
+
+      // Remove from local state
+      deleteUser(userId)
+      toast({
+        title: "Success",
+        description: "User deleted successfully",
+      })
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to delete user",
+        variant: "destructive",
+      })
+    }
   }
 
   const generateRandomEmail = () => {
@@ -384,18 +462,31 @@ export default function UserManagementPage() {
 
             {/* Name */}
             <div className="space-y-2">
-              <Label className="text-white">Name</Label>
+              <Label className="text-white">First Name</Label>
               <Input
-                value={`${formData.firstName} ${formData.lastName}`.trim()}
+                value={formData.firstName || ""}
                 onChange={(e) => {
-                  const names = e.target.value.split(" ")
                   setFormData({
                     ...formData,
-                    firstName: names[0] || "",
-                    lastName: names.slice(1).join(" ") || "",
+                    firstName: e.target.value,
                   })
                 }}
-                placeholder="Enter Full Name"
+                placeholder="Enter First Name"
+                className="bg-gray-700 border-gray-600 text-white"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-white">Last Name</Label>
+              <Input
+                value={formData.lastName || ""}
+                onChange={(e) => {
+                  setFormData({
+                    ...formData,
+                    lastName: e.target.value,
+                  })
+                }}
+                placeholder="Enter Last Name"
                 className="bg-gray-700 border-gray-600 text-white"
               />
             </div>

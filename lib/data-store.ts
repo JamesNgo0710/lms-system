@@ -1186,6 +1186,48 @@ class DataStore {
     return this.users
   }
 
+  // Method to sync users from API
+  async syncUsersFromAPI(): Promise<void> {
+    try {
+      const response = await fetch('/api/users', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        const backendUsers = await response.json()
+        
+        // Convert backend users to local format
+        const localUsers: User[] = backendUsers.map((user: any) => ({
+          id: user.id.toString(),
+          username: user.email.split('@')[0],
+          firstName: user.first_name,
+          lastName: user.last_name,
+          email: user.email,
+          password: '', // Don't store passwords locally
+          role: user.role === 'teacher' ? 'creator' : user.role, // Map teacher to creator
+          joinedDate: user.joined_date ? new Date(user.joined_date).toLocaleDateString() : new Date().toLocaleDateString(),
+          completedTopics: user.completed_topics || 0,
+          totalTopics: user.total_topics || 12,
+          weeklyHours: user.weekly_hours || 0,
+          thisWeekHours: user.this_week_hours || 0,
+          profileImage: user.profile_image,
+        }))
+
+        this.users = localUsers
+        this.saveToStorage()
+        this.notifyListeners()
+        console.log('Users synced from API:', localUsers.length)
+      } else {
+        console.warn('Failed to sync users from API:', response.status)
+      }
+    } catch (error) {
+      console.error('Error syncing users from API:', error)
+    }
+  }
+
   addUser(user: Omit<User, "id">): User {
     const newUser: User = {
       ...user,

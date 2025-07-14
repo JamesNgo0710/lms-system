@@ -16,6 +16,7 @@ declare module "next-auth" {
       skills?: string
       interests?: string
       joinedDate?: string
+      laravelToken?: string
     }
     accessToken?: string
   }
@@ -35,6 +36,7 @@ declare module "next-auth" {
     interests?: string
     joinedDate?: string
     token?: string
+    laravelToken?: string
   }
 }
 

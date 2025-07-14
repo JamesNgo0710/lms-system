@@ -24,6 +24,11 @@ import {
 import { UserAnalytics } from "@/components/admin-user-analytics"
 import { ContentManagement } from "@/components/admin-content-management"
 import { DashboardCustomizer } from "@/components/admin-dashboard-customizer"
+import AdminRealTimeAnalytics from "@/components/admin-real-time-analytics"
+import AdminAdvancedUserManagement from "@/components/admin-advanced-user-management"
+import AdminContentAnalytics from "@/components/admin-content-analytics"
+import AdminSystemHealth from "@/components/admin-system-health"
+import AdminEnhancedReporting from "@/components/admin-enhanced-reporting"
 import { getDashboardStats, dataStore } from "@/lib/data-store"
 
 export function AdminCMSDashboard() {
@@ -129,34 +134,38 @@ export function AdminCMSDashboard() {
 
       {/* Main CMS Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="overview" className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4" />
+        <TabsList className="grid w-full grid-cols-8">
+          <TabsTrigger value="overview" className="flex items-center gap-1 text-xs">
+            <BarChart3 className="w-3 h-3" />
             <span>Overview</span>
-            <Badge variant="secondary" className="ml-1 text-xs bg-amber-100 text-amber-800 dark:bg-amber-800/20 dark:text-amber-200">
-              Beta
-            </Badge>
           </TabsTrigger>
-          <TabsTrigger value="users" className="flex items-center gap-2">
-            <Users className="w-4 h-4" />
-            <span>User Analytics</span>
-            <Badge variant="secondary" className="ml-1 text-xs bg-amber-100 text-amber-800 dark:bg-amber-800/20 dark:text-amber-200">
-              Beta
-            </Badge>
+          <TabsTrigger value="analytics" className="flex items-center gap-1 text-xs">
+            <TrendingUp className="w-3 h-3" />
+            <span>Analytics</span>
           </TabsTrigger>
-          <TabsTrigger value="content" className="flex items-center gap-2">
-            <BookOpen className="w-4 h-4" />
-            <span>Content Management</span>
-            <Badge variant="secondary" className="ml-1 text-xs bg-amber-100 text-amber-800 dark:bg-amber-800/20 dark:text-amber-200">
-              Beta
-            </Badge>
+          <TabsTrigger value="advanced-users" className="flex items-center gap-1 text-xs">
+            <UserCheck className="w-3 h-3" />
+            <span>Users</span>
           </TabsTrigger>
-          <TabsTrigger value="dashboard" className="flex items-center gap-2">
-            <Layout className="w-4 h-4" />
-            <span>Dashboard Config</span>
-            <Badge variant="secondary" className="ml-1 text-xs bg-amber-100 text-amber-800 dark:bg-amber-800/20 dark:text-amber-200">
-              Beta
-            </Badge>
+          <TabsTrigger value="content-analytics" className="flex items-center gap-1 text-xs">
+            <BookOpen className="w-3 h-3" />
+            <span>Content</span>
+          </TabsTrigger>
+          <TabsTrigger value="system" className="flex items-center gap-1 text-xs">
+            <Settings className="w-3 h-3" />
+            <span>System</span>
+          </TabsTrigger>
+          <TabsTrigger value="reports" className="flex items-center gap-1 text-xs">
+            <FileText className="w-3 h-3" />
+            <span>Reports</span>
+          </TabsTrigger>
+          <TabsTrigger value="users" className="flex items-center gap-1 text-xs">
+            <Users className="w-3 h-3" />
+            <span>Legacy</span>
+          </TabsTrigger>
+          <TabsTrigger value="dashboard" className="flex items-center gap-1 text-xs">
+            <Layout className="w-3 h-3" />
+            <span>Config</span>
           </TabsTrigger>
         </TabsList>
 
@@ -264,6 +273,26 @@ export function AdminCMSDashboard() {
 
         <TabsContent value="content" className="space-y-6">
           <ContentManagement />
+        </TabsContent>
+
+        <TabsContent value="analytics" className="space-y-6">
+          <AdminRealTimeAnalytics />
+        </TabsContent>
+
+        <TabsContent value="advanced-users" className="space-y-6">
+          <AdminAdvancedUserManagement />
+        </TabsContent>
+
+        <TabsContent value="content-analytics" className="space-y-6">
+          <AdminContentAnalytics />
+        </TabsContent>
+
+        <TabsContent value="system" className="space-y-6">
+          <AdminSystemHealth />
+        </TabsContent>
+
+        <TabsContent value="reports" className="space-y-6">
+          <AdminEnhancedReporting />
         </TabsContent>
 
         <TabsContent value="dashboard" className="space-y-6">

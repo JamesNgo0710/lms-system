@@ -78,6 +78,7 @@ export const authOptions: NextAuthOptions = {
         session.user.lastName = token.lastName as string
         session.user.name = `${token.firstName} ${token.lastName}`
         session.user.email = session.user.email // Keep email from default
+        session.user.laravelToken = token.accessToken as string
       }
       session.accessToken = token.accessToken as string
       return session

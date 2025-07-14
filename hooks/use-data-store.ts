@@ -76,6 +76,7 @@ export function useUsers() {
     addUser: dataStore.addUser.bind(dataStore),
     updateUser: dataStore.updateUser.bind(dataStore),
     deleteUser: dataStore.deleteUser.bind(dataStore),
+    syncUsersFromAPI: dataStore.syncUsersFromAPI.bind(dataStore),
   }
 }
 
