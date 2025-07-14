@@ -58,6 +58,11 @@ class UserController extends Controller
             'last_name' => 'sometimes|string|max:255',
             'email' => 'sometimes|string|email|max:255|unique:users,email,' . $user->id,
             'profile_image' => 'sometimes|string|nullable',
+            'bio' => 'sometimes|string|nullable',
+            'phone' => 'sometimes|string|max:20|nullable',
+            'location' => 'sometimes|string|max:255|nullable',
+            'skills' => 'sometimes|string|nullable',
+            'interests' => 'sometimes|string|nullable',
         ]);
 
         $user->update($validated);
@@ -92,5 +97,62 @@ class UserController extends Controller
         ]);
 
         return response()->json(['message' => 'Password updated successfully']);
+    }
+
+    public function getLessonCompletions(User $user)
+    {
+        // Users can only view their own completions unless they're admin
+        if (auth()->user()->id !== $user->id && !auth()->user()->hasRole('admin')) {
+            abort(403);
+        }
+
+        $completions = $user->lessonCompletions()
+            ->with(['lesson', 'lesson.topic'])
+            ->orderBy('completed_at', 'desc')
+            ->get();
+
+        return response()->json($completions);
+    }
+
+    public function getLessonViews(User $user)
+    {
+        // Users can only view their own views unless they're admin
+        if (auth()->user()->id !== $user->id && !auth()->user()->hasRole('admin')) {
+            abort(403);
+        }
+
+        $views = $user->lessonViews()
+            ->with(['lesson', 'lesson.topic'])
+            ->orderBy('viewed_at', 'desc')
+            ->get();
+
+        return response()->json($views);
+    }
+
+    public function getAssessmentAttempts(User $user)
+    {
+        // Users can only view their own attempts unless they're admin
+        if (auth()->user()->id !== $user->id && !auth()->user()->hasRole('admin')) {
+            abort(403);
+        }
+
+        $attempts = $user->assessmentAttempts()
+            ->with(['assessment', 'assessment.topic'])
+            ->orderBy('completed_at', 'desc')
+            ->get();
+
+        return response()->json($attempts);
+    }
+
+    public function getTopicProgress(User $user, $topicId)
+    {
+        // Users can only view their own progress unless they're admin
+        if (auth()->user()->id !== $user->id && !auth()->user()->hasRole('admin')) {
+            abort(403);
+        }
+
+        $progress = $user->getTopicProgress($topicId);
+        
+        return response()->json($progress);
     }
 }

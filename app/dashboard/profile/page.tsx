@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSession } from "next-auth/react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -12,6 +13,8 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Progress } from "@/components/ui/progress"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { 
   User, 
   Mail, 
@@ -34,11 +37,13 @@ import {
   Download,
   Settings,
   Archive,
-  Camera
+  Camera,
+  Plus,
+  Check
 } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { useTopics, useLessons, useLessonCompletions, useAssessmentAttempts, useUsers } from "@/hooks/use-data-store"
 import { useToast } from "@/hooks/use-toast"
 import jsPDF from "jspdf"
@@ -69,6 +74,33 @@ const externalCourses = [
   },
 ]
 
+// Predefined skills list for search and add functionality
+const PREDEFINED_SKILLS = [
+  "JavaScript", "TypeScript", "Python", "Java", "C++", "C#", "PHP", "Ruby", "Go", "Rust",
+  "React", "Vue.js", "Angular", "Next.js", "Node.js", "Express.js", "Laravel", "Django", "Flask", "Spring",
+  "HTML", "CSS", "SASS", "SCSS", "Tailwind CSS", "Bootstrap", "Material-UI", "Styled Components",
+  "MySQL", "PostgreSQL", "MongoDB", "Redis", "SQLite", "Oracle", "SQL Server",
+  "AWS", "Azure", "Google Cloud", "Docker", "Kubernetes", "Jenkins", "Git", "GitHub", "GitLab",
+  "Machine Learning", "Data Science", "Artificial Intelligence", "Deep Learning", "Neural Networks",
+  "Web Development", "Mobile Development", "Backend Development", "Frontend Development", "Full Stack",
+  "DevOps", "Testing", "QA", "Agile", "Scrum", "Project Management", "UI/UX Design", "Graphic Design",
+  "API Development", "RESTful APIs", "GraphQL", "Microservices", "System Design", "Software Architecture",
+  "Linux", "Windows", "macOS", "Bash", "PowerShell", "Vim", "VS Code", "IntelliJ", "Eclipse"
+]
+
+// Predefined professional interests for search and add functionality
+const PREDEFINED_INTERESTS = [
+  "Web Development", "Mobile Development", "Software Engineering", "Data Science", "Machine Learning",
+  "Artificial Intelligence", "Cybersecurity", "Cloud Computing", "DevOps", "Blockchain",
+  "Game Development", "UI/UX Design", "Product Management", "Project Management", "Business Analysis",
+  "Digital Marketing", "E-commerce", "Fintech", "Healthcare Technology", "Education Technology",
+  "IoT (Internet of Things)", "Augmented Reality", "Virtual Reality", "Robotics", "Automation",
+  "Quality Assurance", "Database Administration", "System Administration", "Network Security",
+  "Technical Writing", "Research & Development", "Open Source", "Startups", "Enterprise Solutions",
+  "Agile Methodologies", "Scrum", "Lean Development", "Continuous Integration", "Microservices",
+  "API Development", "Frontend Technologies", "Backend Technologies", "Full Stack Development"
+]
+
 interface ProfileFormData {
   name: string
   email: string
@@ -78,10 +110,11 @@ interface ProfileFormData {
   website: string
   linkedin: string
   twitter: string
+  skills: string[]
 }
 
 export default function ProfilePage() {
-  const { data: session } = useSession()
+  const { data: session, update: updateSession } = useSession()
   const { toast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -95,6 +128,9 @@ export default function ProfilePage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editForm, setEditForm] = useState<any>({})
+  const [skillsPopoverOpen, setSkillsPopoverOpen] = useState(false)
+  const [interestsPopoverOpen, setInterestsPopoverOpen] = useState(false)
+  const [customInterest, setCustomInterest] = useState('')
   
   // Data store hooks
   const { getTopicById } = useTopics()
@@ -129,6 +165,16 @@ export default function ProfilePage() {
   // Initialize edit form when user changes
   useEffect(() => {
     if (user) {
+      // Parse skills string into array
+      const skillsArray = user.skills 
+        ? user.skills.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0)
+        : ['Laravel', 'CSS', 'PHP'] // Default skills if none exist
+      
+      // Parse interests string into array
+      const interestsArray = user.interests 
+        ? user.interests.split(',').map(interest => interest.trim()).filter(interest => interest.length > 0)
+        : ['Web Development', 'Software Engineering'] // Default interests if none exist
+      
       setEditForm({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
@@ -137,8 +183,8 @@ export default function ProfilePage() {
         bio: user.bio || 'Passionate learner with a keen interest in technology and innovation.',
         phone: user.phone || '',
         location: user.location || '',
-        skills: user.skills || 'Laravel, CSS, PHP',
-        interests: user.interests || 'Web Development, Software Engineering'
+        skills: skillsArray,
+        interests: interestsArray
       })
     }
   }, [user])
@@ -276,14 +322,82 @@ export default function ProfilePage() {
   }
   
   // Handle save profile changes
-  const handleSaveProfile = () => {
+  const handleSaveProfile = async () => {
     if (!user || !canEdit) return
     
     try {
+      // Use the Laravel backend API directly
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      const response = await fetch(`${API_URL}/api/users/${user.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "Authorization": `Bearer ${(session as any)?.accessToken}`,
+        },
+        body: JSON.stringify({
+          first_name: editForm.firstName,
+          last_name: editForm.lastName,
+          bio: editForm.bio,
+          phone: editForm.phone,
+          location: editForm.location,
+          skills: editForm.skills.join(', '), // Convert array back to comma-separated string
+          interests: editForm.interests.join(', '), // Convert array back to comma-separated string
+        }),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
+      }
+
+      const updatedUser = await response.json()
+      
+      // Update the local user data in data store
       updateUser(user.id, {
-        ...editForm,
+        firstName: editForm.firstName,
+        lastName: editForm.lastName,
+        bio: editForm.bio,
+        phone: editForm.phone,
+        location: editForm.location,
+        skills: editForm.skills.join(', '),
+        interests: editForm.interests.join(', '),
         profileImage: profileImage || user.profileImage
       })
+      
+      // Refresh session with updated user data
+      try {
+        const refreshResponse = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+        
+        if (refreshResponse.ok) {
+          const refreshData = await refreshResponse.json()
+          await updateSession({
+            ...session,
+            user: {
+              ...session?.user,
+              firstName: refreshData.user.firstName,
+              lastName: refreshData.user.lastName,
+              name: refreshData.user.name,
+              bio: refreshData.user.bio,
+              phone: refreshData.user.phone,
+              location: refreshData.user.location,
+              skills: refreshData.user.skills,
+              interests: refreshData.user.interests,
+              joinedDate: refreshData.user.joinedDate,
+            }
+          })
+          
+          // Force page refresh to ensure updated data is shown
+          window.location.reload()
+        }
+      } catch (refreshError) {
+        console.error("Error refreshing session:", refreshError)
+      }
       
       toast({
         title: "Success",
@@ -292,9 +406,10 @@ export default function ProfilePage() {
       
       setIsEditing(false)
     } catch (error) {
+      console.error("Profile update error:", error)
       toast({
         title: "Error",
-        description: "Failed to update profile",
+        description: error instanceof Error ? error.message : "Failed to update profile",
         variant: "destructive",
       })
     }
@@ -305,6 +420,14 @@ export default function ProfilePage() {
     setIsEditing(false)
     // Reset form to original values
     if (user) {
+      const skillsArray = user.skills 
+        ? user.skills.split(',').map(skill => skill.trim()).filter(skill => skill.length > 0)
+        : ['Laravel', 'CSS', 'PHP'] // Default skills if none exist
+      
+      const interestsArray = user.interests 
+        ? user.interests.split(',').map(interest => interest.trim()).filter(interest => interest.length > 0)
+        : ['Web Development', 'Software Engineering'] // Default interests if none exist
+      
       setEditForm({
         firstName: user.firstName || '',
         lastName: user.lastName || '',
@@ -313,10 +436,60 @@ export default function ProfilePage() {
         bio: user.bio || 'Passionate learner with a keen interest in technology and innovation.',
         phone: user.phone || '',
         location: user.location || '',
-        skills: user.skills || 'Laravel, CSS, PHP',
-        interests: user.interests || 'Web Development, Software Engineering'
+        skills: skillsArray,
+        interests: interestsArray
       })
     }
+  }
+
+  // Add skill to the list
+  const addSkill = (skill: string) => {
+    if (!editForm.skills.includes(skill)) {
+      setEditForm({
+        ...editForm,
+        skills: [...editForm.skills, skill]
+      })
+    }
+    setSkillsPopoverOpen(false)
+  }
+
+  // Remove skill from the list
+  const removeSkill = (skillToRemove: string) => {
+    setEditForm({
+      ...editForm,
+      skills: editForm.skills.filter(skill => skill !== skillToRemove)
+    })
+  }
+
+  // Add interest to the list
+  const addInterest = (interest: string) => {
+    if (!editForm.interests.includes(interest)) {
+      setEditForm({
+        ...editForm,
+        interests: [...editForm.interests, interest]
+      })
+    }
+    setInterestsPopoverOpen(false)
+  }
+
+  // Remove interest from the list
+  const removeInterest = (interestToRemove: string) => {
+    setEditForm({
+      ...editForm,
+      interests: editForm.interests.filter(interest => interest !== interestToRemove)
+    })
+  }
+
+  // Add custom interest
+  const addCustomInterest = () => {
+    if (customInterest.trim() && !editForm.interests.includes(customInterest.trim())) {
+      setEditForm({
+        ...editForm,
+        interests: [...editForm.interests, customInterest.trim()]
+      })
+      setCustomInterest('')
+    }
+    setInterestsPopoverOpen(false)
   }
 
   // Handle Archive button click
@@ -380,7 +553,8 @@ export default function ProfilePage() {
         })
 
         if (!response.ok) {
-          throw new Error("Failed to update profile image")
+          const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+          throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`)
         }
 
         // Save to localStorage for immediate display
@@ -399,9 +573,10 @@ export default function ProfilePage() {
       }
       reader.readAsDataURL(file)
     } catch (error) {
+      console.error("Profile image upload error:", error)
       toast({
         title: "Error",
-        description: "Failed to update profile image",
+        description: error instanceof Error ? error.message : "Failed to update profile image",
         variant: "destructive",
       })
     } finally {
@@ -424,6 +599,8 @@ export default function ProfilePage() {
     joinDate: "2023-01-15",
     avatar: "/profile-photo.png",
   }
+
+  // Profile data now comes from Laravel backend
 
   // Determine profile image source
   const displayImage = profileImage || generateAvatarUrl(user?.name || DEFAULT_VALUES.user.firstName + " " + DEFAULT_VALUES.user.lastName)
@@ -448,7 +625,6 @@ export default function ProfilePage() {
               Admin View
             </Badge>
           )}
-          <span className="text-sm text-gray-600">{user.role === 'admin' ? 'AD' : user.role === 'creator' ? 'CR' : 'ST'}</span>
           <span className="text-sm font-medium">
             {user.firstName} {user.lastName}
           </span>
@@ -461,7 +637,7 @@ export default function ProfilePage() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <CardTitle className="text-white">
-                {isAdminView ? `${user.firstName}'s Profile` : 'Profile'}
+                {isAdminView ? `${user.firstName}'s Profile` : 'User Profile'}
               </CardTitle>
               {isEditing && (
                 <Badge variant="secondary" className="bg-white text-orange-600">
@@ -481,22 +657,31 @@ export default function ProfilePage() {
                   Back to Reports
                 </Button>
               )}
-              <Link href="/dashboard">
-                <Button variant="ghost" size="sm" className="text-white hover:bg-orange-600">
-                  <ArrowLeft className="w-4 h-4 mr-2" />
-                  Dashboard
-                </Button>
-              </Link>
             </div>
           </div>
         </CardHeader>
       </Card>
 
       {/* Main Profile Content */}
-      <div id="profile-content">
-        <Card>
-          <CardContent className="p-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div id="profile-content" className="print:bg-white print:shadow-none">
+        <Card className="print:border-0 print:shadow-none">
+          <CardContent className="p-8 print:p-4">
+            {/* Professional Header for PDF */}
+            <div className="hidden print:block mb-6 border-b pb-4">
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">Professional Profile</h1>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">{user.firstName} {user.lastName}</h2>
+                  <p className="text-gray-600">{user.email}</p>
+                </div>
+                <div className="text-right text-sm text-gray-500">
+                  <p>Generated on {new Date().toLocaleDateString()}</p>
+                  <p>Member since {user.joinedDate ? new Date(user.joinedDate).toLocaleDateString() : 'N/A'}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 print:gap-6">
               {/* Profile Info */}
               <div className="lg:col-span-1">
                 <div className="text-center">
@@ -535,19 +720,21 @@ export default function ProfilePage() {
                           onChange={(e) => setEditForm({...editForm, firstName: e.target.value})}
                           placeholder="First Name"
                           className="text-center"
+                          maxLength={50}
                         />
                         <Input
                           value={editForm.lastName}
                           onChange={(e) => setEditForm({...editForm, lastName: e.target.value})}
                           placeholder="Last Name"
                           className="text-center"
+                          maxLength={50}
                         />
                       </div>
                       <Input
                         value={editForm.email}
-                        onChange={(e) => setEditForm({...editForm, email: e.target.value})}
-                        placeholder="Email"
-                        className="text-center"
+                        disabled
+                        placeholder="Email (cannot be changed)"
+                        className="text-center bg-gray-100 text-gray-600 cursor-not-allowed"
                       />
                       {isAdminView && (
                         <select 
@@ -569,7 +756,7 @@ export default function ProfilePage() {
                       <p className="text-gray-600 capitalize">{user.role}</p>
                       <p className="text-sm text-gray-500">{user.email}</p>
                       <p className="text-sm text-gray-500 mt-2">
-                        <strong>Start Date:</strong> {user.joinedDate}
+                        <strong>Start Date:</strong> {user.joinedDate ? new Date(user.joinedDate).toLocaleDateString() : 'Not available'}
                       </p>
                     </>
                   )}
@@ -584,10 +771,11 @@ export default function ProfilePage() {
                       placeholder="Tell us about yourself..."
                       className="text-sm"
                       rows={4}
+                      maxLength={500}
                     />
                   ) : (
                     <p className="text-sm text-gray-600">
-                      {user.bio || 'No bio available.'}
+                      {user.bio || 'Passionate learner with a keen interest in technology and innovation.'}
                     </p>
                   )}
                 </div>
@@ -604,6 +792,7 @@ export default function ProfilePage() {
                           onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
                           placeholder="Phone number"
                           className="text-sm"
+                          maxLength={20}
                         />
                       ) : (
                         <span className="text-gray-600">{user.phone || 'Not provided'}</span>
@@ -617,6 +806,7 @@ export default function ProfilePage() {
                           onChange={(e) => setEditForm({...editForm, location: e.target.value})}
                           placeholder="Location"
                           className="text-sm"
+                          maxLength={100}
                         />
                       ) : (
                         <span className="text-gray-600">{user.location || 'Not provided'}</span>
@@ -630,20 +820,71 @@ export default function ProfilePage() {
               <div className="lg:col-span-2 space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Skills */}
-                  <div className="bg-gray-900 text-white p-6 rounded-lg">
+                  <div className="bg-gray-900 text-white p-6 rounded-lg print:bg-white print:text-black print:border print:border-gray-300">
                     <h3 className="text-lg font-semibold mb-4">Skills</h3>
                     <div className="space-y-4">
                       <div>
                         <h4 className="font-medium">Skills/Expertise:</h4>
                         {isEditing ? (
-                          <Input
-                            value={editForm.skills}
-                            onChange={(e) => setEditForm({...editForm, skills: e.target.value})}
-                            placeholder="e.g., Laravel, CSS, PHP"
-                            className="text-sm mt-2 bg-gray-800 border-gray-600 text-white"
-                          />
+                          <div className="mt-2 space-y-2">
+                            {/* Selected skills display */}
+                            <div className="flex flex-wrap gap-2">
+                              {editForm.skills && editForm.skills.map((skill, index) => (
+                                <Badge 
+                                  key={index} 
+                                  variant="secondary" 
+                                  className="bg-gray-700 text-white hover:bg-gray-600"
+                                >
+                                  {skill}
+                                  <button
+                                    onClick={() => removeSkill(skill)}
+                                    className="ml-2 hover:text-red-300"
+                                    type="button"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
+                            
+                            {/* Add skill popover */}
+                            <Popover open={skillsPopoverOpen} onOpenChange={setSkillsPopoverOpen}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Add Skill
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-64 p-0" align="start">
+                                <Command>
+                                  <CommandInput placeholder="Search skills..." />
+                                  <CommandList>
+                                    <CommandEmpty>No skills found.</CommandEmpty>
+                                    <CommandGroup>
+                                      {PREDEFINED_SKILLS
+                                        .filter(skill => !editForm.skills.includes(skill))
+                                        .map((skill) => (
+                                        <CommandItem
+                                          key={skill}
+                                          onSelect={() => addSkill(skill)}
+                                          className="cursor-pointer"
+                                        >
+                                          <Check className="mr-2 h-4 w-4 opacity-0" />
+                                          {skill}
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
                         ) : (
-                          <p className="text-sm text-gray-300">{user.skills || 'No skills listed'}</p>
+                          <p className="text-sm text-gray-300">{user.skills || 'Laravel, CSS, PHP'}</p>
                         )}
                       </div>
                       <div>
@@ -663,21 +904,110 @@ export default function ProfilePage() {
                   </div>
 
                   {/* Professional Interests */}
-                  <div className="bg-gray-900 text-white p-6 rounded-lg">
+                  <div className="bg-gray-900 text-white p-6 rounded-lg print:bg-white print:text-black print:border print:border-gray-300">
                     <h3 className="text-lg font-semibold mb-4">Professional Interests</h3>
                     <div className="space-y-4">
                       <div>
                         <h4 className="font-medium">Professional Interests:</h4>
                         {isEditing ? (
-                          <Textarea
-                            value={editForm.interests}
-                            onChange={(e) => setEditForm({...editForm, interests: e.target.value})}
-                            placeholder="e.g., Web Development, Machine Learning"
-                            className="text-sm mt-2 bg-gray-800 border-gray-600 text-white"
-                            rows={3}
-                          />
+                          <div className="mt-2 space-y-2">
+                            {/* Selected interests display */}
+                            <div className="flex flex-wrap gap-2">
+                              {editForm.interests && editForm.interests.map((interest, index) => (
+                                <Badge 
+                                  key={index} 
+                                  variant="secondary" 
+                                  className="bg-gray-700 text-white hover:bg-gray-600"
+                                >
+                                  {interest}
+                                  <button
+                                    onClick={() => removeInterest(interest)}
+                                    className="ml-2 hover:text-red-300"
+                                    type="button"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </Badge>
+                              ))}
+                            </div>
+                            
+                            {/* Add interest popover */}
+                            <Popover open={interestsPopoverOpen} onOpenChange={setInterestsPopoverOpen}>
+                              <PopoverTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  className="bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+                                >
+                                  <Plus className="w-4 h-4 mr-2" />
+                                  Add Interest
+                                </Button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-64 p-0" align="start">
+                                <Command>
+                                  <CommandInput placeholder="Search interests..." />
+                                  <CommandList>
+                                    <CommandEmpty>
+                                      <div className="p-2">
+                                        <p className="text-sm text-gray-500 mb-2">No predefined interests found.</p>
+                                        <div className="flex space-x-2">
+                                          <Input
+                                            placeholder="Custom interest"
+                                            value={customInterest}
+                                            onChange={(e) => setCustomInterest(e.target.value)}
+                                            className="text-sm"
+                                            maxLength={50}
+                                          />
+                                          <Button
+                                            size="sm"
+                                            onClick={addCustomInterest}
+                                            disabled={!customInterest.trim()}
+                                          >
+                                            Add
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </CommandEmpty>
+                                    <CommandGroup>
+                                      {PREDEFINED_INTERESTS
+                                        .filter(interest => !editForm.interests.includes(interest))
+                                        .map((interest) => (
+                                        <CommandItem
+                                          key={interest}
+                                          onSelect={() => addInterest(interest)}
+                                          className="cursor-pointer"
+                                        >
+                                          <Check className="mr-2 h-4 w-4 opacity-0" />
+                                          {interest}
+                                        </CommandItem>
+                                      ))}
+                                    </CommandGroup>
+                                    <div className="p-2 border-t">
+                                      <p className="text-xs text-gray-500 mb-2">Add custom interest:</p>
+                                      <div className="flex space-x-2">
+                                        <Input
+                                          placeholder="Custom interest"
+                                          value={customInterest}
+                                          onChange={(e) => setCustomInterest(e.target.value)}
+                                          className="text-sm"
+                                          maxLength={50}
+                                        />
+                                        <Button
+                                          size="sm"
+                                          onClick={addCustomInterest}
+                                          disabled={!customInterest.trim()}
+                                        >
+                                          Add
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </CommandList>
+                                </Command>
+                              </PopoverContent>
+                            </Popover>
+                          </div>
                         ) : (
-                          <p className="text-sm text-gray-300">{user.interests || 'No interests listed'}</p>
+                          <p className="text-sm text-gray-300">{user.interests || 'Web Development, Software Engineering'}</p>
                         )}
                       </div>
                       <div>
@@ -687,7 +1017,7 @@ export default function ProfilePage() {
                             {user.role?.toUpperCase()}
                           </Badge>
                           <div className="text-sm text-gray-300">
-                            Member since: {new Date(user.joinedDate || '').toLocaleDateString()}
+                            Member since: {user.joinedDate ? new Date(user.joinedDate).toLocaleDateString() : 'Not available'}
                           </div>
                         </div>
                       </div>

@@ -1,12 +1,32 @@
 import { NextRequest, NextResponse } from "next/server"
-import { serverDataStore } from "@/lib/server-data-store"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    console.log("Profile image update API called for user:", params.id)
+    // Await params for NextJS 15+ compatibility
+    const { id } = await params
+    console.log("Profile image update API called for user:", id)
+
+    // Get the authenticated session
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: "Unauthorized" },
+        { status: 401 }
+      )
+    }
+
+    // Ensure users can only update their own profile image (unless admin)
+    if (session.user.id !== id && session.user.role !== "admin") {
+      return NextResponse.json(
+        { error: "Forbidden - can only update your own profile image" },
+        { status: 403 }
+      )
+    }
 
     const body = await request.json()
     const { imageData } = body
@@ -36,16 +56,34 @@ export async function PUT(
       )
     }
 
-    console.log("Attempting to update profile image for user:", params.id)
-    const success = serverDataStore.updateUserProfileImage(params.id, imageData)
-    console.log("Profile image update result:", success)
+    // Update profile image in Laravel backend
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:8000'
+    const response = await fetch(`${API_URL}/api/users/${id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "Authorization": `Bearer ${session.accessToken}`,
+      },
+      body: JSON.stringify({
+        profile_image: imageData,
+      }),
+    })
 
-    if (!success) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 })
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+      return NextResponse.json(
+        { error: errorData.error || `Failed to update profile image: ${response.status}` },
+        { status: response.status }
+      )
     }
 
-    console.log("Profile image updated successfully for user:", params.id)
-    return NextResponse.json({ success: true })
+    console.log("Profile image updated successfully for user:", id)
+    
+    return NextResponse.json({ 
+      success: true,
+      message: "Profile image updated successfully" 
+    })
   } catch (error) {
     console.error("Error updating profile image:", error)
     return NextResponse.json(

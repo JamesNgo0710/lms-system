@@ -44,10 +44,14 @@ export default function SettingsPage() {
         email: user.email || "",
       })
       
-      // Load saved profile image from localStorage
-      const savedImage = localStorage.getItem(`profileImage_${user.id}`)
-      if (savedImage) {
-        setProfileImage(savedImage)
+      // Load saved profile image from session or localStorage
+      if (user.image) {
+        setProfileImage(user.image)
+      } else {
+        const savedImage = localStorage.getItem(`profileImage_${user.id}`)
+        if (savedImage) {
+          setProfileImage(savedImage)
+        }
       }
     }
   }, [user])
@@ -417,6 +421,7 @@ export default function SettingsPage() {
                             onChange={(e) => setProfileData({ ...profileData, firstName: e.target.value })}
                             placeholder="John"
                             className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
+                            maxLength={50}
                           />
                         </div>
                         <div className="space-y-2">
@@ -427,6 +432,7 @@ export default function SettingsPage() {
                             onChange={(e) => setProfileData({ ...profileData, lastName: e.target.value })}
                             placeholder="Smith"
                             className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
+                            maxLength={50}
                           />
                         </div>
                       </div>
@@ -499,6 +505,7 @@ export default function SettingsPage() {
                               onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                               placeholder="••••••••"
                               className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
+                              maxLength={128}
                             />
                             <Button
                               type="button"
@@ -523,6 +530,7 @@ export default function SettingsPage() {
                               onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                               placeholder="••••••••"
                               className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
+                              maxLength={128}
                             />
                             <Button
                               type="button"
@@ -547,6 +555,7 @@ export default function SettingsPage() {
                               onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                               placeholder="••••••••"
                               className="dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:placeholder-gray-400"
+                              maxLength={128}
                             />
                             <Button
                               type="button"

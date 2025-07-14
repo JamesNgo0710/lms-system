@@ -110,15 +110,21 @@ const UserProfileSection = ({ open }: { open: boolean }) => {
   const user = session?.user
   const [profileImage, setProfileImage] = useState<string | null>(null)
 
-  // Load profile image from localStorage
+  // Load profile image from session or API
   useEffect(() => {
     if (user?.id) {
-      const savedImage = localStorage.getItem(`profileImage_${user.id}`)
-      if (savedImage) {
-        setProfileImage(savedImage)
+      // First try to get from session
+      if (user.image) {
+        setProfileImage(user.image)
+      } else {
+        // Fallback to localStorage for backward compatibility
+        const savedImage = localStorage.getItem(`profileImage_${user.id}`)
+        if (savedImage) {
+          setProfileImage(savedImage)
+        }
       }
     }
-  }, [user?.id])
+  }, [user?.id, user?.image])
 
   // Listen for profile image updates
   useEffect(() => {

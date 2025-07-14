@@ -24,6 +24,11 @@ class User extends Authenticatable
         'total_topics',
         'weekly_hours',
         'this_week_hours',
+        'bio',
+        'phone',
+        'location',
+        'skills',
+        'interests',
     ];
 
     protected $hidden = [
@@ -81,6 +86,18 @@ class User extends Authenticatable
     public function communityVotes()
     {
         return $this->hasMany(CommunityVote::class);
+    }
+
+    public function achievements()
+    {
+        return $this->belongsToMany(Achievement::class, 'user_achievements')
+            ->withPivot('earned_at')
+            ->withTimestamps();
+    }
+
+    public function userAchievements()
+    {
+        return $this->hasMany(UserAchievement::class);
     }
 
     // Helper methods

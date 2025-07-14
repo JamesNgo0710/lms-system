@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\TopicController;
 use App\Http\Controllers\Api\LessonController;
 use App\Http\Controllers\Api\AssessmentController;
 use App\Http\Controllers\Api\CommunityController;
+use App\Http\Controllers\Api\AchievementController;
 
 // API Welcome route
 Route::get('/', function () {
@@ -27,6 +28,10 @@ Route::get('/', function () {
             'PUT /api/users/{id}' => 'Update user',
             'DELETE /api/users/{id}' => 'Delete user (admin only)',
             'PUT /api/users/{id}/password' => 'Update user password',
+            'GET /api/users/{id}/lesson-completions' => 'Get user lesson completions',
+            'GET /api/users/{id}/lesson-views' => 'Get user lesson views',
+            'GET /api/users/{id}/assessment-attempts' => 'Get user assessment attempts',
+            'GET /api/users/{id}/topics/{topicId}/progress' => 'Get user topic progress',
 
             // Topics
             'GET /api/topics' => 'List all topics',
@@ -57,6 +62,12 @@ Route::get('/', function () {
             'POST /api/assessments/{id}/submit' => 'Submit assessment attempt',
             'GET /api/assessments/{id}/attempts' => 'Get user attempts',
             'GET /api/assessments/{assessmentId}/attempts/{attemptId}' => 'Get attempt results',
+
+            // Achievements
+            'GET /api/achievements' => 'List all achievements',
+            'GET /api/users/{userId}/achievements' => 'Get user achievements',
+            'GET /api/users/{userId}/achievements/{achievementId}' => 'Check if user has achievement',
+            'POST /api/users/{userId}/achievements/{achievementId}' => 'Award achievement to user (admin only)',
 
             // Community Forum
             'GET /api/community/posts' => 'List forum posts',
@@ -104,6 +115,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/users/{user}', [UserController::class, 'show']);
     Route::put('/users/{user}', [UserController::class, 'update']);
     Route::put('/users/{user}/password', [UserController::class, 'updatePassword']);
+    
+    // User progress tracking routes
+    Route::get('/users/{user}/lesson-completions', [UserController::class, 'getLessonCompletions']);
+    Route::get('/users/{user}/lesson-views', [UserController::class, 'getLessonViews']);
+    Route::get('/users/{user}/assessment-attempts', [UserController::class, 'getAssessmentAttempts']);
+    Route::get('/users/{user}/topics/{topicId}/progress', [UserController::class, 'getTopicProgress']);
 
     // Topic routes
     Route::get('/topics', [TopicController::class, 'index']);
@@ -145,6 +162,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/assessments', [AssessmentController::class, 'store']);
         Route::put('/assessments/{id}', [AssessmentController::class, 'update']);
         Route::delete('/assessments/{id}', [AssessmentController::class, 'destroy']);
+    });
+
+    // Achievement routes
+    Route::get('/achievements', [AchievementController::class, 'index']);
+    Route::get('/users/{userId}/achievements', [AchievementController::class, 'getUserAchievements']);
+    Route::get('/users/{userId}/achievements/{achievementId}', [AchievementController::class, 'checkUserAchievement']);
+    
+    Route::middleware('role:admin')->group(function () {
+        Route::post('/users/{userId}/achievements/{achievementId}', [AchievementController::class, 'awardAchievement']);
     });
 
         // Community routes - authenticated user actions

@@ -53,12 +53,8 @@ export function LearningJourneyMap({ topics, className }: LearningJourneyMapProp
     return () => window.removeEventListener('resize', checkMobile)
   }, [])
 
-  if (!isHydrated || !user) {
-    return <div className="animate-pulse h-96 bg-gray-100 rounded-lg" />
-  }
-
   // Calculate progress for each topic and determine unlock status
-  const topicsWithProgress: TopicWithProgress[] = topics.map((topic, index) => {
+  const topicsWithProgress: TopicWithProgress[] = (isHydrated && user) ? topics.map((topic, index) => {
     const progress = getTopicProgress(user.id, topic.id)
     const isCompleted = progress.percentage === 100
     
@@ -74,11 +70,11 @@ export function LearningJourneyMap({ topics, className }: LearningJourneyMapProp
       position: index + 1,
       totalTopics: topics.length
     }
-  })
+  }) : []
 
   // Trigger celebration animation when a milestone is reached
   useEffect(() => {
-    if (!isHydrated || !user) return
+    if (!isHydrated || !user || topicsWithProgress.length === 0) return
     
     const completedCount = topicsWithProgress.filter(t => t.isCompleted).length
     const milestones = [1, 3, 5, 10] // Celebrate at these completion counts
@@ -89,6 +85,11 @@ export function LearningJourneyMap({ topics, className }: LearningJourneyMapProp
     }
   }, [topicsWithProgress, completedMilestone, isHydrated, user])
 
+  // Show loading state if not hydrated or no user
+  if (!isHydrated || !user) {
+    return <div className="animate-pulse h-96 bg-gray-100 dark:bg-gray-800 rounded-lg" />
+  }
+
   const totalProgress = Math.round(
     (topicsWithProgress.filter(t => t.isCompleted).length / topicsWithProgress.length) * 100
   )
@@ -96,18 +97,18 @@ export function LearningJourneyMap({ topics, className }: LearningJourneyMapProp
   return (
     <div className={cn("space-y-6", className)}>
       {/* Journey Overview */}
-      <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
+      <Card className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 border-orange-200 dark:border-orange-700">
         <CardContent className="p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-2xl font-bold text-orange-800">Your Learning Journey</h2>
-              <p className="text-orange-600">
+              <h2 className="text-2xl font-bold text-orange-800 dark:text-orange-200">Your Learning Journey</h2>
+              <p className="text-orange-600 dark:text-orange-300">
                 {topicsWithProgress.filter(t => t.isCompleted).length} of {topicsWithProgress.length} topics completed
               </p>
             </div>
             <div className="text-right">
-              <div className="text-3xl font-bold text-orange-600">{totalProgress}%</div>
-              <div className="text-sm text-orange-500">Overall Progress</div>
+              <div className="text-3xl font-bold text-orange-600 dark:text-orange-300">{totalProgress}%</div>
+              <div className="text-sm text-orange-500 dark:text-orange-400">Overall Progress</div>
             </div>
           </div>
           
@@ -120,9 +121,9 @@ export function LearningJourneyMap({ topics, className }: LearningJourneyMapProp
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="mt-4 p-3 bg-yellow-100 border border-yellow-300 rounded-lg"
+                className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-300 dark:border-yellow-700 rounded-lg"
               >
-                <div className="flex items-center space-x-2 text-yellow-800">
+                <div className="flex items-center space-x-2 text-yellow-800 dark:text-yellow-200">
                   <Trophy className="w-5 h-5" />
                   <span className="font-semibold">
                     🎉 Milestone Reached! You've completed {completedMilestone} topic{completedMilestone > 1 ? 's' : ''}!
@@ -195,10 +196,10 @@ export function LearningJourneyMap({ topics, className }: LearningJourneyMapProp
                 className={cn(
                   "flex-1 transition-all duration-300 cursor-pointer",
                   topic.isCompleted
-                    ? "border-green-200 bg-green-50 shadow-md"
+                    ? "border-green-200 dark:border-green-700 bg-green-50 dark:bg-green-900/20 shadow-md"
                     : topic.isUnlocked
-                      ? "border-orange-200 bg-orange-50 shadow-md hover:shadow-lg active:scale-[0.98]"
-                      : "border-gray-200 bg-gray-50 opacity-60",
+                      ? "border-orange-200 dark:border-orange-700 bg-orange-50 dark:bg-orange-900/20 shadow-md hover:shadow-lg active:scale-[0.98]"
+                      : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 opacity-60",
                   isMobile && "touch-manipulation"
                 )}
                 onClick={() => {
@@ -217,7 +218,7 @@ export function LearningJourneyMap({ topics, className }: LearningJourneyMapProp
                         </Badge>
                       </div>
                       
-                      <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                      <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">
                         {topic.description || "Comprehensive learning material covering essential concepts."}
                       </p>
 
@@ -230,10 +231,10 @@ export function LearningJourneyMap({ topics, className }: LearningJourneyMapProp
                       {topic.isUnlocked && (
                         <div className="mb-4">
                           <div className="flex items-center justify-between text-sm mb-2">
-                            <span className="text-gray-600">Progress</span>
+                            <span className="text-gray-600 dark:text-gray-300">Progress</span>
                             <span className={cn(
                               "font-medium",
-                              topic.isCompleted ? "text-green-600" : "text-orange-600"
+                              topic.isCompleted ? "text-green-600 dark:text-green-400" : "text-orange-600 dark:text-orange-400"
                             )}>
                               {topic.progress.percentage}%
                             </span>
@@ -242,10 +243,10 @@ export function LearningJourneyMap({ topics, className }: LearningJourneyMapProp
                             value={topic.progress.percentage} 
                             className={cn(
                               "h-2",
-                              topic.isCompleted && "bg-green-100"
+                              topic.isCompleted && "bg-green-100 dark:bg-green-900/20"
                             )}
                           />
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                             {topic.progress.completed} of {topic.progress.total} lessons completed
                           </p>
                         </div>
@@ -316,7 +317,7 @@ export function LearningJourneyMap({ topics, className }: LearningJourneyMapProp
                         transition={{ duration: 0.3 }}
                         className="overflow-hidden"
                       >
-                        <div className="pt-4 border-t border-gray-200 mt-4">
+                        <div className="pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
                           <CourseMetadata topic={topic} showDetailed={true} />
                         </div>
                       </motion.div>
@@ -325,7 +326,7 @@ export function LearningJourneyMap({ topics, className }: LearningJourneyMapProp
 
                   {/* Prerequisites for locked topics */}
                   {!topic.isUnlocked && index > 0 && (
-                    <div className="text-xs text-gray-500 bg-gray-100 p-2 rounded">
+                    <div className="text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 p-2 rounded">
                       Complete "{topics[index - 1].title}" to unlock this topic
                     </div>
                   )}
@@ -342,11 +343,11 @@ export function LearningJourneyMap({ topics, className }: LearningJourneyMapProp
             animate={{ opacity: 1, scale: 1 }}
             className="mt-8 text-center"
           >
-            <Card className="bg-gradient-to-r from-green-400 to-green-600 text-white">
+            <Card className="bg-gradient-to-r from-green-400 to-green-600 dark:from-green-600 dark:to-green-800 text-white">
               <CardContent className="p-8">
                 <Trophy className="w-16 h-16 mx-auto mb-4" />
                 <h3 className="text-2xl font-bold mb-2">🎉 Journey Complete!</h3>
-                <p className="text-green-100">
+                <p className="text-green-100 dark:text-green-200">
                   Congratulations! You've completed all learning topics. You're now ready for advanced challenges!
                 </p>
               </CardContent>

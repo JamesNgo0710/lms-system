@@ -10,6 +10,11 @@ declare module "next-auth" {
       lastName: string
       role: string
       image?: string
+      bio?: string
+      phone?: string
+      location?: string
+      skills?: string
+      interests?: string
     }
     accessToken?: string
   }
@@ -22,6 +27,11 @@ declare module "next-auth" {
     lastName: string
     role: string
     image?: string
+    bio?: string
+    phone?: string
+    location?: string
+    skills?: string
+    interests?: string
     token?: string
   }
 }
@@ -33,6 +43,11 @@ declare module "next-auth/jwt" {
     firstName: string
     lastName: string
     image?: string
+    bio?: string
+    phone?: string
+    location?: string
+    skills?: string
+    interests?: string
     accessToken?: string
   }
 } 

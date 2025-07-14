@@ -41,6 +41,11 @@ export const authOptions: NextAuthOptions = {
               lastName: user.last_name,
               role: user.role,
               image: user.profile_image,
+              bio: user.bio,
+              phone: user.phone,
+              location: user.location,
+              skills: user.skills,
+              interests: user.interests,
               token: token,
             }
           }
@@ -61,6 +66,11 @@ export const authOptions: NextAuthOptions = {
         token.firstName = user.firstName
         token.lastName = user.lastName
         token.image = user.image
+        token.bio = user.bio
+        token.phone = user.phone
+        token.location = user.location
+        token.skills = user.skills
+        token.interests = user.interests
         token.accessToken = user.token
       }
       return token
@@ -71,6 +81,11 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role as string
         session.user.firstName = token.firstName as string
         session.user.lastName = token.lastName as string
+        session.user.bio = token.bio as string
+        session.user.phone = token.phone as string
+        session.user.location = token.location as string
+        session.user.skills = token.skills as string
+        session.user.interests = token.interests as string
         if (token.image) {
           session.user.image = token.image as string
         }

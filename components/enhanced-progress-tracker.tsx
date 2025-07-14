@@ -186,17 +186,39 @@ export function EnhancedProgressTracker() {
   useEffect(() => {
     if (!isHydrated || !user) return
     
-    const newlyUnlocked = achievements.find(achievement => 
-      achievement.unlocked && 
-      !localStorage.getItem(`achievement_${achievement.id}_${user.id}`)
-    )
-    
-    if (newlyUnlocked) {
-      localStorage.setItem(`achievement_${newlyUnlocked.id}_${user.id}`, "true")
-      setNewAchievement(newlyUnlocked)
-      setTimeout(() => setNewAchievement(null), 5000)
+    const checkNewAchievements = async () => {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      
+      try {
+        // Get user's current achievements from API
+        const response = await fetch(`${API_URL}/api/users/${user.id}/achievements`, {
+          headers: {
+            'Authorization': `Bearer ${(session as any)?.accessToken}`,
+            'Accept': 'application/json',
+          },
+        })
+        
+        if (response.ok) {
+          const userAchievements = await response.json()
+          const achievementIds = userAchievements.map((ua: any) => ua.achievement_id)
+          
+          const newlyUnlocked = achievements.find(achievement => 
+            achievement.unlocked && 
+            !achievementIds.includes(parseInt(achievement.id))
+          )
+          
+          if (newlyUnlocked) {
+            setNewAchievement(newlyUnlocked)
+            setTimeout(() => setNewAchievement(null), 5000)
+          }
+        }
+      } catch (error) {
+        console.error('Error checking achievements:', error)
+      }
     }
-  }, [achievements, user?.id, isHydrated])
+    
+    checkNewAchievements()
+  }, [achievements, user?.id, isHydrated, session])
 
   // Trigger celebration for milestones
   useEffect(() => {

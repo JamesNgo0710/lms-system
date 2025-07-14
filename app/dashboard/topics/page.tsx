@@ -23,7 +23,7 @@ export default function TopicsPage() {
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [difficultyFilter, setDifficultyFilter] = useState("all")
   const [isHydrated, setIsHydrated] = useState(false)
-  const [viewMode, setViewMode] = useState<"journey" | "grid">("journey")
+  const [viewMode, setViewMode] = useState<"journey" | "grid">("grid")
 
   // Handle hydration
   useEffect(() => {
@@ -58,15 +58,6 @@ export default function TopicsPage() {
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
             <Button
-              variant={viewMode === "journey" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setViewMode("journey")}
-              className="flex items-center space-x-1"
-            >
-              <Map className="w-4 h-4" />
-              <span>Journey</span>
-            </Button>
-            <Button
               variant={viewMode === "grid" ? "default" : "outline"}
               size="sm"
               onClick={() => setViewMode("grid")}
@@ -74,6 +65,18 @@ export default function TopicsPage() {
             >
               <BookOpen className="w-4 h-4" />
               <span>Grid</span>
+            </Button>
+            <Button
+              variant={viewMode === "journey" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setViewMode("journey")}
+              className="flex items-center space-x-1"
+            >
+              <Map className="w-4 h-4" />
+              <span>Journey</span>
+              <Badge variant="secondary" className="ml-1 text-xs bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400">
+                Beta
+              </Badge>
             </Button>
           </div>
           <Badge variant="outline" className="text-sm">
@@ -94,6 +97,7 @@ export default function TopicsPage() {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
+                  maxLength={100}
                 />
               </div>
               <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -131,14 +135,15 @@ export default function TopicsPage() {
       {viewMode === "journey" ? (
         <LearningJourneyMap topics={topics} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {filteredTopics.map((topic) => {
             const topicProgress =
               user && isHydrated ? getTopicProgress(user.id, topic.id) : { completed: 0, total: 0, percentage: 0 }
             const isCompleted = topicProgress.percentage === 100
 
             return (
-              <Card key={topic.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
+              <Link key={topic.id} href={`/dashboard/topics/${topic.id}`} className="block">
+                <Card className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer h-full">
                 <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">
                   <img
                     src={topic.image || "/placeholder.svg?height=200&width=300"}
@@ -217,27 +222,32 @@ export default function TopicsPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <CourseMetadata topic={topic} showDetailed={false} className="mb-2" />
-                      <Badge variant={topic.status === "Published" ? "default" : "secondary"} className="text-xs">
-                        {topic.status}
-                      </Badge>
+                      {user?.role !== "student" && (
+                        <Badge variant={topic.status === "Published" ? "default" : "secondary"} className="text-xs">
+                          {topic.status}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center space-x-2 ml-4">
-                      <Link href={`/dashboard/topics/${topic.id}`}>
-                        <Button
-                          size="sm"
-                          className={
-                            user?.role === "student" && isHydrated && isCompleted
-                              ? "bg-green-500 hover:bg-green-600"
-                              : "bg-orange-500 hover:bg-orange-600"
-                          }
-                        >
-                          {user?.role === "student" && isHydrated && isCompleted ? "Review" : "Start Learning"}
-                        </Button>
-                      </Link>
+                      <Button
+                        size="sm"
+                        className={
+                          user?.role === "student" && isHydrated && isCompleted
+                            ? "bg-green-500 hover:bg-green-600"
+                            : "bg-orange-500 hover:bg-orange-600"
+                        }
+                        onClick={(e) => {
+                          e.preventDefault()
+                          window.location.href = `/dashboard/topics/${topic.id}`
+                        }}
+                      >
+                        {user?.role === "student" && isHydrated && isCompleted ? "Review" : "Start Learning"}
+                      </Button>
                     </div>
                   </div>
                 </CardContent>
-              </Card>
+                </Card>
+              </Link>
             )
           })}
         </div>
