@@ -14,7 +14,8 @@ import {
   User,
   MessageSquare,
   ClipboardList,
-  ChevronRight
+  ChevronRight,
+  Layout
 } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
@@ -33,7 +34,7 @@ interface NavItem {
 
 const studentNavItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: Home },
-  { title: "Topics", href: "/dashboard/topics", icon: BookOpen, roles: ["student", "teacher"] },
+  { title: "Topics", href: "/dashboard/topics", icon: BookOpen, roles: ["student"] },
   { title: "Community", href: "/dashboard/community", icon: MessageSquare },
   { title: "Profile", href: "/dashboard/profile", icon: User },
   { title: "Settings", href: "/dashboard/settings", icon: Settings },
@@ -41,6 +42,7 @@ const studentNavItems: NavItem[] = [
 
 const adminNavItems: NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: Home, roles: ["admin"] },
+  { title: "CMS Panel", href: "/dashboard/admin", icon: Layout, roles: ["admin"] },
   { title: "Manage Topics", href: "/dashboard/manage-topics", icon: BookOpen, roles: ["admin"] },
   { title: "Manage Assessments", href: "/dashboard/manage-assessments", icon: ClipboardList, roles: ["admin"] },
   { title: "Community", href: "/dashboard/community", icon: MessageSquare, roles: ["admin"] },

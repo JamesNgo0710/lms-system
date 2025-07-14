@@ -21,12 +21,6 @@ export function LoginForm() {
   const router = useRouter()
   const { toast } = useToast()
 
-  // Demo accounts that match Laravel backend
-  const demoAccounts = [
-    { email: "admin@lms.com", password: "admin123", role: "admin" },
-    { email: "teacher@lms.com", password: "teacher123", role: "teacher" },
-    { email: "test@lms.com", password: "password123", role: "student" }
-  ]
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,27 +34,43 @@ export function LoginForm() {
       })
 
       if (result?.ok) {
-        // Get the session to extract the token
-        const session = await getSession()
+        // Wait for session to be properly established
+        let session = await getSession()
+        let retries = 0
+        const maxRetries = 5
         
-        if (session?.accessToken) {
-          // Store token in localStorage for API calls
-          localStorage.setItem('auth-token', session.accessToken)
+        // Retry getting session if not immediately available
+        while (!session && retries < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 200))
+          session = await getSession()
+          retries++
         }
-
-        toast({
-          title: "Login successful",
-          description: `Welcome to ${APP_CONFIG.name}`,
-        })
-        router.push("/dashboard")
+        
+        if (session?.user) {
+          toast({
+            title: "Login successful",
+            description: `Welcome to ${APP_CONFIG.name}`,
+          })
+          
+          // Use router.replace to prevent back navigation to login
+          router.replace("/dashboard")
+        } else {
+          // Session not established properly, show error
+          toast({
+            title: "Login failed",
+            description: "Session could not be established. Please try again.",
+            variant: "destructive",
+          })
+        }
       } else {
         toast({
-          title: "Login failed",
-          description: "Invalid email or password. Please check your credentials and try again.",
+          title: "Login failed", 
+          description: result?.error || "Invalid email or password. Please check your credentials and try again.",
           variant: "destructive",
         })
       }
     } catch (error) {
+      console.error("Login error:", error)
       toast({
         title: "Login failed",
         description: "An error occurred during login. Please try again later.",
@@ -71,10 +81,6 @@ export function LoginForm() {
     setIsLoading(false)
   }
 
-  const fillDemoCredentials = (account: typeof demoAccounts[0]) => {
-    setEmail(account.email)
-    setPassword(account.password)
-  }
 
   return (
     <Card className="w-full max-w-md">
@@ -129,30 +135,6 @@ export function LoginForm() {
           </Button>
         </form>
 
-        <div className="mt-6 space-y-2 text-sm text-muted-foreground">
-          <p className="font-semibold">Quick Access (Demo Accounts):</p>
-          <div className="space-y-2">
-            {demoAccounts.map((account) => (
-              <div key={account.email} className="flex items-center justify-between">
-                <div>
-                  <strong className="capitalize">{account.role}:</strong> {account.email} / {account.password}
-                </div>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => fillDemoCredentials(account)}
-                  className="ml-2 h-auto p-1 text-xs"
-                >
-                  Use
-                </Button>
-              </div>
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground mt-4">
-            Note: These demo accounts are pre-seeded in the Laravel backend database.
-          </p>
-        </div>
       </CardContent>
     </Card>
   )
