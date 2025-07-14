@@ -192,16 +192,40 @@ export default function SettingsPage() {
     setIsProfileSaving(true)
 
     try {
-      // Save profile changes (in a real app, this would call an API)
-      // Profile data validation and saving process
+      // Call Laravel backend API to update profile
+      const response = await fetch(`/api/users/${user?.id}/profile`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          firstName: profileData.firstName.trim(),
+          lastName: profileData.lastName.trim(),
+        }),
+      })
 
-      // Use debounced storage update for better performance
+      if (!response.ok) {
+        throw new Error('Failed to update profile')
+      }
+
+      // Handle profile image update if needed
       if (profileImage && user?.id) {
         debouncedStorageUpdate(user.id, profileImage)
       }
 
-      // Simulate API call delay (reduced for better UX)
-      await new Promise(resolve => setTimeout(resolve, 500))
+      // Refresh the session to get updated user data
+      const refreshResponse = await fetch('/api/auth/refresh', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (refreshResponse.ok) {
+        const refreshData = await refreshResponse.json()
+        // Force page reload to ensure session is updated
+        window.location.reload()
+      }
 
       toast({
         title: "Success",
@@ -211,6 +235,7 @@ export default function SettingsPage() {
       // Clear the image file since it's now saved
       setImageFile(null)
     } catch (error) {
+      console.error('Profile update error:', error)
       toast({
         title: "Error",
         description: "Failed to update profile. Please try again.",

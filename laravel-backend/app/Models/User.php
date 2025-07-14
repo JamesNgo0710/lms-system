@@ -45,6 +45,15 @@ class User extends Authenticatable
         ];
     }
 
+    protected static function booted()
+    {
+        static::creating(function ($user) {
+            if (empty($user->joined_date)) {
+                $user->joined_date = now();
+            }
+        });
+    }
+
     protected $appends = ['name', 'role'];
 
     public function getNameAttribute()

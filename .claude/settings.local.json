@@ -19,7 +19,8 @@
       "Bash(powershell:*)",
       "Bash(npx next dev:*)",
       "Bash(npm run build:*)",
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(find:*)"
     ],
     "deny": []
   }
