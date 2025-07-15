@@ -37,7 +37,8 @@
       "Bash(npm install:*)",
       "Bash(grep:*)",
       "Bash(ls:*)",
-      "Bash(npm cache clean:*)"
+      "Bash(npm cache clean:*)",
+      "Bash(mv:*)"
     ],
     "deny": []
   }
