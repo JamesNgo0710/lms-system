@@ -9,7 +9,10 @@
     "lint": "next lint",
     "start": "next start",
     "type-check": "tsc --noEmit",
-    "dev:alt": "next dev -p 3001"
+    "dev:alt": "next dev -p 3001",
+    "populate-backend": "node scripts/populate-backend.js",
+    "test-api": "node test-api-connection.js",
+    "setup": "npm install && cp .env.example .env.local && echo 'Setup complete! Edit .env.local and run npm run dev'"
   },
   "keywords": [
     "lms",
