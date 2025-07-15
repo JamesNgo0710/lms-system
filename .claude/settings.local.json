@@ -32,7 +32,9 @@
       "Bash(git remote add:*)",
       "WebFetch(domain:learning-management-system-master-zcttuk.laravel.cloud)",
       "WebFetch(domain:lms-system-xkit.vercel.app)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(echo:*)",
+      "Bash(npm install:*)"
     ],
     "deny": []
   }
