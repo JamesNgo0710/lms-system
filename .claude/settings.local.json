@@ -35,7 +35,9 @@
       "Bash(touch:*)",
       "Bash(echo:*)",
       "Bash(npm install:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(ls:*)",
+      "Bash(npm cache clean:*)"
     ],
     "deny": []
   }
