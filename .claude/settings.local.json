@@ -34,7 +34,8 @@
       "WebFetch(domain:lms-system-xkit.vercel.app)",
       "Bash(touch:*)",
       "Bash(echo:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(grep:*)"
     ],
     "deny": []
   }
