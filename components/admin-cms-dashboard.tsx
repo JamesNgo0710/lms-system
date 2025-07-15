@@ -29,12 +29,13 @@ import AdminAdvancedUserManagement from "@/components/admin-advanced-user-manage
 import AdminContentAnalytics from "@/components/admin-content-analytics"
 import AdminSystemHealth from "@/components/admin-system-health"
 import AdminEnhancedReporting from "@/components/admin-enhanced-reporting"
-import { getDashboardStats, dataStore } from "@/lib/data-store"
+import { getApiDashboardStats } from "@/lib/api-dashboard-stats"
+import { useUsers } from "@/hooks/use-api-data-store"
 
 export function AdminCMSDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
-  const { admin: dashboardStats } = getDashboardStats()
-  const users = dataStore.getUsers()
+  const { admin: dashboardStats } = getApiDashboardStats()
+  const { users } = useUsers()
   
   const totalUsers = users.length
   const activeUsers = users.filter(user => {

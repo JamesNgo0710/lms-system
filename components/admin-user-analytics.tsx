@@ -20,14 +20,18 @@ import {
   Calendar,
   BarChart3
 } from "lucide-react"
-import { dataStore } from "@/lib/data-store"
+import { useUsers, useTopics, useLessons, useLessonCompletions, useAssessmentAttempts } from "@/hooks/use-api-data-store"
 
 export function UserAnalytics() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedUser, setSelectedUser] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState("name")
   
-  const users = dataStore.getUsers()
+  const { users } = useUsers()
+  const { topics } = useTopics()
+  const { lessons } = useLessons()
+  const { lessonCompletions } = useLessonCompletions()
+  const { assessmentAttempts } = useAssessmentAttempts()
   
   const filteredUsers = users.filter(user => 
     user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||

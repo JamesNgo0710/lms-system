@@ -115,34 +115,24 @@ export function Footer() {
             <h3 className="text-lg font-semibold mb-4 text-white">Learning</h3>
             <ul className="space-y-3">
               <li>
-                <Link href="/topics/blockchain" className="text-gray-400 hover:text-orange-500 transition-colors text-sm">
-                  Blockchain Fundamentals
+                <Link href="/dashboard/topics" className="text-gray-400 hover:text-orange-500 transition-colors text-sm">
+                  All Topics
                 </Link>
               </li>
               <li>
-                <Link href="/topics/cryptocurrency" className="text-gray-400 hover:text-orange-500 transition-colors text-sm">
-                  Cryptocurrency Basics
+                <Link href="/dashboard/assessment" className="text-gray-400 hover:text-orange-500 transition-colors text-sm">
+                  Assessments
                 </Link>
               </li>
               <li>
-                <Link href="/topics/defi" className="text-gray-400 hover:text-orange-500 transition-colors text-sm">
-                  DeFi Protocols
+                <Link href="/dashboard/reports" className="text-gray-400 hover:text-orange-500 transition-colors text-sm">
+                  Progress Reports
                 </Link>
               </li>
               <li>
-                <Link href="/topics/metamask" className="text-gray-400 hover:text-orange-500 transition-colors text-sm">
-                  MetaMask Guide
+                <Link href="/dashboard/profile" className="text-gray-400 hover:text-orange-500 transition-colors text-sm">
+                  My Profile
                 </Link>
-              </li>
-              <li>
-                <Link href="/topics/nft" className="text-gray-400 hover:text-orange-500 transition-colors text-sm">
-                  NFT Marketplace
-                </Link>
-              </li>
-              <li>
-                <a href="#" className="text-gray-400 hover:text-orange-500 transition-colors text-sm">
-                  Advanced Trading
-                </a>
               </li>
             </ul>
           </div>

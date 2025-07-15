@@ -22,7 +22,7 @@ import {
   Save,
   X
 } from "lucide-react"
-import { dataStore } from "@/lib/data-store"
+import { useTopics, useLessons, useAssessments } from "@/hooks/use-api-data-store"
 
 export function ContentManagement() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -37,8 +37,8 @@ export function ContentManagement() {
     status: "Draft"
   })
 
-  const topics = dataStore.getTopics()
-  const lessons = dataStore.getLessons()
+  const { topics } = useTopics()
+  const { lessons } = useLessons()
 
   const filteredTopics = topics.filter(topic => {
     const matchesSearch = topic.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -59,7 +59,8 @@ export function ContentManagement() {
       hasAssessment: false
     }
     
-    dataStore.addTopic(topic)
+    // TODO: Implement createTopic API call
+    console.log('Creating topic:', topic)
     setNewTopic({
       title: "",
       category: "",
@@ -71,13 +72,15 @@ export function ContentManagement() {
   }
 
   const handleUpdateTopic = (topicId: number, updates: any) => {
-    dataStore.updateTopic(topicId, updates)
+    // TODO: Implement updateTopic API call
+    console.log('Updating topic:', topicId, updates)
     setEditingTopic(null)
   }
 
   const handleDeleteTopic = (topicId: number) => {
     if (confirm("Are you sure you want to delete this topic?")) {
-      dataStore.deleteTopic(topicId)
+      // TODO: Implement deleteTopic API call
+      console.log('Deleting topic:', topicId)
     }
   }
 
