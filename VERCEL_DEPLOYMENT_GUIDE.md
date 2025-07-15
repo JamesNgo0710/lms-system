@@ -26,11 +26,12 @@ npm run dev
 2. Click "Import Project"
 3. Connect your GitHub account if not already connected
 4. Import this repository: `JamesNgo0710/lms-system`
-5. Configure environment variables in Vercel:
-   - `NEXT_PUBLIC_API_URL`: `https://learning-management-system-master-zcttuk.laravel.cloud`
-   - `NEXTAUTH_URL`: `https://your-app-name.vercel.app` (Vercel will provide this)
-   - `NEXTAUTH_SECRET`: `/3HAabppz4ppBDzZXPKJrTPQ2L4vdlEGNwhmDdGYvwU=`
+5. Configure environment variables in Vercel dashboard:
+   - `NEXT_PUBLIC_API_URL` = `https://learning-management-system-master-zcttuk.laravel.cloud`
+   - `NEXTAUTH_URL` = `https://your-app-name.vercel.app` (you'll update this after first deploy)
+   - `NEXTAUTH_SECRET` = `/3HAabppz4ppBDzZXPKJrTPQ2L4vdlEGNwhmDdGYvwU=`
 6. Click "Deploy"
+7. After deployment, get your actual Vercel URL and update `NEXTAUTH_URL`
 
 ### Option 2: Vercel CLI
 ```bash

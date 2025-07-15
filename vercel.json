@@ -6,11 +6,6 @@
       "use": "@vercel/next"
     }
   ],
-  "env": {
-    "NEXT_PUBLIC_API_URL": "https://learning-management-system-master-zcttuk.laravel.cloud",
-    "NEXTAUTH_URL": "@nextauth_url",
-    "NEXTAUTH_SECRET": "@nextauth_secret"
-  },
   "routes": [
     {
       "src": "/(.*)",
