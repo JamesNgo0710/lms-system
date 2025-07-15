@@ -27,3 +27,10 @@
 - Role-based filtering is implemented in backend controllers
 - Environment variables need to be configured for production URLs
 - Database seeders use `firstOrCreate()` to handle existing data
+
+## Git Workflow Reminder
+**IMPORTANT**: Always push changes to the appropriate repository after making commits:
+- Frontend changes: Push to `JamesNgo0710/lms-system` repository
+- Backend changes: Push to `JamesNgo0710/lms-backend` repository
+- Both repositories are separate and need individual pushes
+- Changes are deployed automatically via Vercel (frontend) and Laravel Cloud (backend)
