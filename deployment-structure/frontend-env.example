@@ -1,0 +1,11 @@
+# Frontend Environment Variables for Vercel Deployment
+
+# API URL - Update this to your Laravel Cloud URL
+NEXT_PUBLIC_API_URL=https://your-laravel-cloud-app.dev
+
+# NextAuth Configuration
+NEXTAUTH_URL=https://your-frontend-domain.vercel.app
+NEXTAUTH_SECRET=your-very-secure-secret-key-here
+
+# Optional: Analytics or other services
+# NEXT_PUBLIC_ANALYTICS_ID=your-analytics-id

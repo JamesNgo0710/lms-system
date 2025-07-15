@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { apiDataStore } from '@/lib/api-data-store'
 
@@ -91,6 +91,8 @@ export function useLessons() {
     return await apiDataStore.getLessonsByTopic(topicId)
   }
 
+  const getLessonsByTopicId = getLessonsByTopic // Alias for backward compatibility
+
   const addLesson = async (lessonData: any) => {
     const newLesson = await apiDataStore.createLesson(lessonData)
     if (newLesson) {
@@ -122,6 +124,7 @@ export function useLessons() {
     loading,
     getLessonById,
     getLessonsByTopic,
+    getLessonsByTopicId,
     addLesson,
     updateLesson,
     deleteLesson,
@@ -174,6 +177,14 @@ export function useLessonCompletions() {
     return await apiDataStore.getTopicProgress(userId, topicId)
   }
 
+  const isLessonCompleted = (userId: string, lessonId: number) => {
+    return completions.some(completion => 
+      completion.user_id === userId && 
+      completion.lesson_id === lessonId && 
+      completion.is_completed
+    )
+  }
+
   return {
     completions,
     loading,
@@ -181,6 +192,7 @@ export function useLessonCompletions() {
     markLessonComplete,
     markLessonIncomplete,
     getTopicProgress,
+    isLessonCompleted, // Missing function
     refresh: loadCompletions
   }
 }
@@ -266,12 +278,38 @@ export function useAssessmentAttempts() {
     return result
   }
 
+  const addAssessmentAttempt = async (attempt: any) => {
+    // This function maintains compatibility with localStorage version
+    const result = await submitAssessment(attempt.assessmentId, attempt.answers, attempt.timeSpent)
+    return result
+  }
+
+  const getLastAssessmentAttempt = (userId: string, topicId: number) => {
+    const userAttempts = getTopicAssessmentAttempts(userId, topicId)
+    return userAttempts.length > 0 ? userAttempts[userAttempts.length - 1] : null
+  }
+
+  const canTakeAssessment = (userId: string, topicId: number) => {
+    // Basic implementation - can be enhanced with cooldown logic
+    const lastAttempt = getLastAssessmentAttempt(userId, topicId)
+    if (!lastAttempt) return true
+    
+    // For now, allow retaking after 1 hour
+    const lastAttemptTime = new Date(lastAttempt.completed_at || lastAttempt.created_at)
+    const now = new Date()
+    const hoursSinceLastAttempt = (now.getTime() - lastAttemptTime.getTime()) / (1000 * 60 * 60)
+    return hoursSinceLastAttempt >= 1
+  }
+
   return {
     attempts,
     loading,
     getUserAssessmentAttempts,
     getTopicAssessmentAttempts,
     submitAssessment,
+    addAssessmentAttempt, // Backward compatibility
+    getLastAssessmentAttempt, // Missing function
+    canTakeAssessment, // Missing function
     refresh: loadAttempts
   }
 }
@@ -303,11 +341,65 @@ export function useAssessments() {
     return await apiDataStore.getAssessmentByTopic(topicId)
   }
 
+  const getAssessmentByTopicId = getAssessmentByTopic // Alias for backward compatibility
+
+  const createAssessment = async (assessmentData: any) => {
+    const newAssessment = await apiDataStore.createAssessment(assessmentData)
+    if (newAssessment) {
+      setAssessments(prev => [...prev, newAssessment])
+    }
+    return newAssessment
+  }
+
+  const updateAssessment = async (id: number, assessmentData: any) => {
+    const updatedAssessment = await apiDataStore.updateAssessment(id, assessmentData)
+    if (updatedAssessment) {
+      setAssessments(prev => prev.map(assessment => 
+        assessment.id === id ? updatedAssessment : assessment
+      ))
+    }
+    return updatedAssessment
+  }
+
+  const deleteAssessment = async (id: number) => {
+    const success = await apiDataStore.deleteAssessment(id)
+    if (success) {
+      setAssessments(prev => prev.filter(assessment => assessment.id !== id))
+    }
+    return success
+  }
+
+  const addAssessment = createAssessment // Alias for backward compatibility
+  
+  const getRecentAssessmentHistory = (limit = 10) => {
+    // For now, return recent assessments as assessment history
+    // TODO: Implement proper assessment history tracking via API
+    return assessments
+      .sort((a, b) => new Date(b.createdAt || b.created_at || 0).getTime() - new Date(a.createdAt || a.created_at || 0).getTime())
+      .slice(0, limit)
+      .map((assessment, index) => ({
+        id: `history-${assessment.id}-${index}`,
+        topicId: assessment.topicId || assessment.topic_id,
+        topicTitle: assessment.title || `Assessment ${assessment.id}`,
+        action: 'created',
+        actionBy: assessment.createdBy || 'System',
+        actionByName: assessment.createdByName || 'System',
+        timestamp: assessment.createdAt || assessment.created_at || new Date().toISOString(),
+        details: `Assessment for topic ${assessment.topicId || assessment.topic_id}`
+      }))
+  }
+
   return {
     assessments,
     loading,
     getAssessmentById,
     getAssessmentByTopic,
+    getAssessmentByTopicId, // Backward compatibility alias
+    createAssessment,
+    addAssessment, // Backward compatibility alias
+    updateAssessment,
+    deleteAssessment,
+    getRecentAssessmentHistory,
     refresh: loadAssessments
   }
 }
@@ -335,6 +427,14 @@ export function useUsers() {
     return users.find(user => user.id === id)
   }
 
+  const addUser = async (userData: any) => {
+    const newUser = await apiDataStore.createUser(userData)
+    if (newUser) {
+      setUsers(prev => [...prev, newUser])
+    }
+    return newUser
+  }
+
   const updateUser = async (id: string, userData: any) => {
     const updatedUser = await apiDataStore.updateUser(id, userData)
     if (updatedUser) {
@@ -345,11 +445,75 @@ export function useUsers() {
     return updatedUser
   }
 
+  const deleteUser = async (id: string) => {
+    const success = await apiDataStore.deleteUser(id)
+    if (success) {
+      setUsers(prev => prev.filter(user => user.id !== id))
+    }
+    return success
+  }
+
+  const syncUsersFromAPI = async () => {
+    await loadUsers()
+  }
+
   return {
     users,
     loading,
     getUserById,
+    addUser,
     updateUser,
+    deleteUser,
+    syncUsersFromAPI,
     refresh: loadUsers
+  }
+}
+
+// Hook for sync management (simplified for API-based approach)
+export function useSync() {
+  const { data: session } = useSession()
+  const [syncStatus, setSyncStatus] = useState(() => ({
+    lastSync: new Date().toISOString(),
+    status: 'synced' as 'syncing' | 'synced' | 'error',
+    pendingChanges: 0,
+    isPolling: true, // For API-based approach, we're always "connected"
+    currentUser: null as string | null,
+    currentVersion: '1.0.0',
+    metadata: {
+      updatedBy: 'System',
+      lastUpdated: new Date().toISOString()
+    }
+  }))
+
+  // Update sync status when session changes
+  useEffect(() => {
+    if (session?.user?.id) {
+      setSyncStatus(prev => ({
+        ...prev,
+        currentUser: session.user.id,
+        metadata: {
+          updatedBy: session.user.name || 'System',
+          lastUpdated: new Date().toISOString()
+        }
+      }))
+    }
+  }, [session?.user?.id, session?.user?.name])
+
+  // For API-based approach, sync is handled automatically via API calls
+  // This hook maintains compatibility with existing components
+  
+  const setCurrentUser = useCallback((user: any) => {
+    // This is handled by session management in API approach - no-op for compatibility
+    console.log('setCurrentUser called (handled by session):', user)
+  }, [])
+
+  const getSyncStatus = useCallback(() => {
+    return syncStatus
+  }, [syncStatus])
+
+  return {
+    syncStatus,
+    setCurrentUser,
+    getSyncStatus,
   }
 }
