@@ -35,19 +35,42 @@ import {
   Download
 } from "lucide-react"
 import Link from "next/link"
-import { getDashboardStats } from "@/lib/data-store"
+import { getApiDashboardStats, refreshDashboardStats } from "@/lib/api-dashboard-stats"
 import { useSession } from "next-auth/react"
 import { useToast } from "@/hooks/use-toast"
 import { UserActivityChart, TopicCompletionChart, UserDistributionChart } from "@/components/dashboard-chart"
 
 export function AdminDashboard() {
-  const { admin: dashboardStats } = getDashboardStats()
-  const { topVideos, mostViewedTopics } = dashboardStats
+  const [dashboardStats, setDashboardStats] = useState<any>(null)
+  const [isLoadingStats, setIsLoadingStats] = useState(true)
   const { data: session } = useSession()
   const { toast } = useToast()
   const [notifications, setNotifications] = useState([])
   const [isLoading, setIsLoading] = useState(false)
   const [lastRefresh, setLastRefresh] = useState(new Date())
+
+  // Load dashboard stats on component mount
+  useEffect(() => {
+    loadDashboardStats()
+  }, [])
+
+  const loadDashboardStats = async () => {
+    try {
+      setIsLoadingStats(true)
+      const stats = await getApiDashboardStats()
+      setDashboardStats(stats.admin)
+      setLastRefresh(new Date())
+    } catch (error) {
+      console.error('Error loading dashboard stats:', error)
+      toast({
+        title: "Error loading dashboard",
+        description: "Could not load dashboard statistics",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoadingStats(false)
+    }
+  }
 
   // Quick Actions Configuration
   const quickActions = [
@@ -114,7 +137,7 @@ export function AdminDashboard() {
   ]
 
   // Enhanced metrics with trends
-  const enhancedMetrics = [
+  const enhancedMetrics = dashboardStats ? [
     {
       title: "Active Users",
       value: dashboardStats.activeUsersThisMonth,
@@ -126,7 +149,7 @@ export function AdminDashboard() {
     {
       title: "Total Users",
       value: dashboardStats.actualUsers,
-      previousValue: dashboardStats.actualUsers - 5,
+      previousValue: dashboardStats.actualUsers - 2,
       icon: User,
       color: "text-green-500",
       bgColor: "bg-green-50 dark:bg-green-900/20"
@@ -142,24 +165,32 @@ export function AdminDashboard() {
     },
     {
       title: "Completion Rate",
-      value: "78%",
-      previousValue: "72%",
+      value: Math.round(dashboardStats.progressPercentage) + "%",
+      previousValue: Math.round(dashboardStats.progressPercentage - 5) + "%",
       icon: Target,
       color: "text-orange-500",
       bgColor: "bg-orange-50 dark:bg-orange-900/20"
     }
-  ]
+  ] : []
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     setIsLoading(true)
-    setTimeout(() => {
-      setLastRefresh(new Date())
-      setIsLoading(false)
+    try {
+      await refreshDashboardStats()
+      await loadDashboardStats()
       toast({
         title: "Dashboard refreshed",
         description: "All data has been updated",
       })
-    }, 1000)
+    } catch (error) {
+      toast({
+        title: "Refresh failed",
+        description: "Could not refresh dashboard data",
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const handleExportPDF = async () => {
@@ -168,15 +199,15 @@ export function AdminDashboard() {
       const reportData = {
         generatedAt: new Date().toISOString(),
         metrics: enhancedMetrics,
-        userStats: {
+        userStats: dashboardStats ? {
           activeUsersThisMonth: dashboardStats.activeUsersThisMonth,
           activeUsersLastMonth: dashboardStats.activeUsersLastMonth,
           totalUsers: dashboardStats.actualUsers,
           averageTimeThisMonth: dashboardStats.averageTimeThisMonth,
           averageTimeLastMonth: dashboardStats.averageTimeLastMonth
-        },
-        topVideos: topVideos.slice(0, 10),
-        topTopics: mostViewedTopics.slice(0, 10),
+        } : {},
+        topVideos: dashboardStats?.topVideos?.slice(0, 10) || [],
+        topTopics: dashboardStats?.mostViewedTopics?.slice(0, 10) || [],
         systemStatus: {
           apiServer: "Online",
           database: "Online", 
@@ -192,18 +223,18 @@ Generated: ${new Date().toLocaleString()}
 Report by: ${session?.user?.firstName || 'Admin'} ${session?.user?.lastName || ''}
 
 === SYSTEM METRICS ===
-Active Users (This Month): ${dashboardStats.activeUsersThisMonth}
-Active Users (Last Month): ${dashboardStats.activeUsersLastMonth}
-Total Users: ${dashboardStats.actualUsers}
-Average Weekly Hours (This Month): ${dashboardStats.averageTimeThisMonth} hours
-Average Weekly Hours (Last Month): ${dashboardStats.averageTimeLastMonth} hours
+Active Users (This Month): ${dashboardStats?.activeUsersThisMonth || 'N/A'}
+Active Users (Last Month): ${dashboardStats?.activeUsersLastMonth || 'N/A'}
+Total Users: ${dashboardStats?.actualUsers || 'N/A'}
+Average Weekly Hours (This Month): ${dashboardStats?.averageTimeThisMonth || 'N/A'} hours
+Average Weekly Hours (Last Month): ${dashboardStats?.averageTimeLastMonth || 'N/A'} hours
 
 === TOP PERFORMING CONTENT ===
 Top Videos:
-${topVideos.slice(0, 5).map((video, i) => `${i + 1}. ${video.title} - ${video.totalViews} views`).join('\n')}
+${dashboardStats?.topVideos?.slice(0, 5).map((video, i) => `${i + 1}. ${video.title} - ${video.totalViews} views`).join('\n') || 'No video data available'}
 
 Top Topics:
-${mostViewedTopics.slice(0, 5).map((topic, i) => `${i + 1}. ${topic.title} - ${topic.totalViews} views`).join('\n')}
+${dashboardStats?.mostViewedTopics?.slice(0, 5).map((topic, i) => `${i + 1}. ${topic.title} - ${topic.totalViews} views`).join('\n') || 'No topic data available'}
 
 === SYSTEM STATUS ===
 API Server: Online
@@ -282,7 +313,7 @@ This report was generated automatically by the LMS Dashboard system.
                 All Services Online
               </Badge>
               <span className="text-xs text-gray-500 dark:text-gray-400">
-                {dashboardStats.actualUsers} total users • {dashboardStats.activeUsersThisMonth} active this month
+                {dashboardStats ? `${dashboardStats.actualUsers} total users • ${dashboardStats.activeUsersThisMonth} active this month` : 'Loading...'}
               </span>
             </div>
           </div>
@@ -354,7 +385,28 @@ This report was generated automatically by the LMS Dashboard system.
 
       {/* Enhanced Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        {enhancedMetrics.map((metric, index) => {
+        {isLoadingStats ? (
+          // Loading skeleton for metrics
+          Array.from({ length: 4 }).map((_, index) => (
+            <Card key={index} className="animate-pulse">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="p-3 rounded-lg bg-gray-200 dark:bg-gray-700">
+                    <div className="w-6 h-6 bg-gray-300 dark:bg-gray-600 rounded"></div>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-4 h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    <div className="w-8 h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                  </div>
+                </div>
+                <div className="mt-4 space-y-2">
+                  <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        ) : enhancedMetrics.map((metric, index) => {
           const currentValue = typeof metric.value === 'string' ? parseFloat(metric.value) : metric.value
           const previousValue = typeof metric.previousValue === 'string' ? parseFloat(metric.previousValue) : metric.previousValue
           const trend = calculateTrend(currentValue, previousValue)
@@ -485,8 +537,23 @@ This report was generated automatically by the LMS Dashboard system.
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-            {topVideos.length > 0 ? (
-              topVideos.map((video, index) => (
+            {isLoadingStats ? (
+              // Loading skeleton
+              Array.from({ length: 4 }).map((_, index) => (
+                <Card key={index} className="overflow-hidden animate-pulse">
+                  <div className="aspect-video bg-gray-200 dark:bg-gray-700"></div>
+                  <CardContent className="p-4 space-y-2">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                    <div className="space-y-1">
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : dashboardStats?.topVideos?.length > 0 ? (
+              dashboardStats.topVideos.map((video, index) => (
                 <Card key={video.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="aspect-video bg-gray-200 relative">
                     <img
@@ -574,8 +641,24 @@ This report was generated automatically by the LMS Dashboard system.
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mostViewedTopics.length > 0 ? (
-              mostViewedTopics.map((topic, index) => (
+            {isLoadingStats ? (
+              // Loading skeleton
+              Array.from({ length: 6 }).map((_, index) => (
+                <Card key={index} className="overflow-hidden animate-pulse">
+                  <div className="aspect-video bg-gray-200 dark:bg-gray-700"></div>
+                  <CardContent className="p-4 space-y-2">
+                    <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+                    <div className="space-y-1">
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            ) : dashboardStats?.mostViewedTopics?.length > 0 ? (
+              dashboardStats.mostViewedTopics.map((topic, index) => (
                 <Card key={topic.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                   <div className="aspect-video bg-gradient-to-br from-blue-400 to-blue-600 relative">
                     <img

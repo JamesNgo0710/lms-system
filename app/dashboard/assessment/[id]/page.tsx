@@ -9,7 +9,7 @@ import { Clock, ChevronLeft, Lock } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
-import { useTopics, useAssessments, useLessonCompletions, useAssessmentAttempts } from "@/hooks/use-data-store"
+import { useTopics, useAssessments, useLessonCompletions, useAssessmentAttempts } from "@/hooks/use-api-data-store"
 
 export default function TakeAssessmentPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session } = useSession()

@@ -21,7 +21,7 @@ import { Zap } from "lucide-react"
 import { AlertTriangle } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
-import { useTopics, useLessonCompletions } from "@/hooks/use-data-store"
+import { useTopics, useLessonCompletions } from "@/hooks/use-api-data-store"
 import Link from "next/link"
 
 interface ProgressMetrics {

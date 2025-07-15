@@ -36,9 +36,9 @@ const DashboardHeader = memo(function DashboardHeader({ onOpenSearch }: Dashboar
   }, [])
 
   return (
-    <header className="h-14 bg-gray-900 dark:bg-gray-950 border-b border-gray-700 dark:border-gray-800 px-4 flex items-center justify-between">
+    <header className="h-14 bg-gray-900 dark:bg-gray-950 border-b border-gray-700 dark:border-gray-800 px-4 flex items-center">
       {/* Left side - Logo/Home if not on dashboard */}
-      <div className="flex items-center">
+      <div className="flex items-center flex-1">
         {!isOnDashboard && (
           <Link href="/dashboard" className="flex items-center gap-2 hover:opacity-80 transition-opacity text-white">
             <Home className="h-4 w-4" />
@@ -47,9 +47,8 @@ const DashboardHeader = memo(function DashboardHeader({ onOpenSearch }: Dashboar
         )}
       </div>
 
-      {/* Right side - Actions */}
-      <div className="flex items-center gap-3">
-        {/* Search Button */}
+      {/* Center - Search Button */}
+      <div className="flex items-center justify-center flex-1">
         <Button 
           variant="ghost" 
           size="sm" 
@@ -63,7 +62,10 @@ const DashboardHeader = memo(function DashboardHeader({ onOpenSearch }: Dashboar
             <span>K</span>
           </div>
         </Button>
+      </div>
 
+      {/* Right side - Actions */}
+      <div className="flex items-center gap-3 flex-1 justify-end">
         {/* Live Indicator */}
         <div className="flex items-center gap-2 text-green-400 text-sm">
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>

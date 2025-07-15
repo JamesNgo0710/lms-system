@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { ChevronLeft, Star, Play, Edit, Trash2, Plus, CheckCircle, Clock, Eye } from "lucide-react"
 import Link from "next/link"
-import { useTopics, useLessons, useLessonCompletions, useAssessments, useAssessmentAttempts } from "@/hooks/use-data-store"
+import { useTopics, useLessons, useLessonCompletions, useAssessments, useAssessmentAttempts } from "@/hooks/use-api-data-store"
 import { useToast } from "@/hooks/use-toast"
 
 export default function TopicDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -22,7 +22,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
   const { getTopicById } = useTopics()
   const { getLessonsByTopicId, deleteLesson } = useLessons()
   const { isLessonCompleted, getTopicProgress } = useLessonCompletions()
-  const { getAssessmentByTopicId } = useAssessments()
+  const { getAssessmentByTopic } = useAssessments()
   const { canTakeAssessment } = useAssessmentAttempts()
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState("overview")
@@ -32,7 +32,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
   const topicId = Number.parseInt(resolvedParams.id)
   const topic = getTopicById(topicId)
   const lessons = getLessonsByTopicId(topicId)
-  const assessment = getAssessmentByTopicId(topicId)
+  const assessment = getAssessmentByTopic(topicId)
   
   // Get return navigation info
   const returnTo = searchParams.get('returnTo')

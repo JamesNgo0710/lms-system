@@ -10,25 +10,45 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress"
 import { BookOpen, Clock, Users, Star, Search, CheckCircle, Map } from "lucide-react"
 import Link from "next/link"
-import { useTopics, useLessonCompletions } from "@/hooks/use-data-store"
+import { useTopics, useLessonCompletions } from "@/hooks/use-api-data-store"
 import { LearningJourneyMap } from "@/components/learning-journey-map"
 import { CourseMetadata } from "@/components/course-metadata"
 
 export default function TopicsPage() {
   const { data: session } = useSession()
   const user = session?.user
-  const { topics } = useTopics()
+  const { topics, loading: topicsLoading } = useTopics()
   const { getTopicProgress } = useLessonCompletions()
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [difficultyFilter, setDifficultyFilter] = useState("all")
   const [isHydrated, setIsHydrated] = useState(false)
   const [viewMode, setViewMode] = useState<"journey" | "grid">("grid")
+  const [topicProgressCache, setTopicProgressCache] = useState<Record<number, any>>({})
 
   // Handle hydration
   useEffect(() => {
     setIsHydrated(true)
   }, [])
+
+  // Load topic progress for all topics
+  useEffect(() => {
+    if (user?.id && topics.length > 0 && user.role === "student") {
+      const loadProgress = async () => {
+        const progressData: Record<number, any> = {}
+        for (const topic of topics) {
+          try {
+            const progress = await getTopicProgress(user.id, topic.id)
+            progressData[topic.id] = progress || { completed: 0, total: 0, percentage: 0 }
+          } catch (error) {
+            progressData[topic.id] = { completed: 0, total: 0, percentage: 0 }
+          }
+        }
+        setTopicProgressCache(progressData)
+      }
+      loadProgress()
+    }
+  }, [user?.id, topics, getTopicProgress])
 
   const categories = Array.from(new Set(topics.map((topic) => topic.category)))
   const difficulties = ["Beginner", "Intermediate", "Advanced"]
@@ -137,8 +157,7 @@ export default function TopicsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           {filteredTopics.map((topic) => {
-            const topicProgress =
-              user && isHydrated ? getTopicProgress(user.id, topic.id) : { completed: 0, total: 0, percentage: 0 }
+            const topicProgress = topicProgressCache[topic.id] || { completed: 0, total: 0, percentage: 0 }
             const isCompleted = topicProgress.percentage === 100
 
             return (
@@ -169,7 +188,7 @@ export default function TopicsPage() {
                         {topic.difficulty}
                       </Badge>
                     </div>
-                    {user?.role === "student" && isHydrated && isCompleted && (
+                    {user?.role === "student" && isCompleted && (
                       <Badge className="bg-green-500">
                         <CheckCircle className="w-3 h-3 mr-1" />
                         Completed
@@ -206,7 +225,7 @@ export default function TopicsPage() {
                   </p>
 
                   {/* Progress for students */}
-                  {user?.role === "student" && isHydrated && (
+                  {user?.role === "student" && (
                     <div className="mb-4">
                       <div className="flex items-center justify-between text-sm mb-2">
                         <span className="text-gray-600">Progress</span>
@@ -232,7 +251,7 @@ export default function TopicsPage() {
                       <Button
                         size="sm"
                         className={
-                          user?.role === "student" && isHydrated && isCompleted
+                          user?.role === "student" && isCompleted
                             ? "bg-green-500 hover:bg-green-600"
                             : "bg-orange-500 hover:bg-orange-600"
                         }
@@ -241,7 +260,7 @@ export default function TopicsPage() {
                           window.location.href = `/dashboard/topics/${topic.id}`
                         }}
                       >
-                        {user?.role === "student" && isHydrated && isCompleted ? "Review" : "Start Learning"}
+                        {user?.role === "student" && isCompleted ? "Review" : "Start Learning"}
                       </Button>
                     </div>
                   </div>

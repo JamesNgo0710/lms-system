@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Edit, Trash2, Camera, Copy, RefreshCw, Key } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
-import { useUsers } from "@/hooks/use-data-store"
+import { useUsers } from "@/hooks/use-api-data-store"
 import { useSession } from "next-auth/react"
 
 interface UserFormData {

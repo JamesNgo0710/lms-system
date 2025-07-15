@@ -10,21 +10,40 @@ import { Progress } from "@/components/ui/progress"
 import { ChevronLeft } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useTopics, useAssessments } from "@/hooks/use-data-store"
+import { useTopics, useAssessments } from "@/hooks/use-api-data-store"
 import { useToast } from "@/hooks/use-toast"
 
 export default function PreviewAssessmentPage({ params }: { params: Promise<{ id: string }> }) {
   const { getTopicById } = useTopics()
-  const { getAssessmentByTopicId } = useAssessments()
+  const { getAssessmentByTopic } = useAssessments()
   const router = useRouter()
   const { toast } = useToast()
   const [currentQuestion, setCurrentQuestion] = useState(0)
   const [selectedAnswer, setSelectedAnswer] = useState<string | number | null>(null)
+  const [topic, setTopic] = useState<any>(null)
+  const [assessment, setAssessment] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
 
   const resolvedParams = use(params)
   const topicId = Number.parseInt(resolvedParams.id)
-  const topic = getTopicById(topicId)
-  const assessment = getAssessmentByTopicId(topicId)
+
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true)
+      try {
+        const topicData = getTopicById(topicId)
+        const assessmentData = await getAssessmentByTopic(topicId)
+        setTopic(topicData)
+        setAssessment(assessmentData)
+      } catch (error) {
+        console.error('Error loading preview data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    loadData()
+  }, [topicId, getTopicById, getAssessmentByTopic])
 
   const questions = assessment?.questions || []
   const question = questions[currentQuestion]
@@ -57,13 +76,26 @@ export default function PreviewAssessmentPage({ params }: { params: Promise<{ id
     setSelectedAnswer(answer)
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Card className="max-w-md bg-white dark:bg-gray-800">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Loading...</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">Please wait while we load the assessment preview.</p>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   if (!topic) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Card className="max-w-md bg-white dark:bg-gray-800">
           <CardContent className="p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">Topic Not Found</h2>
-            <p className="text-gray-600 mb-4">The requested topic could not be found</p>
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Topic Not Found</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">The requested topic could not be found</p>
             <Link href="/dashboard/manage-assessments">
               <Button>Back to Assessments</Button>
             </Link>
@@ -75,11 +107,11 @@ export default function PreviewAssessmentPage({ params }: { params: Promise<{ id
 
   if (!assessment || questions.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <Card className="max-w-md">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Card className="max-w-md bg-white dark:bg-gray-800">
           <CardContent className="p-8 text-center">
-            <h2 className="text-2xl font-bold mb-4">No Assessment Available</h2>
-            <p className="text-gray-600 mb-4">No assessment has been created for "{topic.title}" yet.</p>
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">No Assessment Available</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">No assessment has been created for "{topic.title}" yet.</p>
             <div className="space-y-2">
               <Link href="/dashboard/manage-assessments">
                 <Button className="w-full">Back to Assessments</Button>
@@ -97,9 +129,9 @@ export default function PreviewAssessmentPage({ params }: { params: Promise<{ id
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="bg-white border-b px-6 py-4">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
           <div className="flex items-center space-x-4">
             <Link href="/dashboard/manage-assessments">
@@ -108,8 +140,8 @@ export default function PreviewAssessmentPage({ params }: { params: Promise<{ id
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold">Assessment Preview: {topic.title}</h1>
-              <p className="text-gray-600">Total Questions: {questions.length}</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Assessment Preview: {topic.title}</h1>
+              <p className="text-gray-600 dark:text-gray-300">Total Questions: {questions.length}</p>
             </div>
           </div>
           <Link href="/dashboard/manage-assessments">
@@ -119,13 +151,13 @@ export default function PreviewAssessmentPage({ params }: { params: Promise<{ id
       </div>
 
       {/* Progress */}
-      <div className="bg-white px-6 py-4 border-b">
+      <div className="bg-white dark:bg-gray-800 px-6 py-4 border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-6xl mx-auto">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-600 dark:text-gray-300">
               Question {currentQuestion + 1} of {questions.length}
             </span>
-            <span className="text-sm text-gray-600">{Math.round(progress)}% Complete</span>
+            <span className="text-sm text-gray-600 dark:text-gray-300">{Math.round(progress)}% Complete</span>
           </div>
           <Progress value={progress} className="h-2" />
         </div>
@@ -136,7 +168,7 @@ export default function PreviewAssessmentPage({ params }: { params: Promise<{ id
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Question */}
           <div className="lg:col-span-2">
-            <Card>
+            <Card className="bg-white dark:bg-gray-800">
               <CardContent className="p-8">
                 <div className="flex items-center justify-between mb-6">
                   <h2 className="text-xl font-semibold text-orange-500">Question {currentQuestion + 1}</h2>
@@ -145,7 +177,7 @@ export default function PreviewAssessmentPage({ params }: { params: Promise<{ id
                   </Badge>
                 </div>
 
-                <p className="text-lg mb-8 leading-relaxed">{question.question}</p>
+                <p className="text-lg mb-8 leading-relaxed text-gray-900 dark:text-gray-100">{question.question}</p>
 
                 {/* Answer Options */}
                 <div className="space-y-3">
@@ -156,9 +188,9 @@ export default function PreviewAssessmentPage({ params }: { params: Promise<{ id
                         onClick={() => handleAnswerSelect(index)}
                         className={`w-full p-4 text-left border-2 rounded-lg transition-colors ${
                           selectedAnswer === index
-                            ? "border-orange-500 bg-orange-50"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
+                            ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                            : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
+                        } text-gray-900 dark:text-gray-100`}
                       >
                         <span className="font-medium mr-3">{String.fromCharCode(65 + index)}.</span>
                         {option}
@@ -170,9 +202,9 @@ export default function PreviewAssessmentPage({ params }: { params: Promise<{ id
                         onClick={() => handleAnswerSelect("true")}
                         className={`flex-1 px-8 py-4 rounded-lg border-2 transition-colors font-medium ${
                           selectedAnswer === "true"
-                            ? "border-orange-500 bg-orange-50"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
+                            ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                            : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
+                        } text-gray-900 dark:text-gray-100`}
                       >
                         True
                       </button>
@@ -180,9 +212,9 @@ export default function PreviewAssessmentPage({ params }: { params: Promise<{ id
                         onClick={() => handleAnswerSelect("false")}
                         className={`flex-1 px-8 py-4 rounded-lg border-2 transition-colors font-medium ${
                           selectedAnswer === "false"
-                            ? "border-orange-500 bg-orange-50"
-                            : "border-gray-200 hover:border-gray-300"
-                        }`}
+                            ? "border-orange-500 bg-orange-50 dark:bg-orange-900/20"
+                            : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
+                        } text-gray-900 dark:text-gray-100`}
                       >
                         False
                       </button>
@@ -208,7 +240,7 @@ export default function PreviewAssessmentPage({ params }: { params: Promise<{ id
           {/* Image */}
           <div className="lg:col-span-1">
             {question.image && (
-              <Card>
+              <Card className="bg-white dark:bg-gray-800">
                 <CardContent className="p-0">
                   <img
                     src={question.image || "/placeholder.svg"}
@@ -220,21 +252,21 @@ export default function PreviewAssessmentPage({ params }: { params: Promise<{ id
             )}
 
             {/* Assessment Info */}
-            <Card className="mt-4">
+            <Card className="mt-4 bg-white dark:bg-gray-800">
               <CardContent className="p-4">
-                <h3 className="font-semibold mb-3">Assessment Details</h3>
+                <h3 className="font-semibold mb-3 text-gray-900 dark:text-gray-100">Assessment Details</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Total Questions:</span>
-                    <span className="font-medium">{assessment.totalQuestions}</span>
+                    <span className="text-gray-600 dark:text-gray-300">Total Questions:</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{assessment.totalQuestions}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Time Limit:</span>
-                    <span className="font-medium">{assessment.timeLimit}</span>
+                    <span className="text-gray-600 dark:text-gray-300">Time Limit:</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{assessment.timeLimit}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Retake Period:</span>
-                    <span className="font-medium">{assessment.retakePeriod} months</span>
+                    <span className="text-gray-600 dark:text-gray-300">Retake Period:</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">{assessment.retakePeriod} months</span>
                   </div>
                 </div>
               </CardContent>

@@ -47,7 +47,7 @@ import {
   List
 } from "lucide-react"
 import Link from "next/link"
-import { useTopics, useLessons, useLessonCompletions } from "@/hooks/use-data-store"
+import { useTopics, useLessons, useLessonCompletions } from "@/hooks/use-api-data-store"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 

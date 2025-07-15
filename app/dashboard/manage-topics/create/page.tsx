@@ -11,7 +11,7 @@ import { ChevronLeft, Upload, X, Link as LinkIcon, Image as ImageIcon } from "lu
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { useTopics } from "@/hooks/use-data-store"
+import { useTopics } from "@/hooks/use-api-data-store"
 
 interface TopicFormData {
   title: string
@@ -32,7 +32,7 @@ export default function CreateTopicPage() {
   const [imageUploadMethod, setImageUploadMethod] = useState<"upload" | "url">("upload")
   const [isDragOver, setIsDragOver] = useState(false)
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.title || !formData.description) {
       toast({
         title: "Error",
@@ -42,25 +42,36 @@ export default function CreateTopicPage() {
       return
     }
 
-    const newTopic = addTopic({
-      title: formData.title,
-      category: "Other", // Default category
-      status: "Draft", // Default status
-      students: 0,
-      lessons: 0,
-      createdAt: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD format
-      hasAssessment: false,
-      difficulty: "Beginner", // Default difficulty
-      description: formData.description,
-      image: formData.image || "/placeholder.svg?height=200&width=300",
-    })
+    try {
+      const newTopic = await addTopic({
+        title: formData.title,
+        category: "Other", // Default category
+        status: "Draft", // Default status
+        students: 0,
+        lessons: 0,
+        createdAt: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD format
+        hasAssessment: false,
+        difficulty: "Beginner", // Default difficulty
+        description: formData.description,
+        image: formData.image || "/placeholder.svg?height=200&width=300",
+      })
 
-    toast({
-      title: "Success",
-      description: "Topic created successfully",
-    })
-
-    router.push(`/dashboard/manage-topics`)
+      if (newTopic) {
+        toast({
+          title: "Success",
+          description: "Topic created successfully",
+        })
+        router.push(`/dashboard/manage-topics`)
+      } else {
+        throw new Error("Failed to create topic")
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to create topic. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleImageDrop = (e: React.DragEvent<HTMLDivElement>) => {

@@ -10,7 +10,7 @@ import { CheckCircle, Lock, PlayCircle, Clock, Star, Trophy, ChevronRight, Info 
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { motion, AnimatePresence } from "framer-motion"
-import { useTopics, useLessonCompletions } from "@/hooks/use-data-store"
+import { useTopics, useLessonCompletions } from "@/hooks/use-api-data-store"
 import { CourseMetadata } from "@/components/course-metadata"
 import type { Topic } from "@/lib/data-store"
 

@@ -10,7 +10,7 @@ import { Plus, Search, Edit, Trash2, Eye, History, User, Calendar, FileText, Che
 import { useToast } from "@/hooks/use-toast"
 import Link from "next/link"
 
-import { useTopics, useAssessments } from "@/hooks/use-data-store"
+import { useTopics, useAssessments } from "@/hooks/use-api-data-store"
 
 export default function ManageAssessmentsPage() {
   const { topics } = useTopics()

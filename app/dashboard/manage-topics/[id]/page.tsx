@@ -38,7 +38,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useTopics, useLessons, useLessonCompletions } from "@/hooks/use-data-store"
+import { useTopics, useLessons, useLessonCompletions } from "@/hooks/use-api-data-store"
 import { useToast } from "@/hooks/use-toast"
 
 export default function TopicDetailsPage({ params }: { params: Promise<{ id: string }> }) {

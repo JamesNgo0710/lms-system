@@ -12,7 +12,7 @@ import { ChevronLeft, Upload, Plus, Trash2, Link as LinkIcon, Loader2 } from "lu
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { useTopics, useAssessments } from "@/hooks/use-data-store"
+import { useTopics, useAssessments } from "@/hooks/use-api-data-store"
 import { uploadImageFree, isValidImageUrl, loadImageFromUrl } from "@/lib/image-utils"
 
 interface Question {
@@ -35,33 +35,63 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
   const router = useRouter()
   const { toast } = useToast()
   const { getTopicById } = useTopics()
-  const { getAssessmentByTopicId, updateAssessment, updateAssessmentCooldown, formatCooldownPeriod } = useAssessments()
+  const { getAssessmentByTopic, updateAssessment } = useAssessments()
+  
+  // Helper function to format cooldown period
+  const formatCooldownPeriod = (hours: number) => {
+    if (hours === 1) return "1 hour"
+    if (hours < 24) return `${hours} hours`
+    const days = Math.floor(hours / 24)
+    if (days === 1) return "1 day"
+    return `${days} days`
+  }
   
   const resolvedParams = use(params)
   const topicId = Number.parseInt(resolvedParams.id)
-  const topic = getTopicById(topicId)
-  const existingAssessment = getAssessmentByTopicId(topicId)
+  const [topic, setTopic] = useState<any>(null)
+  const [existingAssessment, setExistingAssessment] = useState<any>(null)
 
-  // Load existing assessment data or initialize with empty question
+  // Load data from API
   useEffect(() => {
-    if (existingAssessment && existingAssessment.questions.length > 0) {
-      // Load existing questions, cooldown period, and time limit
-      setQuestions(existingAssessment.questions)
-      setCooldownPeriod(existingAssessment.cooldownPeriod || 1) // Default 1 hour
-      setTimeLimit(existingAssessment.timeLimit || "01:00") // Default 1 hour
-    } else {
-      // Initialize with one empty question if no assessment exists
-      setQuestions([{
-        id: 1,
-        type: "true-false",
-        question: "",
-        correctAnswer: "true",
-      }])
-      setCooldownPeriod(1) // Default 1 hour cooldown
-      setTimeLimit("01:00") // Default 1 hour time limit
+    const loadData = async () => {
+      setIsLoading(true)
+      try {
+        const topicData = getTopicById(topicId)
+        const assessmentData = await getAssessmentByTopic(topicId)
+        
+        setTopic(topicData)
+        setExistingAssessment(assessmentData)
+        
+        if (assessmentData && assessmentData.questions.length > 0) {
+          // Load existing questions, cooldown period, and time limit
+          setQuestions(assessmentData.questions)
+          setCooldownPeriod(assessmentData.cooldownPeriod || 1) // Default 1 hour
+          setTimeLimit(assessmentData.timeLimit || "01:00") // Default 1 hour
+        } else {
+          // Initialize with one empty question if no assessment exists
+          setQuestions([{
+            id: 1,
+            type: "true-false",
+            question: "",
+            correctAnswer: "true",
+          }])
+          setCooldownPeriod(1) // Default 1 hour cooldown
+          setTimeLimit("01:00") // Default 1 hour time limit
+        }
+      } catch (error) {
+        console.error('Error loading assessment data:', error)
+        toast({
+          title: "Error",
+          description: "Failed to load assessment data",
+          variant: "destructive",
+        })
+      } finally {
+        setIsLoading(false)
+      }
     }
-    setIsLoading(false)
-  }, [existingAssessment])
+    
+    loadData()
+  }, [topicId, getTopicById, getAssessmentByTopic])
 
   // Listen for storage quota exceeded events
   useEffect(() => {
@@ -195,26 +225,8 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
     updateQuestion(id, updates)
   }
 
-  const handleCooldownUpdate = (hours: number) => {
-    if (!existingAssessment) return
-    
-    try {
-      updateAssessmentCooldown(existingAssessment.id, hours)
-      setCooldownPeriod(hours)
-      toast({
-        title: "Success",
-        description: `Cooldown period updated to ${formatCooldownPeriod(hours)}`,
-      })
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to update cooldown period",
-        variant: "destructive",
-      })
-    }
-  }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!existingAssessment) {
       toast({
         title: "Error",
@@ -235,21 +247,32 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
       return
     }
 
-    // Update the assessment with new questions, cooldown, and time limit
-    updateAssessment(existingAssessment.id, {
-      questions: validQuestions,
-      totalQuestions: validQuestions.length,
-      timeLimit: timeLimit,
-    })
+    try {
+      // Update the assessment with new questions, cooldown, and time limit
+      const updatedAssessment = await updateAssessment(existingAssessment.id, {
+        questions: validQuestions,
+        totalQuestions: validQuestions.length,
+        timeLimit: timeLimit,
+        cooldownPeriod: cooldownPeriod,
+      })
 
-    // Update cooldown period separately
-    handleCooldownUpdate(cooldownPeriod)
-
-    setHasUnsavedChanges(false)
-    toast({
-      title: "Success",
-      description: "Assessment saved as draft successfully",
-    })
+      if (updatedAssessment) {
+        setExistingAssessment(updatedAssessment)
+        setHasUnsavedChanges(false)
+        toast({
+          title: "Success",
+          description: "Assessment saved as draft successfully",
+        })
+      } else {
+        throw new Error("Failed to save assessment")
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to save assessment. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   const handlePreview = () => {
@@ -264,7 +287,7 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
     router.push(`/dashboard/manage-assessments/preview/${resolvedParams.id}`)
   }
 
-  const handlePublish = () => {
+  const handlePublish = async () => {
     if (!existingAssessment) return
 
     if (hasUnsavedChanges) {
@@ -287,14 +310,27 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
       return
     }
 
-    const newStatus = existingAssessment.status === "Published" ? "Draft" : "Published"
-    
-    updateAssessment(existingAssessment.id, { status: newStatus })
-    
-    toast({
-      title: "Success",
-      description: `Assessment ${newStatus === "Published" ? "published" : "unpublished"} successfully`,
-    })
+    try {
+      const newStatus = existingAssessment.status === "Published" ? "Draft" : "Published"
+      
+      const updatedAssessment = await updateAssessment(existingAssessment.id, { status: newStatus })
+      
+      if (updatedAssessment) {
+        setExistingAssessment(updatedAssessment)
+        toast({
+          title: "Success",
+          description: `Assessment ${newStatus === "Published" ? "published" : "unpublished"} successfully`,
+        })
+      } else {
+        throw new Error("Failed to update assessment status")
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update assessment status. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
 
   if (isLoading) {
@@ -509,13 +545,9 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
                   </Button>
                 </div>
 
-                <Button
-                  onClick={() => handleCooldownUpdate(cooldownPeriod)}
-                  variant="outline"
-                  size="sm"
-                >
-                  Update Cooldown
-                </Button>
+                <p className="text-sm text-gray-500">
+                  Cooldown will be updated when you save the assessment
+                </p>
               </div>
             </div>
           </CardContent>

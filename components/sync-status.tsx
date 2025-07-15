@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Wifi, WifiOff, RefreshCw, Info } from "lucide-react"
-import { useSync } from "@/hooks/use-data-store"
+import { useSync } from "@/hooks/use-api-data-store"
 
 export function SyncStatus() {
   const { syncStatus } = useSync()

@@ -27,7 +27,7 @@ import {
   AlertCircle
 } from "lucide-react"
 import Link from "next/link"
-import { useAssessments, useAssessmentAttempts, useTopics } from "@/hooks/use-data-store"
+import { useAssessments, useAssessmentAttempts, useTopics } from "@/hooks/use-api-data-store"
 
 interface WrongAnswer {
   questionNo: number

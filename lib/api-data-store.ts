@@ -1,6 +1,8 @@
 "use client"
 
 import { getSession } from "next-auth/react"
+import { detectBackend, config } from './config'
+import { mockDataService } from './mock-data-service'
 
 // Types (imported from existing data-store.ts)
 interface Topic {
@@ -121,7 +123,7 @@ interface User {
 
 class ApiDataStore {
   private static instance: ApiDataStore
-  private API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+  private backendConfig: any = null
 
   private constructor() {}
 
@@ -130,6 +132,51 @@ class ApiDataStore {
       ApiDataStore.instance = new ApiDataStore()
     }
     return ApiDataStore.instance
+  }
+
+  /**
+   * Get backend configuration
+   */
+  private async getBackendConfig() {
+    if (!this.backendConfig) {
+      this.backendConfig = await detectBackend()
+    }
+    return this.backendConfig
+  }
+
+  /**
+   * Get API URL dynamically
+   */
+  private async getApiUrl() {
+    const backend = await this.getBackendConfig()
+    return backend.apiUrl
+  }
+
+  /**
+   * Helper method to make API requests with dynamic URL
+   */
+  private async makeApiRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
+    const apiUrl = await this.getApiUrl()
+    const headers = await this.getAuthHeaders()
+    
+    const response = await fetch(`${apiUrl}${endpoint}`, {
+      ...options,
+      headers: {
+        ...headers,
+        ...options.headers,
+      },
+    })
+
+    return response
+  }
+
+  /**
+   * Legacy method for backward compatibility - converts old API calls to new format
+   */
+  private async makeRequest(url: string, options: RequestInit = {}): Promise<Response> {
+    // Extract endpoint from full URL
+    const endpoint = url.replace(/^https?:\/\/[^\/]+/, '').replace(/^\$\{this\.API_URL\}/, '')
+    return this.makeApiRequest(endpoint, options)
   }
 
   private async getAuthHeaders() {
@@ -144,8 +191,14 @@ class ApiDataStore {
   // Topics API
   async getTopics(): Promise<Topic[]> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/topics`, { headers })
+      const backend = await this.getBackendConfig()
+      
+      // Use mock data if backend not connected
+      if (!backend.isConnected) {
+        return await mockDataService.getTopics()
+      }
+
+      const response = await this.makeApiRequest('/api/topics')
       
       if (!response.ok) {
         throw new Error(`Failed to fetch topics: ${response.status}`)
@@ -154,14 +207,14 @@ class ApiDataStore {
       return await response.json()
     } catch (error) {
       console.error('Error fetching topics:', error)
-      return []
+      // Fallback to mock data on error
+      return await mockDataService.getTopics()
     }
   }
 
   async getTopic(id: number): Promise<Topic | null> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/topics/${id}`, { headers })
+      const response = await this.makeApiRequest(`/api/topics/${id}`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch topic: ${response.status}`)
@@ -176,10 +229,8 @@ class ApiDataStore {
 
   async createTopic(topic: Omit<Topic, 'id'>): Promise<Topic | null> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/topics`, {
+      const response = await this.makeApiRequest('/api/topics', {
         method: 'POST',
-        headers,
         body: JSON.stringify(topic),
       })
       
@@ -196,10 +247,8 @@ class ApiDataStore {
 
   async updateTopic(id: number, topic: Partial<Topic>): Promise<Topic | null> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/topics/${id}`, {
+      const response = await this.makeApiRequest(`/api/topics/${id}`, {
         method: 'PUT',
-        headers,
         body: JSON.stringify(topic),
       })
       
@@ -216,10 +265,8 @@ class ApiDataStore {
 
   async deleteTopic(id: number): Promise<boolean> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/topics/${id}`, {
+      const response = await this.makeApiRequest(`/api/topics/${id}`, {
         method: 'DELETE',
-        headers,
       })
       
       return response.ok
@@ -232,8 +279,14 @@ class ApiDataStore {
   // Lessons API
   async getLessons(): Promise<Lesson[]> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/lessons`, { headers })
+      const backend = await this.getBackendConfig()
+      
+      // Use mock data if backend not connected
+      if (!backend.isConnected) {
+        return await mockDataService.getLessons()
+      }
+
+      const response = await this.makeApiRequest('/api/lessons')
       
       if (!response.ok) {
         throw new Error(`Failed to fetch lessons: ${response.status}`)
@@ -242,14 +295,21 @@ class ApiDataStore {
       return await response.json()
     } catch (error) {
       console.error('Error fetching lessons:', error)
-      return []
+      // Fallback to mock data on error
+      return await mockDataService.getLessons()
     }
   }
 
   async getLessonsByTopic(topicId: number): Promise<Lesson[]> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/topics/${topicId}/lessons`, { headers })
+      const backend = await this.getBackendConfig()
+      
+      // Use mock data if backend not connected
+      if (!backend.isConnected) {
+        return await mockDataService.getLessonsByTopic(topicId)
+      }
+
+      const response = await this.makeApiRequest(`/api/topics/${topicId}/lessons`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch lessons for topic: ${response.status}`)
@@ -258,14 +318,14 @@ class ApiDataStore {
       return await response.json()
     } catch (error) {
       console.error('Error fetching lessons by topic:', error)
-      return []
+      // Fallback to mock data on error
+      return await mockDataService.getLessonsByTopic(topicId)
     }
   }
 
   async getLesson(id: number): Promise<Lesson | null> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/lessons/${id}`, { headers })
+      const response = await this.makeApiRequest(`/api/lessons/${id}`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch lesson: ${response.status}`)
@@ -280,10 +340,8 @@ class ApiDataStore {
 
   async createLesson(lesson: Omit<Lesson, 'id'>): Promise<Lesson | null> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/lessons`, {
+      const response = await this.makeApiRequest(`/api/lessons`, {
         method: 'POST',
-        headers,
         body: JSON.stringify(lesson),
       })
       
@@ -300,12 +358,7 @@ class ApiDataStore {
 
   async updateLesson(id: number, lesson: Partial<Lesson>): Promise<Lesson | null> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/lessons/${id}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(lesson),
-      })
+      const response = await this.makeApiRequest(`/api/lessons/${id}`, { method: 'PUT',body: JSON.stringify(lesson), })
       
       if (!response.ok) {
         throw new Error(`Failed to update lesson: ${response.status}`)
@@ -320,11 +373,7 @@ class ApiDataStore {
 
   async deleteLesson(id: number): Promise<boolean> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/lessons/${id}`, {
-        method: 'DELETE',
-        headers,
-      })
+      const response = await this.makeApiRequest(`/api/lessons/${id}`, { method: 'DELETE', })
       
       return response.ok
     } catch (error) {
@@ -336,11 +385,7 @@ class ApiDataStore {
   // Lesson Completions API
   async markLessonComplete(lessonId: number, timeSpent?: number): Promise<boolean> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/lessons/${lessonId}/complete`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ time_spent: timeSpent }),
+      const response = await this.makeApiRequest(`/api/lessons/${lessonId}/complete`, { method: 'POST',body: JSON.stringify({ time_spent: timeSpent }),
       })
       
       return response.ok
@@ -352,11 +397,7 @@ class ApiDataStore {
 
   async markLessonIncomplete(lessonId: number): Promise<boolean> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/lessons/${lessonId}/complete`, {
-        method: 'DELETE',
-        headers,
-      })
+      const response = await this.makeApiRequest(`/api/lessons/${lessonId}/complete`, { method: 'DELETE', })
       
       return response.ok
     } catch (error) {
@@ -367,11 +408,7 @@ class ApiDataStore {
 
   async trackLessonView(lessonId: number, duration?: number): Promise<boolean> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/lessons/${lessonId}/view`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ duration }),
+      const response = await this.makeApiRequest(`/api/lessons/${lessonId}/view`, { method: 'POST',body: JSON.stringify({ duration }),
       })
       
       return response.ok
@@ -384,8 +421,14 @@ class ApiDataStore {
   // Assessments API
   async getAssessments(): Promise<Assessment[]> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/assessments`, { headers })
+      const backend = await this.getBackendConfig()
+      
+      // Use mock data if backend not connected
+      if (!backend.isConnected) {
+        return await mockDataService.getAssessments()
+      }
+
+      const response = await this.makeApiRequest(`/api/assessments`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch assessments: ${response.status}`)
@@ -394,14 +437,21 @@ class ApiDataStore {
       return await response.json()
     } catch (error) {
       console.error('Error fetching assessments:', error)
-      return []
+      // Fallback to mock data on error
+      return await mockDataService.getAssessments()
     }
   }
 
   async getAssessmentByTopic(topicId: number): Promise<Assessment | null> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/topics/${topicId}/assessment`, { headers })
+      const backend = await this.getBackendConfig()
+      
+      // Use mock data if backend not connected
+      if (!backend.isConnected) {
+        return await mockDataService.getAssessmentByTopic(topicId)
+      }
+
+      const response = await this.makeApiRequest(`/api/topics/${topicId}/assessment`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch assessment for topic: ${response.status}`)
@@ -410,14 +460,14 @@ class ApiDataStore {
       return await response.json()
     } catch (error) {
       console.error('Error fetching assessment by topic:', error)
-      return null
+      // Fallback to mock data on error
+      return await mockDataService.getAssessmentByTopic(topicId)
     }
   }
 
   async getAssessment(id: number): Promise<Assessment | null> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/assessments/${id}`, { headers })
+      const response = await this.makeApiRequest(`/api/assessments/${id}`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch assessment: ${response.status}`)
@@ -430,13 +480,50 @@ class ApiDataStore {
     }
   }
 
+  async createAssessment(assessment: Omit<Assessment, 'id'>): Promise<Assessment | null> {
+    try {
+      const response = await this.makeApiRequest(`/api/assessments`, { method: 'POST',body: JSON.stringify(assessment), })
+      
+      if (!response.ok) {
+        throw new Error(`Failed to create assessment: ${response.status}`)
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Error creating assessment:', error)
+      return null
+    }
+  }
+
+  async updateAssessment(id: number, assessment: Partial<Assessment>): Promise<Assessment | null> {
+    try {
+      const response = await this.makeApiRequest(`/api/assessments/${id}`, { method: 'PUT',body: JSON.stringify(assessment), })
+      
+      if (!response.ok) {
+        throw new Error(`Failed to update assessment: ${response.status}`)
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Error updating assessment:', error)
+      return null
+    }
+  }
+
+  async deleteAssessment(id: number): Promise<boolean> {
+    try {
+      const response = await this.makeApiRequest(`/api/assessments/${id}`, { method: 'DELETE', })
+      
+      return response.ok
+    } catch (error) {
+      console.error('Error deleting assessment:', error)
+      return false
+    }
+  }
+
   async submitAssessment(assessmentId: number, answers: (string | number)[], timeSpent: number): Promise<AssessmentAttempt | null> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/assessments/${assessmentId}/submit`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ answers, time_spent: timeSpent }),
+      const response = await this.makeApiRequest(`/api/assessments/${assessmentId}/submit`, { method: 'POST',body: JSON.stringify({ answers, time_spent: timeSpent }),
       })
       
       if (!response.ok) {
@@ -452,8 +539,7 @@ class ApiDataStore {
 
   async getAssessmentAttempts(assessmentId: number): Promise<AssessmentAttempt[]> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/assessments/${assessmentId}/attempts`, { headers })
+      const response = await this.makeApiRequest(`/api/assessments/${assessmentId}/attempts`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch assessment attempts: ${response.status}`)
@@ -469,8 +555,14 @@ class ApiDataStore {
   // Users API
   async getUsers(): Promise<User[]> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/users`, { headers })
+      const backend = await this.getBackendConfig()
+      
+      // Use mock data if backend not connected
+      if (!backend.isConnected) {
+        return await mockDataService.getUsers()
+      }
+
+      const response = await this.makeApiRequest(`/api/users`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch users: ${response.status}`)
@@ -479,14 +571,14 @@ class ApiDataStore {
       return await response.json()
     } catch (error) {
       console.error('Error fetching users:', error)
-      return []
+      // Fallback to mock data on error
+      return await mockDataService.getUsers()
     }
   }
 
   async getUser(id: string): Promise<User | null> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/users/${id}`, { headers })
+      const response = await this.makeApiRequest(`/api/users/${id}`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch user: ${response.status}`)
@@ -499,14 +591,24 @@ class ApiDataStore {
     }
   }
 
+  async createUser(userData: Omit<User, 'id'>): Promise<User | null> {
+    try {
+      const response = await this.makeApiRequest(`/api/users`, { method: 'POST',body: JSON.stringify(userData), })
+      
+      if (!response.ok) {
+        throw new Error(`Failed to create user: ${response.status}`)
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Error creating user:', error)
+      return null
+    }
+  }
+
   async updateUser(id: string, userData: Partial<User>): Promise<User | null> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/users/${id}`, {
-        method: 'PUT',
-        headers,
-        body: JSON.stringify(userData),
-      })
+      const response = await this.makeApiRequest(`/api/users/${id}`, { method: 'PUT',body: JSON.stringify(userData), })
       
       if (!response.ok) {
         throw new Error(`Failed to update user: ${response.status}`)
@@ -519,11 +621,28 @@ class ApiDataStore {
     }
   }
 
+  async deleteUser(id: string): Promise<boolean> {
+    try {
+      const response = await this.makeApiRequest(`/api/users/${id}`, { method: 'DELETE', })
+      
+      return response.ok
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      return false
+    }
+  }
+
   // Helper methods for compatibility with existing hooks
   async getUserLessonCompletions(userId: string): Promise<LessonCompletion[]> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/users/${userId}/lesson-completions`, { headers })
+      const backend = await this.getBackendConfig()
+      
+      // Use mock data if backend not connected
+      if (!backend.isConnected) {
+        return await mockDataService.getUserLessonCompletions(userId)
+      }
+
+      const response = await this.makeApiRequest(`/api/users/${userId}/lesson-completions`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch lesson completions: ${response.status}`)
@@ -532,14 +651,21 @@ class ApiDataStore {
       return await response.json()
     } catch (error) {
       console.error('Error fetching lesson completions:', error)
-      return []
+      // Fallback to mock data on error
+      return await mockDataService.getUserLessonCompletions(userId)
     }
   }
 
   async getUserLessonViews(userId: string): Promise<LessonView[]> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/users/${userId}/lesson-views`, { headers })
+      const backend = await this.getBackendConfig()
+      
+      // Use mock data if backend not connected
+      if (!backend.isConnected) {
+        return await mockDataService.getUserLessonViews(userId)
+      }
+
+      const response = await this.makeApiRequest(`/api/users/${userId}/lesson-views`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch lesson views: ${response.status}`)
@@ -548,14 +674,21 @@ class ApiDataStore {
       return await response.json()
     } catch (error) {
       console.error('Error fetching lesson views:', error)
-      return []
+      // Fallback to mock data on error
+      return await mockDataService.getUserLessonViews(userId)
     }
   }
 
   async getUserAssessmentAttempts(userId: string): Promise<AssessmentAttempt[]> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/users/${userId}/assessment-attempts`, { headers })
+      const backend = await this.getBackendConfig()
+      
+      // Use mock data if backend not connected
+      if (!backend.isConnected) {
+        return await mockDataService.getUserAssessmentAttempts(userId)
+      }
+
+      const response = await this.makeApiRequest(`/api/users/${userId}/assessment-attempts`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch assessment attempts: ${response.status}`)
@@ -564,14 +697,21 @@ class ApiDataStore {
       return await response.json()
     } catch (error) {
       console.error('Error fetching assessment attempts:', error)
-      return []
+      // Fallback to mock data on error
+      return await mockDataService.getUserAssessmentAttempts(userId)
     }
   }
 
   async getTopicProgress(userId: string, topicId: number): Promise<{ completed: number; total: number; percentage: number }> {
     try {
-      const headers = await this.getAuthHeaders()
-      const response = await fetch(`${this.API_URL}/api/users/${userId}/topics/${topicId}/progress`, { headers })
+      const backend = await this.getBackendConfig()
+      
+      // Use mock data if backend not connected
+      if (!backend.isConnected) {
+        return await mockDataService.getTopicProgress(userId, topicId)
+      }
+
+      const response = await this.makeApiRequest(`/api/users/${userId}/topics/${topicId}/progress`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch topic progress: ${response.status}`)
@@ -580,7 +720,8 @@ class ApiDataStore {
       return await response.json()
     } catch (error) {
       console.error('Error fetching topic progress:', error)
-      return { completed: 0, total: 0, percentage: 0 }
+      // Fallback to mock data on error
+      return await mockDataService.getTopicProgress(userId, topicId)
     }
   }
 }

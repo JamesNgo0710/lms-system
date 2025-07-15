@@ -16,7 +16,7 @@ import { ChevronLeft, Upload, Plus, Trash2, Twitter, Youtube, FileText, Download
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
-import { useTopics, useLessons } from "@/hooks/use-data-store"
+import { useTopics, useLessons } from "@/hooks/use-api-data-store"
 
 interface LessonFormData {
   title: string

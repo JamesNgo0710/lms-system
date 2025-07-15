@@ -30,7 +30,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import Image from "next/image"
 import { APP_CONFIG } from "@/lib/constants"
 import { getAvatarUrl } from "@/lib/config"
-import { useTopics, useLessonCompletions } from "@/hooks/use-data-store"
+import { useTopics, useLessonCompletions } from "@/hooks/use-api-data-store"
 
 interface NavItem {
   title: string

@@ -44,7 +44,7 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
-import { useTopics, useLessons, useLessonCompletions, useAssessmentAttempts, useUsers } from "@/hooks/use-data-store"
+import { useTopics, useLessons, useLessonCompletions, useAssessmentAttempts, useUsers } from "@/hooks/use-api-data-store"
 import { useToast } from "@/hooks/use-toast"
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"

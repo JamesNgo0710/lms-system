@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Download, FileText, Users, Play, ExternalLink, Flag, Eye, CheckCircle, XCircle, AlertTriangle } from "lucide-react"
 import Link from "next/link"
-import { useTopics, useLessons, useLessonCompletions, useLessonViews, useUsers } from "@/hooks/use-data-store"
+import { useTopics, useLessons, useLessonCompletions, useLessonViews, useUsers } from "@/hooks/use-api-data-store"
 import { apiClient } from "@/lib/api-client"
 import { useSession } from "next-auth/react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
