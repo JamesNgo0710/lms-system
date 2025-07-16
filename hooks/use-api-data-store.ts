@@ -19,7 +19,17 @@ export function useTopics() {
   const loadTopics = async () => {
     setLoading(true)
     const data = await apiDataStore.getTopics()
-    setTopics(data)
+    // Normalize topic data to ensure consistent structure
+    const normalizedTopics = data.filter(topic => topic && typeof topic === 'object' && topic.id).map(topic => ({
+      ...topic,
+      // Ensure all required fields are strings
+      title: String(topic.title || ''),
+      description: String(topic.description || ''),
+      category: String(topic.category || ''),
+      difficulty: String(topic.difficulty || 'Beginner'),
+      status: String(topic.status || 'Draft'),
+    }))
+    setTopics(normalizedTopics)
     setLoading(false)
   }
 
@@ -80,7 +90,7 @@ export function useLessons() {
     setLoading(true)
     const data = await apiDataStore.getLessons()
     // Normalize lesson data to ensure consistent structure
-    const normalizedLessons = data.map(lesson => ({
+    const normalizedLessons = data.filter(lesson => lesson && typeof lesson === 'object' && lesson.id).map(lesson => ({
       ...lesson,
       // Convert snake_case to camelCase for consistency
       topicId: lesson.topic_id || lesson.topicId,
@@ -90,6 +100,12 @@ export function useLessons() {
       downloads: Array.isArray(lesson.downloads) ? lesson.downloads : [],
       createdAt: lesson.created_at || lesson.createdAt,
       updatedAt: lesson.updated_at || lesson.updatedAt,
+      // Ensure all required fields are strings
+      title: String(lesson.title || ''),
+      description: String(lesson.description || ''),
+      difficulty: String(lesson.difficulty || 'Beginner'),
+      duration: String(lesson.duration || '15 min'),
+      status: String(lesson.status || 'Draft'),
     }))
     setLessons(normalizedLessons)
     setLoading(false)

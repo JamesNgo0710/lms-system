@@ -295,7 +295,7 @@ export default function ManageTopicsPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {lessons.filter(lesson => lesson && lesson.id).map((lesson, index) => (
+                    {lessons.filter(lesson => lesson && lesson.id && typeof lesson === 'object').map((lesson, index) => (
                       <Card key={lesson.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                         <div className="aspect-video relative overflow-hidden">
                           <img
@@ -313,21 +313,21 @@ export default function ManageTopicsPage() {
                             </div>
                           </div>
                           <div className="absolute bottom-4 left-4 right-4">
-                            <h3 className="text-white font-semibold text-lg mb-2">{lesson.title}</h3>
+                            <h3 className="text-white font-semibold text-lg mb-2">{lesson.title || 'Untitled Lesson'}</h3>
                             <div className="flex items-center justify-between">
                               <Badge variant="secondary" className="bg-white/20 text-white">
-                                {lesson.difficulty}
+                                {lesson.difficulty || 'Beginner'}
                               </Badge>
                               <Badge variant="secondary" className="bg-white/20 text-white">
                                 <Clock className="w-3 h-3 mr-1" />
-                                {lesson.duration}
+                                {lesson.duration || '15 min'}
                               </Badge>
                             </div>
                           </div>
                         </div>
 
                         <CardContent className="p-4">
-                          <p className="text-sm text-gray-600 mb-3 overflow-hidden text-ellipsis" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>{lesson.description}</p>
+                          <p className="text-sm text-gray-600 mb-3 overflow-hidden text-ellipsis" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>{lesson.description || 'No description available'}</p>
 
                           {Array.isArray(lesson.prerequisites) && lesson.prerequisites.length > 0 && (
                             <div className="mb-3">
@@ -335,7 +335,7 @@ export default function ManageTopicsPage() {
                               <div className="flex flex-wrap gap-1">
                                 {lesson.prerequisites.slice(0, 2).map((prereq, index) => (
                                   <Badge key={index} variant="outline" className="text-xs">
-                                    {prereq}
+                                    {typeof prereq === 'string' ? prereq : String(prereq)}
                                   </Badge>
                                 ))}
                                 {lesson.prerequisites.length > 2 && (
@@ -369,7 +369,7 @@ export default function ManageTopicsPage() {
                                 Delete
                               </Button>
                             </div>
-                            <Badge variant={lesson.status === "Published" ? "default" : "secondary"}>{lesson.status}</Badge>
+                            <Badge variant={lesson.status === "Published" ? "default" : "secondary"}>{lesson.status || 'Draft'}</Badge>
                           </div>
                         </CardContent>
                       </Card>

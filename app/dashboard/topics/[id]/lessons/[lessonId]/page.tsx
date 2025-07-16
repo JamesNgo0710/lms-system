@@ -345,7 +345,7 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
                   {lesson.prerequisites.map((prereq, index) => (
                     <div key={index} className="flex items-center space-x-2 p-2 bg-gray-50 dark:bg-gray-800 rounded">
                       <CheckCircle className="w-4 h-4 text-green-500" />
-                      <span className="text-sm text-gray-900 dark:text-gray-100">{prereq}</span>
+                      <span className="text-sm text-gray-900 dark:text-gray-100">{typeof prereq === 'string' ? prereq : String(prereq)}</span>
                     </div>
                   ))}
                 </div>

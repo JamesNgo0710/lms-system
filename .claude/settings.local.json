@@ -39,7 +39,8 @@
       "Bash(ls:*)",
       "Bash(npm cache clean:*)",
       "Bash(mv:*)",
-      "Bash(npx vercel:*)"
+      "Bash(npx vercel:*)",
+      "Bash(npx tsc:*)"
     ],
     "deny": []
   }
