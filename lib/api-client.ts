@@ -1,6 +1,12 @@
 import axios from 'axios';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:8000';
+// Handle truncated URLs from Vercel environment variables
+let API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:8000';
+
+// Fix for truncated Laravel Cloud URL
+if (API_URL.includes('learning-management-syst') && !API_URL.includes('laravel.cloud')) {
+  API_URL = 'https://learning-management-system-master-zcttuk.laravel.cloud';
+}
 
 // Debug API URL configuration
 console.log('🌐 API Client Configuration:', {
