@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../auth/[...nextauth]/route'
-
-const LARAVEL_API_URL = process.env.LARAVEL_API_URL || 'http://localhost:8000/api'
+import { createApiEndpoint, createApiHeaders } from '@/lib/api-url-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,12 +12,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Proxy request to Laravel backend
-    const response = await fetch(`${LARAVEL_API_URL}/topics`, {
-      headers: {
-        'Authorization': `Bearer ${(session as any).accessToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+    const response = await fetch(createApiEndpoint('/topics'), {
+      headers: createApiHeaders(session),
     })
 
     if (!response.ok) {
@@ -44,13 +39,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     // Proxy request to Laravel backend
-    const response = await fetch(`${LARAVEL_API_URL}/topics`, {
+    const response = await fetch(createApiEndpoint('/topics'), {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${(session as any).accessToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+      headers: createApiHeaders(session),
       body: JSON.stringify(body),
     })
 

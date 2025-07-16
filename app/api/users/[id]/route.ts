@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { createApiEndpoint, createApiHeaders } from '@/lib/api-url-utils'
 
-const LARAVEL_BASE_URL = process.env.LARAVEL_BASE_URL || 'http://localhost:8000'
+
 
 export async function GET(
   request: NextRequest,
@@ -22,13 +23,9 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const response = await fetch(`${LARAVEL_BASE_URL}/api/users/${id}`, {
+    const response = await fetch(createApiEndpoint('/users/${id}'), {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${session.user.laravelToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+      headers: createApiHeaders(session),
     })
 
     if (!response.ok) {
@@ -92,13 +89,9 @@ export async function PUT(
       updateData.role = role === 'creator' ? 'teacher' : role
     }
 
-    const response = await fetch(`${LARAVEL_BASE_URL}/api/users/${id}`, {
+    const response = await fetch(createApiEndpoint('/users/${id}'), {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${session.user.laravelToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+      headers: createApiHeaders(session),
       body: JSON.stringify(updateData),
     })
 
@@ -148,13 +141,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'Cannot delete your own account' }, { status: 400 })
     }
 
-    const response = await fetch(`${LARAVEL_BASE_URL}/api/users/${id}`, {
+    const response = await fetch(createApiEndpoint('/users/${id}'), {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${session.user.laravelToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+      headers: createApiHeaders(session),
     })
 
     if (!response.ok) {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../auth/[...nextauth]/route'
 
-const LARAVEL_API_URL = process.env.LARAVEL_API_URL || 'http://localhost:8000/api'
+
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,12 +13,8 @@ export async function GET(request: NextRequest) {
     }
 
     // Proxy request to Laravel backend
-    const response = await fetch(`${LARAVEL_API_URL}/assessments`, {
-      headers: {
-        'Authorization': `Bearer ${(session as any).accessToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+    const response = await fetch(createApiEndpoint('/assessments'), {
+      headers: createApiHeaders(session),
     })
 
     if (!response.ok) {
@@ -44,13 +40,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     // Proxy request to Laravel backend
-    const response = await fetch(`${LARAVEL_API_URL}/assessments`, {
+    const response = await fetch(createApiEndpoint('/assessments'), {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${(session as any).accessToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+      headers: createApiHeaders(session),
       body: JSON.stringify(body),
     })
 

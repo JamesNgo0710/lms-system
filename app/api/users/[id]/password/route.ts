@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/route"
 
-const LARAVEL_BASE_URL = process.env.LARAVEL_BASE_URL || 'http://localhost:8000'
-
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -48,13 +46,9 @@ export async function PUT(
     console.log("Password change validated for user:", id)
     
     // Update password via Laravel API
-    const response = await fetch(`${LARAVEL_BASE_URL}/api/users/${id}/password`, {
+    const response = await fetch(createApiEndpoint('/users/${id}/password'), {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${session.user.laravelToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+      headers: createApiHeaders(session),
       body: JSON.stringify({
         password: newPassword,
         password_confirmation: newPassword,

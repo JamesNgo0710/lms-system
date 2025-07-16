@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../../auth/[...nextauth]/route'
 
-const LARAVEL_API_URL = process.env.LARAVEL_API_URL || 'http://localhost:8000/api'
+
 
 export async function GET(
   request: NextRequest,
@@ -18,12 +18,8 @@ export async function GET(
     const { id } = params
 
     // Proxy request to Laravel backend
-    const response = await fetch(`${LARAVEL_API_URL}/assessments/${id}`, {
-      headers: {
-        'Authorization': `Bearer ${(session as any).accessToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+    const response = await fetch(createApiEndpoint('/assessments/${id}'), {
+      headers: createApiHeaders(session),
     })
 
     if (!response.ok) {
@@ -53,13 +49,9 @@ export async function PUT(
     const body = await request.json()
 
     // Proxy request to Laravel backend
-    const response = await fetch(`${LARAVEL_API_URL}/assessments/${id}`, {
+    const response = await fetch(createApiEndpoint('/assessments/${id}'), {
       method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${(session as any).accessToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+      headers: createApiHeaders(session),
       body: JSON.stringify(body),
     })
 
@@ -89,13 +81,9 @@ export async function DELETE(
     const { id } = params
 
     // Proxy request to Laravel backend
-    const response = await fetch(`${LARAVEL_API_URL}/assessments/${id}`, {
+    const response = await fetch(createApiEndpoint('/assessments/${id}'), {
       method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${(session as any).accessToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+      headers: createApiHeaders(session),
     })
 
     if (!response.ok) {

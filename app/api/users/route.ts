@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/app/api/auth/[...nextauth]/route'
-
-const LARAVEL_BASE_URL = process.env.LARAVEL_BASE_URL || 'http://localhost:8000'
+import { createApiEndpoint, createApiHeaders } from '@/lib/api-url-utils'
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,13 +16,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const response = await fetch(`${LARAVEL_BASE_URL}/api/users`, {
+    const response = await fetch(createApiEndpoint('/users'), {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${session.user.laravelToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+      headers: createApiHeaders(session),
     })
 
     if (!response.ok) {
@@ -78,13 +73,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Create user via Laravel API
-    const response = await fetch(`${LARAVEL_BASE_URL}/api/users`, {
+    const response = await fetch(createApiEndpoint('/users'), {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${session.user.laravelToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+      headers: createApiHeaders(session),
       body: JSON.stringify({
         first_name: firstName,
         last_name: lastName,

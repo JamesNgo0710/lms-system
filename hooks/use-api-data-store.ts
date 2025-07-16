@@ -136,6 +136,7 @@ export function useLessons() {
 export function useLessonCompletions() {
   const [completions, setCompletions] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [progressCache, setProgressCache] = useState<Record<string, any>>({})
   const { data: session } = useSession()
 
   useEffect(() => {
@@ -173,7 +174,37 @@ export function useLessonCompletions() {
     return success
   }
 
-  const getTopicProgress = async (userId: string, topicId: number) => {
+  const getTopicProgress = (userId: string, topicId: number) => {
+    const cacheKey = `${userId}-${topicId}`
+    
+    // Return cached progress if available
+    if (progressCache[cacheKey]) {
+      return progressCache[cacheKey]
+    }
+    
+    // Calculate progress from completions synchronously
+    const userCompletions = completions.filter(completion => 
+      completion.user_id === userId && completion.topic_id === topicId
+    )
+    
+    // For now, return a default progress structure
+    // This will be updated when the async data loads
+    const progress = {
+      completed: userCompletions.length,
+      total: 0, // Will be updated when lessons load
+      percentage: 0
+    }
+    
+    // Cache the result
+    setProgressCache(prev => ({
+      ...prev,
+      [cacheKey]: progress
+    }))
+    
+    return progress
+  }
+
+  const getTopicProgressAsync = async (userId: string, topicId: number) => {
     return await apiDataStore.getTopicProgress(userId, topicId)
   }
 
@@ -192,7 +223,9 @@ export function useLessonCompletions() {
     markLessonComplete,
     markLessonIncomplete,
     getTopicProgress,
-    isLessonCompleted, // Missing function
+    getTopicProgressAsync,
+    isLessonCompleted,
+    trackLessonView: apiDataStore.trackLessonView.bind(apiDataStore),
     refresh: loadCompletions
   }
 }
@@ -289,16 +322,24 @@ export function useAssessmentAttempts() {
     return userAttempts.length > 0 ? userAttempts[userAttempts.length - 1] : null
   }
 
-  const canTakeAssessment = (userId: string, topicId: number) => {
-    // Basic implementation - can be enhanced with cooldown logic
-    const lastAttempt = getLastAssessmentAttempt(userId, topicId)
-    if (!lastAttempt) return true
+  const canTakeAssessment = (userId: string, assessmentId: number) => {
+    // Find the assessment and get its topic ID
+    const assessment = assessments.find(a => a.id === assessmentId)
+    if (!assessment) return { canTake: false, message: "Assessment not found" }
+    
+    const lastAttempt = getLastAssessmentAttempt(userId, assessment.topicId)
+    if (!lastAttempt) return { canTake: true, message: "" }
     
     // For now, allow retaking after 1 hour
     const lastAttemptTime = new Date(lastAttempt.completed_at || lastAttempt.created_at)
     const now = new Date()
     const hoursSinceLastAttempt = (now.getTime() - lastAttemptTime.getTime()) / (1000 * 60 * 60)
-    return hoursSinceLastAttempt >= 1
+    const canTake = hoursSinceLastAttempt >= 1
+    
+    return {
+      canTake,
+      message: canTake ? "" : `You can retake this assessment in ${Math.ceil(1 - hoursSinceLastAttempt)} hour(s)`
+    }
   }
 
   return {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../auth/[...nextauth]/route'
 
-const LARAVEL_API_URL = process.env.LARAVEL_API_URL || 'http://localhost:8000/api'
+
 
 export async function POST(
   request: NextRequest,
@@ -19,13 +19,9 @@ export async function POST(
     const body = await request.json()
 
     // Proxy request to Laravel backend
-    const response = await fetch(`${LARAVEL_API_URL}/lessons/${id}/view`, {
+    const response = await fetch(createApiEndpoint('/lessons/${id}/view'), {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${(session as any).accessToken}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-      },
+      headers: createApiHeaders(session),
       body: JSON.stringify(body),
     })
 
