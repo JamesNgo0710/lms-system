@@ -24,6 +24,10 @@ return [
         'http://127.0.0.1:3000',
         'https://localhost:3000',
         'https://127.0.0.1:3000',
+        'https://lms-system-duh.vercel.app',
+        'https://lms-system-lu6z.vercel.app',
+        'https://lms-system-dep.vercel.app',
+        'https://lms-system-xkit.vercel.app',
     ],
 
     'allowed_origins_patterns' => [],
