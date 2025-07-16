@@ -126,12 +126,37 @@ export function useLessons() {
     return lessons.find(lesson => lesson.id === id)
   }
 
-  const getLessonsByTopic = async (topicId: number) => {
-    return await apiDataStore.getLessonsByTopic(topicId)
-  }
+  // Removed getLessonsByTopic as it returns raw backend data
+  // Use getLessonsByTopicId instead which returns normalized data
 
   const getLessonsByTopicId = (topicId: number) => {
-    return lessons.filter(lesson => lesson.topicId === topicId || lesson.topic_id === topicId)
+    return lessons.filter(lesson => lesson.topicId === topicId).map(lesson => {
+      // Double-check that we return a clean object
+      if (!lesson || typeof lesson !== 'object' || !lesson.id) {
+        console.error('Invalid lesson in getLessonsByTopicId:', lesson)
+        return null
+      }
+      
+      // Return an even cleaner object to be absolutely sure
+      return {
+        id: lesson.id,
+        topicId: lesson.topicId,
+        title: String(lesson.title || ''),
+        description: String(lesson.description || ''),
+        difficulty: String(lesson.difficulty || 'Beginner'),
+        duration: String(lesson.duration || '15 min'),
+        status: String(lesson.status || 'Draft'),
+        content: String(lesson.content || ''),
+        videoUrl: lesson.videoUrl || '',
+        socialLinks: lesson.socialLinks || {},
+        prerequisites: Array.isArray(lesson.prerequisites) ? lesson.prerequisites : [],
+        downloads: Array.isArray(lesson.downloads) ? lesson.downloads : [],
+        order: lesson.order || 0,
+        image: lesson.image || '',
+        createdAt: lesson.createdAt || '',
+        updatedAt: lesson.updatedAt || ''
+      }
+    }).filter(lesson => lesson !== null)
   }
 
   const addLesson = async (lessonData: any) => {
@@ -218,7 +243,6 @@ export function useLessons() {
     lessons,
     loading,
     getLessonById,
-    getLessonsByTopic,
     getLessonsByTopicId,
     addLesson,
     updateLesson,
