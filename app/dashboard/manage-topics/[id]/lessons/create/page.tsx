@@ -82,6 +82,7 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
 
   const [difficultyValue, setDifficultyValue] = useState([1])
   const [prerequisitesOpen, setPrerequisitesOpen] = useState(false)
+  const [isCreating, setIsCreating] = useState(false)
 
   const availablePrerequisites = existingLessons.map((lesson) => lesson.title)
 
@@ -321,7 +322,7 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
     }))
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.title || !formData.description) {
       toast({
         title: "Error",
@@ -331,19 +332,21 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
       return
     }
 
+    setIsCreating(true)
+
     const nextOrder = Math.max(0, ...existingLessons.map((l) => l.order)) + 1
 
     // Create lesson with file handling
     const lessonData = {
-      topicId,
+      topic_id: topicId, // Use topic_id instead of topicId to match backend
       title: formData.title,
       description: formData.description,
       duration: `${formData.duration} min`,
       difficulty: formData.difficulty,
-      videoUrl: formData.videoUrl,
+      video_url: formData.videoUrl, // Use video_url instead of videoUrl
       prerequisites: formData.prerequisites,
       content: contentEditorRef.current?.innerHTML || formData.content,
-      socialLinks: formData.socialLinks,
+      social_links: formData.socialLinks, // Use social_links instead of socialLinks
       downloads: formData.downloads.map(download => ({
         id: download.id,
         name: download.name,
@@ -352,18 +355,36 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
       })),
       order: nextOrder,
       status: formData.status,
-      createdAt: new Date().toLocaleDateString('en-CA'),
+      created_at: new Date().toISOString(), // Use created_at and ISO format
       image: formData.image,
     }
 
-    addLesson(lessonData)
-
-    toast({
-      title: "Success",
-      description: "Lesson created successfully",
-    })
-
-    router.push(`/dashboard/manage-topics/${topicId}`)
+    try {
+      const result = await addLesson(lessonData)
+      
+      if (result) {
+        toast({
+          title: "Success",
+          description: "Lesson created successfully",
+        })
+        router.push(`/dashboard/manage-topics/${topicId}`)
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to create lesson. Please try again.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error creating lesson:', error)
+      toast({
+        title: "Error",
+        description: "Failed to create lesson. Please check the form and try again.",
+        variant: "destructive",
+      })
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   if (!topic) {
@@ -804,8 +825,12 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
 
             {/* Action Buttons */}
             <div className="flex justify-center space-x-4 pt-6">
-              <Button onClick={handleSave} className="bg-orange-500 hover:bg-orange-600">
-                Create Lesson
+              <Button 
+                onClick={handleSave} 
+                disabled={isCreating}
+                className="bg-orange-500 hover:bg-orange-600 disabled:opacity-50"
+              >
+                {isCreating ? "Creating..." : "Create Lesson"}
               </Button>
               <Link href={`/dashboard/manage-topics/${topicId}`}>
                 <Button variant="outline">Cancel</Button>

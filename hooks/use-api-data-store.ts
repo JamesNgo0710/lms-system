@@ -99,6 +99,8 @@ export function useLessons() {
     const newLesson = await apiDataStore.createLesson(lessonData)
     if (newLesson) {
       setLessons(prev => [...prev, newLesson])
+      // Refresh the lessons list to ensure we have the latest data
+      await loadLessons()
     }
     return newLesson
   }
