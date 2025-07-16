@@ -88,26 +88,37 @@ export function useLessons() {
 
   const loadLessons = async () => {
     setLoading(true)
-    const data = await apiDataStore.getLessons()
-    // Normalize lesson data to ensure consistent structure
-    const normalizedLessons = data.filter(lesson => lesson && typeof lesson === 'object' && lesson.id).map(lesson => ({
-      ...lesson,
-      // Convert snake_case to camelCase for consistency
-      topicId: lesson.topic_id || lesson.topicId,
-      videoUrl: lesson.video_url || lesson.videoUrl,
-      socialLinks: lesson.social_links || lesson.socialLinks || {},
-      prerequisites: Array.isArray(lesson.prerequisites) ? lesson.prerequisites : [],
-      downloads: Array.isArray(lesson.downloads) ? lesson.downloads : [],
-      createdAt: lesson.created_at || lesson.createdAt,
-      updatedAt: lesson.updated_at || lesson.updatedAt,
-      // Ensure all required fields are strings
-      title: String(lesson.title || ''),
-      description: String(lesson.description || ''),
-      difficulty: String(lesson.difficulty || 'Beginner'),
-      duration: String(lesson.duration || '15 min'),
-      status: String(lesson.status || 'Draft'),
-    }))
-    setLessons(normalizedLessons)
+    try {
+      const data = await apiDataStore.getLessons()
+      // Normalize lesson data to ensure consistent structure
+      const normalizedLessons = data.filter(lesson => lesson && typeof lesson === 'object' && lesson.id).map(lesson => {
+        // Create a clean object with only the necessary fields
+        const cleanLesson = {
+          id: lesson.id,
+          topicId: lesson.topic_id || lesson.topicId,
+          videoUrl: lesson.video_url || lesson.videoUrl,
+          socialLinks: lesson.social_links || lesson.socialLinks || {},
+          prerequisites: Array.isArray(lesson.prerequisites) ? lesson.prerequisites : [],
+          downloads: Array.isArray(lesson.downloads) ? lesson.downloads : [],
+          createdAt: lesson.created_at || lesson.createdAt,
+          updatedAt: lesson.updated_at || lesson.updatedAt,
+          order: lesson.order || 0,
+          image: lesson.image || '',
+          // Ensure all required fields are strings
+          title: String(lesson.title || ''),
+          description: String(lesson.description || ''),
+          difficulty: String(lesson.difficulty || 'Beginner'),
+          duration: String(lesson.duration || '15 min'),
+          status: String(lesson.status || 'Draft'),
+          content: String(lesson.content || ''),
+        }
+        return cleanLesson
+      })
+      setLessons(normalizedLessons)
+    } catch (error) {
+      console.error('Error loading lessons:', error)
+      setLessons([])
+    }
     setLoading(false)
   }
 
@@ -127,10 +138,9 @@ export function useLessons() {
     try {
       const newLesson = await apiDataStore.createLesson(lessonData)
       if (newLesson) {
-        // Ensure the new lesson has the same structure as existing lessons
-        const normalizedLesson = {
-          ...newLesson,
-          // Convert snake_case to camelCase for consistency
+        // Create a clean object with only the necessary fields
+        const cleanLesson = {
+          id: newLesson.id,
           topicId: newLesson.topic_id || newLesson.topicId,
           videoUrl: newLesson.video_url || newLesson.videoUrl,
           socialLinks: newLesson.social_links || newLesson.socialLinks || {},
@@ -138,10 +148,19 @@ export function useLessons() {
           downloads: Array.isArray(newLesson.downloads) ? newLesson.downloads : [],
           createdAt: newLesson.created_at || newLesson.createdAt,
           updatedAt: newLesson.updated_at || newLesson.updatedAt,
+          order: newLesson.order || 0,
+          image: newLesson.image || '',
+          // Ensure all required fields are strings
+          title: String(newLesson.title || ''),
+          description: String(newLesson.description || ''),
+          difficulty: String(newLesson.difficulty || 'Beginner'),
+          duration: String(newLesson.duration || '15 min'),
+          status: String(newLesson.status || 'Draft'),
+          content: String(newLesson.content || ''),
         }
         
-        setLessons(prev => [...prev, normalizedLesson])
-        return normalizedLesson
+        setLessons(prev => [...prev, cleanLesson])
+        return cleanLesson
       }
       return newLesson
     } catch (error) {
@@ -154,10 +173,9 @@ export function useLessons() {
     try {
       const updatedLesson = await apiDataStore.updateLesson(id, lessonData)
       if (updatedLesson) {
-        // Ensure the updated lesson has the same structure as existing lessons
-        const normalizedLesson = {
-          ...updatedLesson,
-          // Convert snake_case to camelCase for consistency
+        // Create a clean object with only the necessary fields
+        const cleanLesson = {
+          id: updatedLesson.id,
           topicId: updatedLesson.topic_id || updatedLesson.topicId,
           videoUrl: updatedLesson.video_url || updatedLesson.videoUrl,
           socialLinks: updatedLesson.social_links || updatedLesson.socialLinks || {},
@@ -165,12 +183,21 @@ export function useLessons() {
           downloads: Array.isArray(updatedLesson.downloads) ? updatedLesson.downloads : [],
           createdAt: updatedLesson.created_at || updatedLesson.createdAt,
           updatedAt: updatedLesson.updated_at || updatedLesson.updatedAt,
+          order: updatedLesson.order || 0,
+          image: updatedLesson.image || '',
+          // Ensure all required fields are strings
+          title: String(updatedLesson.title || ''),
+          description: String(updatedLesson.description || ''),
+          difficulty: String(updatedLesson.difficulty || 'Beginner'),
+          duration: String(updatedLesson.duration || '15 min'),
+          status: String(updatedLesson.status || 'Draft'),
+          content: String(updatedLesson.content || ''),
         }
         
         setLessons(prev => prev.map(lesson => 
-          lesson.id === id ? normalizedLesson : lesson
+          lesson.id === id ? cleanLesson : lesson
         ))
-        return normalizedLesson
+        return cleanLesson
       }
       return updatedLesson
     } catch (error) {
