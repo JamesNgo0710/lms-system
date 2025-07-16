@@ -265,21 +265,21 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                             </div>
                           </div>
                           <div className="absolute bottom-4 left-4 right-4">
-                            <h3 className="text-white font-semibold text-lg mb-2">{lesson.title}</h3>
+                            <h3 className="text-white font-semibold text-lg mb-2">{lesson.title || 'Untitled Lesson'}</h3>
                             <div className="flex items-center justify-between">
                               <Badge variant="secondary" className="bg-white/20 text-white">
-                                {lesson.difficulty}
+                                {lesson.difficulty || 'Beginner'}
                               </Badge>
                               <Badge variant="secondary" className="bg-white/20 text-white">
                                 <Clock className="w-3 h-3 mr-1" />
-                                {lesson.duration}
+                                {lesson.duration || '15 min'}
                               </Badge>
                             </div>
                           </div>
                         </div>
 
                         <CardContent className="p-4">
-                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{lesson.description}</p>
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{lesson.description || 'No description available'}</p>
 
                           {lesson.prerequisites.length > 0 && (
                             <div className="mb-3">
@@ -287,7 +287,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                               <div className="flex flex-wrap gap-1">
                                 {lesson.prerequisites.slice(0, 2).map((prereq, index) => (
                                   <Badge key={index} variant="outline" className="text-xs">
-                                    {prereq}
+                                    {typeof prereq === 'string' ? prereq : String(prereq)}
                                   </Badge>
                                 ))}
                                 {lesson.prerequisites.length > 2 && (
@@ -347,7 +347,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                               </Link>
                             )}
                             <Badge variant={lesson.status === "Published" ? "default" : "secondary"}>
-                              {lesson.status}
+                              {lesson.status || 'Draft'}
                             </Badge>
                           </div>
                         </CardContent>

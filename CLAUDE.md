@@ -3,7 +3,7 @@
 ## Project Architecture
 - **Frontend**: Next.js application hosted on Vercel
   - Repository: `JamesNgo0710/lms-system`
-  - Deployment: Vercel (https://lms-system-xkit.vercel.app)
+  - Deployment: Vercel (https://lms-system-dep.vercel.app/)
   - Framework: Next.js with TypeScript
 
 - **Backend**: Laravel API hosted on Laravel Cloud

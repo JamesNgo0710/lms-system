@@ -579,8 +579,8 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                         <TableRow key={lesson.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800">
                           <TableCell className="py-4">
                             <div>
-                              <p className="font-semibold text-gray-900 dark:text-gray-100">{lesson.title}</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{lesson.description}</p>
+                              <p className="font-semibold text-gray-900 dark:text-gray-100">{lesson.title || 'Untitled Lesson'}</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{lesson.description || 'No description available'}</p>
                             </div>
                           </TableCell>
                           <TableCell className="py-4">
@@ -591,12 +591,12 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                           </TableCell>
                           <TableCell className="py-4">
                             <Badge className={getDifficultyColor(lesson.difficulty)}>
-                              {lesson.difficulty}
+                              {lesson.difficulty || 'Beginner'}
                             </Badge>
                           </TableCell>
                           <TableCell className="py-4">
                             <Badge className={getStatusColor(lesson.status)}>
-                              {lesson.status}
+                              {lesson.status || 'Draft'}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-right py-4">
