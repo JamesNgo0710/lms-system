@@ -38,7 +38,8 @@
       "Bash(grep:*)",
       "Bash(ls:*)",
       "Bash(npm cache clean:*)",
-      "Bash(mv:*)"
+      "Bash(mv:*)",
+      "Bash(npx vercel:*)"
     ],
     "deny": []
   }

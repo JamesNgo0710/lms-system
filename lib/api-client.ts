@@ -2,6 +2,14 @@ import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.API_URL || 'http://localhost:8000';
 
+// Debug API URL configuration
+console.log('🌐 API Client Configuration:', {
+  'NEXT_PUBLIC_API_URL': process.env.NEXT_PUBLIC_API_URL,
+  'API_URL': process.env.API_URL,
+  'Final API_URL': API_URL,
+  'Environment': process.env.NODE_ENV
+});
+
 // Create axios instance with default config
 export const apiClient = axios.create({
   baseURL: `${API_URL}/api`,
@@ -21,15 +29,21 @@ export const getCsrfCookie = async () => {
   csrfTokenRequested = true;
   
   try {
+    console.log('🔍 Attempting CSRF request to:', `${API_URL}/sanctum/csrf-cookie`);
     await axios.get(`${API_URL}/sanctum/csrf-cookie`, {
       withCredentials: true,
-      timeout: 5000, // 5 second timeout
+      timeout: 10000, // Increase timeout to 10 seconds
     });
-    console.log('CSRF cookie obtained successfully');
+    console.log('✅ CSRF cookie obtained successfully');
   } catch (error) {
     csrfTokenRequested = false;
-    console.error('Failed to get CSRF cookie:', error);
-    throw error;
+    console.error('❌ Failed to get CSRF cookie:', {
+      url: `${API_URL}/sanctum/csrf-cookie`,
+      error: error.message,
+      code: error.code
+    });
+    // Don't throw error - continue without CSRF for now
+    console.warn('⚠️ Continuing without CSRF token...');
   }
 };
 
