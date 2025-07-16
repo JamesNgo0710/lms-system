@@ -31,7 +31,12 @@ export function useUserData() {
     setError(null)
 
     try {
-      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      let API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+      
+      // Fix for truncated Laravel Cloud URL
+      if (API_URL.includes('learning-management-syst') && !API_URL.includes('laravel.cloud')) {
+        API_URL = 'https://learning-management-system-master-zcttuk.laravel.cloud';
+      }
       const response = await axios.get(`${API_URL}/api/users/${session.user.id}`, {
         headers: {
           'Authorization': `Bearer ${session.accessToken}`,
