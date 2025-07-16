@@ -83,8 +83,11 @@ export function useLessons() {
     const normalizedLessons = data.map(lesson => ({
       ...lesson,
       // Convert snake_case to camelCase for consistency
+      topicId: lesson.topic_id || lesson.topicId,
       videoUrl: lesson.video_url || lesson.videoUrl,
       socialLinks: lesson.social_links || lesson.socialLinks || {},
+      prerequisites: Array.isArray(lesson.prerequisites) ? lesson.prerequisites : [],
+      downloads: Array.isArray(lesson.downloads) ? lesson.downloads : [],
       createdAt: lesson.created_at || lesson.createdAt,
       updatedAt: lesson.updated_at || lesson.updatedAt,
     }))
@@ -101,7 +104,7 @@ export function useLessons() {
   }
 
   const getLessonsByTopicId = (topicId: number) => {
-    return lessons.filter(lesson => lesson.topic_id === topicId)
+    return lessons.filter(lesson => lesson.topicId === topicId || lesson.topic_id === topicId)
   }
 
   const addLesson = async (lessonData: any) => {
@@ -112,15 +115,16 @@ export function useLessons() {
         const normalizedLesson = {
           ...newLesson,
           // Convert snake_case to camelCase for consistency
+          topicId: newLesson.topic_id || newLesson.topicId,
           videoUrl: newLesson.video_url || newLesson.videoUrl,
           socialLinks: newLesson.social_links || newLesson.socialLinks || {},
+          prerequisites: Array.isArray(newLesson.prerequisites) ? newLesson.prerequisites : [],
+          downloads: Array.isArray(newLesson.downloads) ? newLesson.downloads : [],
           createdAt: newLesson.created_at || newLesson.createdAt,
           updatedAt: newLesson.updated_at || newLesson.updatedAt,
         }
         
         setLessons(prev => [...prev, normalizedLesson])
-        // Refresh the lessons list to ensure we have the latest data
-        await loadLessons()
         return normalizedLesson
       }
       return newLesson
@@ -138,8 +142,11 @@ export function useLessons() {
         const normalizedLesson = {
           ...updatedLesson,
           // Convert snake_case to camelCase for consistency
+          topicId: updatedLesson.topic_id || updatedLesson.topicId,
           videoUrl: updatedLesson.video_url || updatedLesson.videoUrl,
           socialLinks: updatedLesson.social_links || updatedLesson.socialLinks || {},
+          prerequisites: Array.isArray(updatedLesson.prerequisites) ? updatedLesson.prerequisites : [],
+          downloads: Array.isArray(updatedLesson.downloads) ? updatedLesson.downloads : [],
           createdAt: updatedLesson.created_at || updatedLesson.createdAt,
           updatedAt: updatedLesson.updated_at || updatedLesson.updatedAt,
         }
