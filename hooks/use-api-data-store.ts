@@ -79,7 +79,16 @@ export function useLessons() {
   const loadLessons = async () => {
     setLoading(true)
     const data = await apiDataStore.getLessons()
-    setLessons(data)
+    // Normalize lesson data to ensure consistent structure
+    const normalizedLessons = data.map(lesson => ({
+      ...lesson,
+      // Convert snake_case to camelCase for consistency
+      videoUrl: lesson.video_url || lesson.videoUrl,
+      socialLinks: lesson.social_links || lesson.socialLinks || {},
+      createdAt: lesson.created_at || lesson.createdAt,
+      updatedAt: lesson.updated_at || lesson.updatedAt,
+    }))
+    setLessons(normalizedLessons)
     setLoading(false)
   }
 
@@ -96,23 +105,55 @@ export function useLessons() {
   }
 
   const addLesson = async (lessonData: any) => {
-    const newLesson = await apiDataStore.createLesson(lessonData)
-    if (newLesson) {
-      setLessons(prev => [...prev, newLesson])
-      // Refresh the lessons list to ensure we have the latest data
-      await loadLessons()
+    try {
+      const newLesson = await apiDataStore.createLesson(lessonData)
+      if (newLesson) {
+        // Ensure the new lesson has the same structure as existing lessons
+        const normalizedLesson = {
+          ...newLesson,
+          // Convert snake_case to camelCase for consistency
+          videoUrl: newLesson.video_url || newLesson.videoUrl,
+          socialLinks: newLesson.social_links || newLesson.socialLinks || {},
+          createdAt: newLesson.created_at || newLesson.createdAt,
+          updatedAt: newLesson.updated_at || newLesson.updatedAt,
+        }
+        
+        setLessons(prev => [...prev, normalizedLesson])
+        // Refresh the lessons list to ensure we have the latest data
+        await loadLessons()
+        return normalizedLesson
+      }
+      return newLesson
+    } catch (error) {
+      console.error('Error creating lesson:', error)
+      return null
     }
-    return newLesson
   }
 
   const updateLesson = async (id: number, lessonData: any) => {
-    const updatedLesson = await apiDataStore.updateLesson(id, lessonData)
-    if (updatedLesson) {
-      setLessons(prev => prev.map(lesson => 
-        lesson.id === id ? updatedLesson : lesson
-      ))
+    try {
+      const updatedLesson = await apiDataStore.updateLesson(id, lessonData)
+      if (updatedLesson) {
+        // Ensure the updated lesson has the same structure as existing lessons
+        const normalizedLesson = {
+          ...updatedLesson,
+          // Convert snake_case to camelCase for consistency
+          videoUrl: updatedLesson.video_url || updatedLesson.videoUrl,
+          socialLinks: updatedLesson.social_links || updatedLesson.socialLinks || {},
+          createdAt: updatedLesson.created_at || updatedLesson.createdAt,
+          updatedAt: updatedLesson.updated_at || updatedLesson.updatedAt,
+        }
+        
+        setLessons(prev => prev.map(lesson => 
+          lesson.id === id ? normalizedLesson : lesson
+        ))
+        return normalizedLesson
+      }
+      return updatedLesson
+    } catch (error) {
+      console.error('Error updating lesson:', error)
+      return null
     }
-    return updatedLesson
   }
 
   const deleteLesson = async (id: number) => {
