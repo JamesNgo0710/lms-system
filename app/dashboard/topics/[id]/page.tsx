@@ -94,6 +94,17 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
     }
   }
 
+  if (topicsLoading || lessonsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold text-gray-900">Loading {topicsLoading ? 'topic' : 'lessons'}...</h2>
+        </div>
+      </div>
+    )
+  }
+
   if (!topic) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -233,12 +244,23 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {lessons.filter(lesson => lesson && typeof lesson === 'object' && lesson.id).map((lesson, index) => {
+                  {lessons.filter(lesson => {
+                    // Ensure lesson is properly normalized (has camelCase properties, not snake_case)
+                    return lesson && 
+                           lesson.id && 
+                           typeof lesson === 'object' && 
+                           lesson.topicId && // This is camelCase, not topic_id
+                           !lesson.topic_id && // Ensure no snake_case properties
+                           !lesson.created_at && 
+                           !lesson.updated_at &&
+                           !lesson.video_url &&
+                           !lesson.social_links
+                  }).map((lesson, index) => {
                     const lessonCompleted = user && isHydrated ? isLessonCompleted(user.id, lesson.id) : false
                     
                     // Debug logging to identify the issue
                     if (typeof lesson !== 'object' || !lesson.id) {
-                      console.warn('Invalid lesson object:', lesson);
+                      console.warn('Invalid lesson object:', { id: lesson?.id, title: lesson?.title, hasSnakeCase: !!(lesson?.topic_id || lesson?.video_url) });
                       return null;
                     }
                     

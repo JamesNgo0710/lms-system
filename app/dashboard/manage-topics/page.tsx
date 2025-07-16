@@ -56,7 +56,7 @@ export default function ManageTopicsPage() {
   const user = session?.user
   const router = useRouter()
   const { topics, deleteTopic, updateTopic } = useTopics()
-  const { getLessonsByTopicId, deleteLesson } = useLessons()
+  const { getLessonsByTopicId, deleteLesson, loading: lessonsLoading } = useLessons()
   const { isLessonCompleted } = useLessonCompletions()
   const { toast } = useToast()
 
@@ -129,6 +129,20 @@ export default function ManageTopicsPage() {
 
   if (selectedTopic) {
     const lessons = getLessonsByTopicId(selectedTopic.id) || []
+    
+    // Don't render lessons while they're still loading
+    if (lessonsLoading) {
+      return (
+        <div className="space-y-6">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+              <h2 className="text-2xl font-bold text-gray-900">Loading lessons...</h2>
+            </div>
+          </div>
+        </div>
+      )
+    }
 
     return (
       <div className="space-y-6">
@@ -295,7 +309,18 @@ export default function ManageTopicsPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {lessons.filter(lesson => lesson && lesson.id && typeof lesson === 'object').map((lesson, index) => (
+                    {lessons.filter(lesson => {
+                      // Ensure lesson is properly normalized (has camelCase properties, not snake_case)
+                      return lesson && 
+                             lesson.id && 
+                             typeof lesson === 'object' && 
+                             lesson.topicId && // This is camelCase, not topic_id
+                             !lesson.topic_id && // Ensure no snake_case properties
+                             !lesson.created_at && 
+                             !lesson.updated_at &&
+                             !lesson.video_url &&
+                             !lesson.social_links
+                    }).map((lesson, index) => (
                       <Card key={lesson.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                         <div className="aspect-video relative overflow-hidden">
                           <img

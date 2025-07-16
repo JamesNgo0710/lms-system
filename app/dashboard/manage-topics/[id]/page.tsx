@@ -45,7 +45,7 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
   const { data: session } = useSession()
   const router = useRouter()
   const { getTopicById, deleteTopic, updateTopic, loading: topicsLoading } = useTopics()
-  const { getLessonsByTopicId, deleteLesson } = useLessons()
+  const { getLessonsByTopicId, deleteLesson, loading: lessonsLoading } = useLessons()
   const { isLessonCompleted } = useLessonCompletions()
   const { toast } = useToast()
 
@@ -118,12 +118,12 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
     }
   }
 
-  if (topicsLoading) {
+  if (topicsLoading || lessonsLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <h2 className="text-2xl font-bold text-gray-900">Loading topic...</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Loading {topicsLoading ? 'topic' : 'lessons'}...</h2>
         </div>
       </div>
     )
@@ -442,7 +442,18 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                 </div>
               ) : viewMode === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {lessons.map((lesson, index) => (
+                  {lessons.filter(lesson => {
+                    // Ensure lesson is properly normalized (has camelCase properties, not snake_case)
+                    return lesson && 
+                           lesson.id && 
+                           typeof lesson === 'object' && 
+                           lesson.topicId && // This is camelCase, not topic_id
+                           !lesson.topic_id && // Ensure no snake_case properties
+                           !lesson.created_at && 
+                           !lesson.updated_at &&
+                           !lesson.video_url &&
+                           !lesson.social_links
+                  }).map((lesson, index) => (
                     <Card key={lesson.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
                       <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">
                         <img
@@ -579,7 +590,18 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {lessons.map((lesson) => (
+                      {lessons.filter(lesson => {
+                        // Ensure lesson is properly normalized (has camelCase properties, not snake_case)
+                        return lesson && 
+                               lesson.id && 
+                               typeof lesson === 'object' && 
+                               lesson.topicId && // This is camelCase, not topic_id
+                               !lesson.topic_id && // Ensure no snake_case properties
+                               !lesson.created_at && 
+                               !lesson.updated_at &&
+                               !lesson.video_url &&
+                               !lesson.social_links
+                      }).map((lesson) => (
                         <TableRow key={lesson.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800">
                           <TableCell className="py-4">
                             <div>

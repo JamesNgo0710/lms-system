@@ -130,7 +130,7 @@ export function useLessons() {
       )
       
       if (lessonWithSnakeCase) {
-        console.error('FOUND LESSON WITH SNAKE_CASE PROPERTIES:', lessonWithSnakeCase)
+        console.error('FOUND LESSON WITH SNAKE_CASE PROPERTIES:', { id: lessonWithSnakeCase?.id, title: lessonWithSnakeCase?.title, snakeCaseFields: Object.keys(lessonWithSnakeCase).filter(key => key.includes('_')) })
       }
       
       setLessons(normalizedLessons)
@@ -144,7 +144,7 @@ export function useLessons() {
   const getLessonById = (id: number) => {
     const lesson = lessons.find(lesson => lesson.id === id)
     if (!lesson || typeof lesson !== 'object' || !lesson.id) {
-      console.error('Invalid lesson in getLessonById:', lesson)
+      console.error('Invalid lesson in getLessonById:', { id: lesson?.id, title: lesson?.title, hasSnakeCase: !!(lesson?.topic_id || lesson?.video_url) })
       return null
     }
     
@@ -182,13 +182,14 @@ export function useLessons() {
     return filtered.map(lesson => {
       // Double-check that we return a clean object
       if (!lesson || typeof lesson !== 'object' || !lesson.id) {
-        console.error('Invalid lesson in getLessonsByTopicId:', lesson)
+        console.error('Invalid lesson in getLessonsByTopicId:', { id: lesson?.id, title: lesson?.title, hasSnakeCase: !!(lesson?.topic_id || lesson?.video_url) })
         return null
       }
       
-      // Check if this lesson has snake_case properties
+      // Check if this lesson has snake_case properties - if so, DO NOT return it
       if (lesson.topic_id || lesson.video_url || lesson.social_links || lesson.created_at || lesson.updated_at) {
-        console.error('🚨 FOUND LESSON WITH SNAKE_CASE IN getLessonsByTopicId:', lesson)
+        console.error('🚨 FOUND LESSON WITH SNAKE_CASE IN getLessonsByTopicId - FILTERING OUT:', { id: lesson?.id, title: lesson?.title, snakeCaseFields: Object.keys(lesson).filter(key => key.includes('_')) })
+        return null // Return null to filter out non-normalized lessons
       }
       
       // Return an even cleaner object to be absolutely sure
@@ -210,7 +211,7 @@ export function useLessons() {
         createdAt: lesson.createdAt || '',
         updatedAt: lesson.updatedAt || ''
       }
-    }).filter(lesson => lesson !== null)
+    }).filter(lesson => lesson !== null && lesson.topicId) // Remove null entries and ensure topicId exists
   }
 
   const addLesson = async (lessonData: any) => {
@@ -296,13 +297,17 @@ export function useLessons() {
   // Debug current lessons state
   console.log('🔍 Current lessons state:', lessons)
   
-  // Check if any lessons have snake_case properties
+  // Check if any lessons have snake_case properties - this is the error we're trying to fix
   const badLessons = lessons.filter(lesson => 
     lesson && (lesson.topic_id || lesson.video_url || lesson.social_links || lesson.created_at || lesson.updated_at)
   )
   
   if (badLessons.length > 0) {
-    console.error('🚨 FOUND LESSONS WITH SNAKE_CASE PROPERTIES IN STATE:', badLessons)
+    console.error('🚨 FOUND LESSONS WITH SNAKE_CASE PROPERTIES IN STATE:', badLessons.map(lesson => ({
+      id: lesson?.id,
+      title: lesson?.title,
+      snakeCaseFields: Object.keys(lesson).filter(key => key.includes('_'))
+    })))
   }
 
   return {
