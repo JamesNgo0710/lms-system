@@ -44,7 +44,7 @@ import { useToast } from "@/hooks/use-toast"
 export default function TopicDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session } = useSession()
   const router = useRouter()
-  const { getTopicById, deleteTopic, updateTopic } = useTopics()
+  const { getTopicById, deleteTopic, updateTopic, loading: topicsLoading } = useTopics()
   const { getLessonsByTopicId, deleteLesson } = useLessons()
   const { isLessonCompleted } = useLessonCompletions()
   const { toast } = useToast()
@@ -83,12 +83,12 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
     }
   }, [topic])
 
-  // Redirect if topic not found
+  // Redirect if topic not found (only after loading is complete)
   useEffect(() => {
-    if (!topic) {
+    if (!topicsLoading && !topic) {
       router.push('/dashboard/manage-topics')
     }
-  }, [topic, router])
+  }, [topic, router, topicsLoading])
 
   // Calculate total duration from all lessons
   const calculateTotalDuration = () => {
@@ -116,6 +116,17 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
       const minutes = totalMinutes % 60
       return minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`
     }
+  }
+
+  if (topicsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold text-gray-900">Loading topic...</h2>
+        </div>
+      </div>
+    )
   }
 
   if (!topic) {
