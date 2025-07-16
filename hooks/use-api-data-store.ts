@@ -114,6 +114,19 @@ export function useLessons() {
         }
         return cleanLesson
       })
+      // Final check - if any lesson still has snake_case properties, log it
+      const lessonWithSnakeCase = normalizedLessons.find(lesson => 
+        lesson.hasOwnProperty('topic_id') || 
+        lesson.hasOwnProperty('video_url') || 
+        lesson.hasOwnProperty('social_links') ||
+        lesson.hasOwnProperty('created_at') ||
+        lesson.hasOwnProperty('updated_at')
+      )
+      
+      if (lessonWithSnakeCase) {
+        console.error('FOUND LESSON WITH SNAKE_CASE PROPERTIES:', lessonWithSnakeCase)
+      }
+      
       setLessons(normalizedLessons)
     } catch (error) {
       console.error('Error loading lessons:', error)
@@ -123,7 +136,31 @@ export function useLessons() {
   }
 
   const getLessonById = (id: number) => {
-    return lessons.find(lesson => lesson.id === id)
+    const lesson = lessons.find(lesson => lesson.id === id)
+    if (!lesson || typeof lesson !== 'object' || !lesson.id) {
+      console.error('Invalid lesson in getLessonById:', lesson)
+      return null
+    }
+    
+    // Return a clean object even from getId to be absolutely sure
+    return {
+      id: lesson.id,
+      topicId: lesson.topicId,
+      title: String(lesson.title || ''),
+      description: String(lesson.description || ''),
+      difficulty: String(lesson.difficulty || 'Beginner'),
+      duration: String(lesson.duration || '15 min'),
+      status: String(lesson.status || 'Draft'),
+      content: String(lesson.content || ''),
+      videoUrl: lesson.videoUrl || '',
+      socialLinks: lesson.socialLinks || {},
+      prerequisites: Array.isArray(lesson.prerequisites) ? lesson.prerequisites : [],
+      downloads: Array.isArray(lesson.downloads) ? lesson.downloads : [],
+      order: lesson.order || 0,
+      image: lesson.image || '',
+      createdAt: lesson.createdAt || '',
+      updatedAt: lesson.updatedAt || ''
+    }
   }
 
   // Removed getLessonsByTopic as it returns raw backend data
@@ -240,7 +277,7 @@ export function useLessons() {
   }
 
   return {
-    lessons,
+    lessons: lessons.filter(lesson => lesson && typeof lesson === 'object' && lesson.id), // Final safety check
     loading,
     getLessonById,
     getLessonsByTopicId,
