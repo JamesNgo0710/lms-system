@@ -114,7 +114,7 @@ export default function ManageTopicsPage() {
     })
     // Refresh selected topic if it's currently selected
     if (selectedTopic) {
-      const updatedLessons = getLessonsByTopicId(selectedTopic.id)
+      const updatedLessons = getLessonsByTopicId(selectedTopic.id) || []
       setSelectedTopic({ ...selectedTopic, lessons: updatedLessons })
     }
   }
@@ -128,7 +128,7 @@ export default function ManageTopicsPage() {
   }
 
   if (selectedTopic) {
-    const lessons = getLessonsByTopicId(selectedTopic.id)
+    const lessons = getLessonsByTopicId(selectedTopic.id) || []
 
     return (
       <div className="space-y-6">
@@ -295,7 +295,7 @@ export default function ManageTopicsPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {lessons.map((lesson, index) => (
+                    {lessons.filter(lesson => lesson && lesson.id).map((lesson, index) => (
                       <Card key={lesson.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                         <div className="aspect-video relative overflow-hidden">
                           <img
@@ -329,7 +329,7 @@ export default function ManageTopicsPage() {
                         <CardContent className="p-4">
                           <p className="text-sm text-gray-600 mb-3 overflow-hidden text-ellipsis" style={{display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical'}}>{lesson.description}</p>
 
-                          {lesson.prerequisites.length > 0 && (
+                          {Array.isArray(lesson.prerequisites) && lesson.prerequisites.length > 0 && (
                             <div className="mb-3">
                               <p className="text-xs font-medium text-gray-500 mb-1">Prerequisites:</p>
                               <div className="flex flex-wrap gap-1">
