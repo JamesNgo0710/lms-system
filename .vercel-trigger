@@ -1,3 +1,4 @@
-Force Vercel sync - timestamp: 2025-01-16T15:00:00Z
-Latest commit: 497dcce (domain update)
-Environment: NEXTAUTH_URL updated to lms-system-dep.vercel.app
+Environment variable update - timestamp: 2025-01-16T15:30:00Z
+Latest commit: 5bb17b0 
+Updated NEXTAUTH_URL in Vercel to: https://lms-system-dep.vercel.app
+Need fresh deployment to pick up env changes
