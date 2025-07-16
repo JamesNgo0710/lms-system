@@ -233,8 +233,15 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {lessons.map((lesson, index) => {
+                  {lessons.filter(lesson => lesson && typeof lesson === 'object' && lesson.id).map((lesson, index) => {
                     const lessonCompleted = user && isHydrated ? isLessonCompleted(user.id, lesson.id) : false
+                    
+                    // Debug logging to identify the issue
+                    if (typeof lesson !== 'object' || !lesson.id) {
+                      console.warn('Invalid lesson object:', lesson);
+                      return null;
+                    }
+                    
                     return (
                       <Card key={lesson.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                         <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">

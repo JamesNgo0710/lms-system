@@ -191,7 +191,7 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
                   </div>
                 </div>
                 <p className="text-gray-600 dark:text-gray-400 mb-4">{lesson.description}</p>
-                <RichContentRenderer content={lesson.content} />
+                <RichContentRenderer content={typeof lesson.content === 'string' ? lesson.content : ''} />
 
                 {/* Social Links */}
                 {((lesson.socialLinks?.youtube || lesson.social_links?.youtube) || (lesson.socialLinks?.twitter || lesson.social_links?.twitter)) && (
@@ -242,8 +242,8 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
                       <div className="flex items-center space-x-3">
                         <FileText className="w-5 h-5 text-red-500" />
                         <div>
-                          <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{download.name}</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">{download.size}</p>
+                          <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{download.name || 'Unknown file'}</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">{download.size || 'Unknown size'}</p>
                         </div>
                       </div>
                       <Button size="sm" variant="outline">
