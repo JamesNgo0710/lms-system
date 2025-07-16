@@ -323,22 +323,25 @@ export function useAssessmentAttempts() {
   }
 
   const canTakeAssessment = (userId: string, assessmentId: number) => {
-    // Find the assessment and get its topic ID
-    const assessment = assessments.find(a => a.id === assessmentId)
-    if (!assessment) return { canTake: false, message: "Assessment not found" }
+    // Find the assessment from attempts data - we don't have direct access to assessments here
+    const userAssessmentAttempts = attempts.filter(a => a.assessmentId === assessmentId && a.userId === userId)
+    if (userAssessmentAttempts.length === 0) return { canTake: true, message: "" }
     
-    const lastAttempt = getLastAssessmentAttempt(userId, assessment.topicId)
-    if (!lastAttempt) return { canTake: true, message: "" }
+    // Get the most recent attempt
+    const lastAttempt = userAssessmentAttempts.sort((a, b) => 
+      new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+    )[0]
     
     // For now, allow retaking after 1 hour
-    const lastAttemptTime = new Date(lastAttempt.completed_at || lastAttempt.created_at)
+    const lastAttemptTime = new Date(lastAttempt.completedAt)
     const now = new Date()
     const hoursSinceLastAttempt = (now.getTime() - lastAttemptTime.getTime()) / (1000 * 60 * 60)
     const canTake = hoursSinceLastAttempt >= 1
     
     return {
       canTake,
-      message: canTake ? "" : `You can retake this assessment in ${Math.ceil(1 - hoursSinceLastAttempt)} hour(s)`
+      message: canTake ? "" : `You can retake this assessment in ${Math.ceil(1 - hoursSinceLastAttempt)} hour(s)`,
+      timeRemaining: canTake ? 0 : Math.ceil(1 - hoursSinceLastAttempt) * 60 // in minutes
     }
   }
 
