@@ -80,9 +80,9 @@ export function useLessons() {
   const [loading, setLoading] = useState(true)
   const { data: session } = useSession()
   
-  // Force rebuild indicator
-  console.log('🔄 useLessons hook loaded - FORCED_REBUILD_FOR_REACT_ERROR_FIX')
-  console.log('🔄 Initial lessons state:', lessons)
+  // Force rebuild indicator - temporarily removed for debugging
+  // console.log('🔄 useLessons hook loaded - FORCED_REBUILD_FOR_REACT_ERROR_FIX')
+  // console.log('🔄 Initial lessons state:', lessons)
 
   useEffect(() => {
     if (session) {
@@ -92,10 +92,10 @@ export function useLessons() {
 
   const loadLessons = async () => {
     setLoading(true)
-    console.log('🔄 loadLessons called - FORCED_REBUILD_FOR_REACT_ERROR_FIX')
+    // console.log('🔄 loadLessons called - FORCED_REBUILD_FOR_REACT_ERROR_FIX')
     try {
       const data = await apiDataStore.getLessons()
-      console.log('📦 Raw lesson data from API:', data)
+      // console.log('📦 Raw lesson data from API:', data)
       // Normalize lesson data to ensure consistent structure
       const normalizedLessons = data.filter(lesson => lesson && typeof lesson === 'object' && lesson.id).map(lesson => {
         // Create a clean object with only the necessary fields
@@ -294,8 +294,8 @@ export function useLessons() {
     return success
   }
 
-  // Debug current lessons state
-  console.log('🔍 Current lessons state:', lessons)
+  // Debug current lessons state - temporarily removed for debugging
+  // console.log('🔍 Current lessons state:', lessons)
   
   // Check if any lessons have snake_case properties - this is the error we're trying to fix
   const badLessons = lessons.filter(lesson => 
@@ -303,11 +303,11 @@ export function useLessons() {
   )
   
   if (badLessons.length > 0) {
-    console.error('🚨 FOUND LESSONS WITH SNAKE_CASE PROPERTIES IN STATE:', badLessons.map(lesson => ({
-      id: lesson?.id,
-      title: lesson?.title,
-      snakeCaseFields: Object.keys(lesson).filter(key => key.includes('_'))
-    })))
+    // console.error('🚨 FOUND LESSONS WITH SNAKE_CASE PROPERTIES IN STATE:', badLessons.map(lesson => ({
+    //   id: lesson?.id,
+    //   title: lesson?.title,
+    //   snakeCaseFields: Object.keys(lesson).filter(key => key.includes('_'))
+    // })))
   }
 
   return {
