@@ -453,15 +453,23 @@ class ApiDataStore {
 
       const response = await this.makeApiRequest(`/api/topics/${topicId}/assessment`)
       
+      if (response.status === 404) {
+        // Return null for 404s instead of throwing error to reduce console spam
+        return null
+      }
+      
       if (!response.ok) {
         throw new Error(`Failed to fetch assessment for topic: ${response.status}`)
       }
       
       return await response.json()
     } catch (error) {
-      console.error('Error fetching assessment by topic:', error)
-      // Fallback to mock data on error
-      return await mockDataService.getAssessmentByTopic(topicId)
+      // Only log errors that aren't 404s
+      if (!error.message?.includes('404')) {
+        console.error('Error fetching assessment by topic:', error)
+      }
+      // Return null instead of falling back to mock data for missing assessments
+      return null
     }
   }
 

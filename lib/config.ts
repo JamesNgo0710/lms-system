@@ -7,8 +7,9 @@ export const config = {
   // API URLs - Support multiple potential backend configurations
   apiUrl: (() => {
     let url = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_LARAVEL_API_URL || 'http://localhost:8000';
-    // Fix for truncated Laravel Cloud URL
+    // Fix for truncated Laravel Cloud URL (common Vercel environment variable issue)
     if (url.includes('learning-management-syst') && !url.includes('laravel.cloud')) {
+      console.log('🔧 Fixing truncated API URL:', url, '→', 'https://learning-management-system-master-zcttuk.laravel.cloud');
       url = 'https://learning-management-system-master-zcttuk.laravel.cloud';
     }
     return url;
