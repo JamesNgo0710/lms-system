@@ -5,7 +5,14 @@ export const config = {
   isProduction: process.env.NODE_ENV === 'production',
   
   // API URLs - Support multiple potential backend configurations
-  apiUrl: process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_LARAVEL_API_URL || 'http://localhost:8000',
+  apiUrl: (() => {
+    let url = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_LARAVEL_API_URL || 'http://localhost:8000';
+    // Fix for truncated Laravel Cloud URL
+    if (url.includes('learning-management-syst') && !url.includes('laravel.cloud')) {
+      url = 'https://learning-management-system-master-zcttuk.laravel.cloud';
+    }
+    return url;
+  })(),
   frontendUrl: process.env.NEXTAUTH_URL || 'http://localhost:3000',
   
   // Feature flags
@@ -127,7 +134,13 @@ class BackendDetector {
       'http://127.0.0.1:8000',
       'http://localhost:8080',
       'http://127.0.0.1:8080',
-    ].filter(Boolean) as string[]
+    ].filter(Boolean).map(url => {
+      // Fix for truncated Laravel Cloud URL
+      if (url.includes('learning-management-syst') && !url.includes('laravel.cloud')) {
+        return 'https://learning-management-system-master-zcttuk.laravel.cloud';
+      }
+      return url;
+    }) as string[]
 
     // Test each potential URL
     for (const url of potentialUrls) {
