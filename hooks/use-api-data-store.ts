@@ -82,6 +82,7 @@ export function useLessons() {
   
   // Force rebuild indicator
   console.log('🔄 useLessons hook loaded - FORCED_REBUILD_FOR_REACT_ERROR_FIX')
+  console.log('🔄 Initial lessons state:', lessons)
 
   useEffect(() => {
     if (session) {
@@ -172,11 +173,22 @@ export function useLessons() {
   // Use getLessonsByTopicId instead which returns normalized data
 
   const getLessonsByTopicId = (topicId: number) => {
-    return lessons.filter(lesson => lesson.topicId === topicId).map(lesson => {
+    console.log('🔍 getLessonsByTopicId called with topicId:', topicId)
+    console.log('🔍 Current lessons for filtering:', lessons)
+    
+    const filtered = lessons.filter(lesson => lesson.topicId === topicId)
+    console.log('🔍 Filtered lessons:', filtered)
+    
+    return filtered.map(lesson => {
       // Double-check that we return a clean object
       if (!lesson || typeof lesson !== 'object' || !lesson.id) {
         console.error('Invalid lesson in getLessonsByTopicId:', lesson)
         return null
+      }
+      
+      // Check if this lesson has snake_case properties
+      if (lesson.topic_id || lesson.video_url || lesson.social_links || lesson.created_at || lesson.updated_at) {
+        console.error('🚨 FOUND LESSON WITH SNAKE_CASE IN getLessonsByTopicId:', lesson)
       }
       
       // Return an even cleaner object to be absolutely sure
@@ -279,6 +291,18 @@ export function useLessons() {
       setLessons(prev => prev.filter(lesson => lesson.id !== id))
     }
     return success
+  }
+
+  // Debug current lessons state
+  console.log('🔍 Current lessons state:', lessons)
+  
+  // Check if any lessons have snake_case properties
+  const badLessons = lessons.filter(lesson => 
+    lesson && (lesson.topic_id || lesson.video_url || lesson.social_links || lesson.created_at || lesson.updated_at)
+  )
+  
+  if (badLessons.length > 0) {
+    console.error('🚨 FOUND LESSONS WITH SNAKE_CASE PROPERTIES IN STATE:', badLessons)
   }
 
   return {
