@@ -152,11 +152,11 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
           <Card>
             <CardContent className="p-0">
               <div className="aspect-video bg-gray-900 relative rounded-t-lg overflow-hidden">
-                {lesson.videoUrl ? (
+                {(lesson.videoUrl || lesson.video_url) ? (
                   <iframe
                     width="100%"
                     height="100%"
-                    src={lesson.videoUrl.replace("watch?v=", "embed/")}
+                    src={(lesson.videoUrl || lesson.video_url).replace("watch?v=", "embed/")}
                     title={lesson.title}
                     frameBorder="0"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -194,32 +194,32 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
                 <RichContentRenderer content={lesson.content} />
 
                 {/* Social Links */}
-                {(lesson.socialLinks.youtube || lesson.socialLinks.twitter) && (
+                {((lesson.socialLinks?.youtube || lesson.social_links?.youtube) || (lesson.socialLinks?.twitter || lesson.social_links?.twitter)) && (
                   <div className="mt-6 space-y-2">
                     <h3 className="font-medium text-gray-900 dark:text-gray-100">Additional Resources:</h3>
-                    {lesson.socialLinks.youtube && (
+                    {(lesson.socialLinks?.youtube || lesson.social_links?.youtube) && (
                       <p className="font-medium text-gray-900 dark:text-gray-100">
                         YouTube:{" "}
                         <a
-                          href={lesson.socialLinks.youtube}
+                          href={lesson.socialLinks?.youtube || lesson.social_links?.youtube}
                           className="text-blue-600 hover:underline"
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          {lesson.socialLinks.youtube}
+                          {lesson.socialLinks?.youtube || lesson.social_links?.youtube}
                         </a>
                       </p>
                     )}
-                    {lesson.socialLinks.twitter && (
+                    {(lesson.socialLinks?.twitter || lesson.social_links?.twitter) && (
                       <p className="font-medium text-gray-900 dark:text-gray-100">
                         Twitter:{" "}
                         <a
-                          href={lesson.socialLinks.twitter}
+                          href={lesson.socialLinks?.twitter || lesson.social_links?.twitter}
                           className="text-blue-600 hover:underline"
                           target="_blank"
                           rel="noopener noreferrer"
                         >
-                          {lesson.socialLinks.twitter}
+                          {lesson.socialLinks?.twitter || lesson.social_links?.twitter}
                         </a>
                       </p>
                     )}

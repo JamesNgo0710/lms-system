@@ -87,14 +87,14 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
         description: lesson.description,
         duration: durationNumber,
         difficulty: lesson.difficulty,
-        videoUrl: lesson.videoUrl || "",
-        prerequisites: lesson.prerequisites,
-        content: lesson.content,
+        videoUrl: lesson.videoUrl || lesson.video_url || "",
+        prerequisites: lesson.prerequisites || [],
+        content: lesson.content || "",
         socialLinks: {
-          twitter: lesson.socialLinks.twitter || "",
-          youtube: lesson.socialLinks.youtube || "",
+          twitter: lesson.socialLinks?.twitter || lesson.social_links?.twitter || "",
+          youtube: lesson.socialLinks?.youtube || lesson.social_links?.youtube || "",
         },
-        downloads: lesson.downloads,
+        downloads: lesson.downloads || [],
         status: lesson.status,
       })
 
@@ -102,17 +102,19 @@ export default function EditLessonPage({ params }: { params: Promise<{ id: strin
       setDifficultyValue([difficultyMap[lesson.difficulty]])
       
       // Set counter to highest existing download ID + 1
-      const maxId = lesson.downloads.length > 0 ? Math.max(...lesson.downloads.map(d => d.id)) : 0
+      const downloads = lesson.downloads || []
+      const maxId = downloads.length > 0 ? Math.max(...downloads.map(d => d.id)) : 0
       setDownloadIdCounter(maxId + 1)
 
       // Set content in rich text editor
       if (contentEditorRef.current) {
-        contentEditorRef.current.innerHTML = lesson.content
+        contentEditorRef.current.innerHTML = lesson.content || ""
       }
 
       // Load video preview if URL exists
-      if (lesson.videoUrl) {
-        extractVideoInfo(lesson.videoUrl)
+      const videoUrl = lesson.videoUrl || lesson.video_url
+      if (videoUrl) {
+        extractVideoInfo(videoUrl)
       }
     }
   }, [lesson])
