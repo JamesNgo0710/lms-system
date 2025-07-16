@@ -13,7 +13,8 @@ console.log('🌐 API Client Configuration:', {
   'NEXT_PUBLIC_API_URL': process.env.NEXT_PUBLIC_API_URL,
   'API_URL': process.env.API_URL,
   'Final API_URL': API_URL,
-  'Environment': process.env.NODE_ENV
+  'Environment': process.env.NODE_ENV,
+  'Deployment': 'FORCED_REBUILD_FOR_REACT_ERROR_FIX'
 });
 
 // Create axios instance with default config
