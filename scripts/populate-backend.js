@@ -10,6 +10,7 @@
  *   node scripts/populate-backend.js
  *   node scripts/populate-backend.js --url=http://localhost:8000
  *   node scripts/populate-backend.js --force-mock
+ *   node scripts/populate-backend.js --force-populate (ignores existing data)
  */
 
 const fs = require('fs')
@@ -26,6 +27,7 @@ const config = {
 const args = process.argv.slice(2)
 const apiUrl = args.find(arg => arg.startsWith('--url='))?.split('=')[1] || config.defaultApiUrl
 const forceMock = args.includes('--force-mock')
+const forcePopulate = args.includes('--force-populate')
 const verbose = args.includes('--verbose') || args.includes('-v')
 
 // Sample data
@@ -208,6 +210,27 @@ async function testBackendConnection(url) {
 }
 
 async function populateTopics(apiUrl) {
+  success('Checking existing topics...')
+  
+  // First check if topics already exist (unless forced)
+  if (!forcePopulate) {
+    try {
+      const existingResponse = await makeRequest(`${apiUrl}/api/topics`)
+      if (existingResponse.ok) {
+        const existingTopics = await existingResponse.json()
+        if (existingTopics.length > 0) {
+          warn(`Found ${existingTopics.length} existing topics. Skipping population to avoid duplicates.`)
+          warn('To force repopulation, run with --force-populate flag.')
+          return
+        }
+      }
+    } catch (error) {
+      log(`Could not check existing topics: ${error.message}`)
+    }
+  } else {
+    warn('Force populate mode enabled - will create topics even if they exist')
+  }
+
   success('Populating topics...')
   
   for (const topic of sampleData.topics) {
