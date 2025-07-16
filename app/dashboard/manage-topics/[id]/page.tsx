@@ -159,7 +159,11 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
   }
 
   const handleDeleteLesson = (lesson: any) => {
-    setLessonToDelete(lesson)
+    // Only store the id and title to avoid rendering the entire lesson object
+    setLessonToDelete({
+      id: lesson.id,
+      title: lesson.title || 'Untitled Lesson'
+    })
     setDeleteLessonDialogOpen(true)
   }
 
