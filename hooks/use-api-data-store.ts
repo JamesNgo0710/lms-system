@@ -91,7 +91,9 @@ export function useLessons() {
     return await apiDataStore.getLessonsByTopic(topicId)
   }
 
-  const getLessonsByTopicId = getLessonsByTopic // Alias for backward compatibility
+  const getLessonsByTopicId = (topicId: number) => {
+    return lessons.filter(lesson => lesson.topic_id === topicId)
+  }
 
   const addLesson = async (lessonData: any) => {
     const newLesson = await apiDataStore.createLesson(lessonData)
@@ -381,7 +383,11 @@ export function useAssessments() {
     return assessments.find(assessment => assessment.id === id)
   }
 
-  const getAssessmentByTopic = async (topicId: number) => {
+  const getAssessmentByTopic = (topicId: number) => {
+    return assessments.find(assessment => assessment.topic_id === topicId)
+  }
+
+  const getAssessmentByTopicAsync = async (topicId: number) => {
     return await apiDataStore.getAssessmentByTopic(topicId)
   }
 
@@ -438,6 +444,7 @@ export function useAssessments() {
     loading,
     getAssessmentById,
     getAssessmentByTopic,
+    getAssessmentByTopicAsync,
     getAssessmentByTopicId, // Backward compatibility alias
     createAssessment,
     addAssessment, // Backward compatibility alias
