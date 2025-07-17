@@ -324,11 +324,7 @@ class ApiDataStore {
       }
       
       const rawLessons = await response.json()
-      console.log('🔥 NUCLEAR SOLUTION: Raw lessons from API (before normalization):', rawLessons.map((l: any) => ({ 
-        id: l.id, 
-        title: l.title, 
-        hasSnakeCase: !!(l.topic_id || l.video_url || l.social_links || l.created_at || l.updated_at) 
-      })))
+      console.log('🔥 NUCLEAR SOLUTION: Raw lessons from API count:', rawLessons.length, 'with snake_case properties:', rawLessons.filter((l: any) => l.topic_id || l.video_url || l.social_links || l.created_at || l.updated_at).length)
       
       // NUCLEAR SOLUTION: BULLETPROOF NORMALIZATION AT API LEVEL
       // This ensures NO snake_case lesson objects can EVER escape the API layer
@@ -394,11 +390,7 @@ class ApiDataStore {
       }
       
       const rawLessons = await response.json()
-      console.log(`🔥 NUCLEAR SOLUTION: Raw lessons for topic ${topicId} from API (before normalization):`, rawLessons.map((l: any) => ({ 
-        id: l.id, 
-        title: l.title, 
-        hasSnakeCase: !!(l.topic_id || l.video_url || l.social_links || l.created_at || l.updated_at) 
-      })))
+      console.log(`🔥 NUCLEAR SOLUTION: Raw lessons for topic ${topicId} count:`, rawLessons.length, 'with snake_case properties:', rawLessons.filter((l: any) => l.topic_id || l.video_url || l.social_links || l.created_at || l.updated_at).length)
       
       // NUCLEAR SOLUTION: BULLETPROOF NORMALIZATION AT API LEVEL FOR TOPIC LESSONS
       const bulletproofLessons = rawLessons
@@ -453,11 +445,7 @@ class ApiDataStore {
       }
       
       const rawLesson = await response.json()
-      console.log(`🔥 NUCLEAR SOLUTION: Raw lesson ${id} from API (before normalization):`, { 
-        id: rawLesson.id, 
-        title: rawLesson.title, 
-        hasSnakeCase: !!(rawLesson.topic_id || rawLesson.video_url || rawLesson.social_links || rawLesson.created_at || rawLesson.updated_at) 
-      })
+      console.log(`🔥 NUCLEAR SOLUTION: Raw lesson ${id} from API, title: "${rawLesson.title}", has snake_case:`, !!(rawLesson.topic_id || rawLesson.video_url || rawLesson.social_links || rawLesson.created_at || rawLesson.updated_at))
       
       // NUCLEAR SOLUTION: BULLETPROOF NORMALIZATION FOR SINGLE LESSON
       if (!rawLesson || typeof rawLesson !== 'object' || !rawLesson.id) {
