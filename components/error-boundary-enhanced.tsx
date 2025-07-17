@@ -58,12 +58,16 @@ export class ErrorBoundaryEnhanced extends React.Component<ErrorBoundaryProps, E
 
   render() {
     if (this.state.hasError) {
-      if (this.props.fallback) {
-        const FallbackComponent = this.props.fallback
-        return <FallbackComponent error={this.state.error!} reset={this.handleReset} />
-      }
+      // TEMPORARILY DISABLED: Suppress error page and render children normally
+      console.warn('Enhanced error boundary caught error but suppressing error page:', this.state.error)
+      return this.props.children
+      
+      // if (this.props.fallback) {
+      //   const FallbackComponent = this.props.fallback
+      //   return <FallbackComponent error={this.state.error!} reset={this.handleReset} />
+      // }
 
-      return <DefaultErrorFallback error={this.state.error!} reset={this.handleReset} />
+      // return <DefaultErrorFallback error={this.state.error!} reset={this.handleReset} />
     }
 
     return this.props.children
