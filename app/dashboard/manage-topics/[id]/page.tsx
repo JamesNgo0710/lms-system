@@ -158,11 +158,11 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
     setTopicToDelete(null)
   }
 
-  const handleDeleteLesson = (lesson: any) => {
+  const handleDeleteLesson = (lessonId: number, lessonTitle: string) => {
     // Only store the id and title to avoid rendering the entire lesson object
     setLessonToDelete({
-      id: lesson.id,
-      title: lesson.title || 'Untitled Lesson'
+      id: lessonId,
+      title: lessonTitle || 'Untitled Lesson'
     })
     setDeleteLessonDialogOpen(true)
   }
@@ -494,7 +494,7 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                                 </Link>
                               </DropdownMenuItem>
                               <DropdownMenuItem 
-                                onClick={() => handleDeleteLesson(lesson)}
+                                onClick={() => handleDeleteLesson(lesson.id, lesson.title)}
                                 className="text-red-600"
                               >
                                 <Trash2 className="w-4 h-4 mr-2" />
@@ -567,7 +567,7 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleDeleteLesson(lesson)}
+                            onClick={() => handleDeleteLesson(lesson.id, lesson.title)}
                             className="text-red-500 border-red-500 hover:bg-red-50"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -646,7 +646,7 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                                   </Link>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
-                                  onClick={() => handleDeleteLesson(lesson)}
+                                  onClick={() => handleDeleteLesson(lesson.id, lesson.title)}
                                   className="text-red-600 dark:text-red-400 dark:hover:bg-gray-800 dark:focus:bg-gray-800"
                                 >
                                   <Trash2 className="w-4 h-4 mr-2" />
