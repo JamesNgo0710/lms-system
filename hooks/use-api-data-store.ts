@@ -310,8 +310,22 @@ export function useLessons() {
     // })))
   }
 
+  // Filter out any lessons with snake_case properties completely to prevent React error #31
+  const safeLessons = lessons.filter(lesson => {
+    if (!lesson || typeof lesson !== 'object' || !lesson.id) return false
+    
+    // Reject any lesson that still has snake_case properties
+    const hasSnakeCase = lesson.topic_id || lesson.video_url || lesson.social_links || lesson.created_at || lesson.updated_at
+    if (hasSnakeCase) {
+      // Do not include lessons with snake_case properties
+      return false
+    }
+    
+    return true
+  })
+
   return {
-    lessons: lessons.filter(lesson => lesson && typeof lesson === 'object' && lesson.id), // Final safety check
+    lessons: safeLessons, // Only return completely clean lessons
     loading,
     getLessonById,
     getLessonsByTopicId,
