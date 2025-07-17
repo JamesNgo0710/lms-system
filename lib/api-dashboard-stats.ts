@@ -155,6 +155,7 @@ class ApiDashboardStats {
       const averageTimeLastMonth = Math.max(1, Math.round(averageTimeThisMonth * 0.8))
 
       // Calculate lesson/video statistics
+      console.log('🔥 DASHBOARD STATS: Received lessons from API:', lessons.length, 'first lesson keys:', lessons.length > 0 ? Object.keys(lessons[0]) : 'none')
       const lessonStats = lessons.map(lesson => {
         const topic = topics.find(t => t.id === lesson.topicId)
         // Since we don't have view tracking yet, use estimated data based on topic popularity
@@ -162,23 +163,32 @@ class ApiDashboardStats {
         const estimatedUsers = Math.floor(estimatedViews * 0.7)
         const completionRate = Math.floor(Math.random() * 40) + 60 // 60-100%
 
-        return {
+        // SAFETY: Ensure lesson properties are normalized (fallback to snake_case if needed)
+        const safeLesson = {
           id: lesson.id,
-          topicId: lesson.topicId,
-          title: lesson.title,
+          topicId: lesson.topicId || lesson.topic_id || 0,
+          title: String(lesson.title || ''),
           topic: topic?.title || 'Unknown Topic',
           totalViews: estimatedViews,
           numberOfUsers: estimatedUsers,
           completionRate,
-          difficulty: lesson.difficulty || 'Beginner',
-          image: lesson.image || topic?.image || '/placeholder.svg',
-          videoUrl: lesson.videoUrl,
+          difficulty: String(lesson.difficulty || 'Beginner'),
+          image: String(lesson.image || topic?.image || '/placeholder.svg'),
+          videoUrl: String(lesson.videoUrl || lesson.video_url || ''),
         }
+        
+        // CRITICAL: Verify no snake_case properties exist in dashboard stats
+        const hasSnakeCase = Object.keys(safeLesson).some(key => key.includes('_'))
+        if (hasSnakeCase) {
+          console.error('🚨 DASHBOARD STATS: snake_case property found:', safeLesson)
+        }
+        
+        return safeLesson
       }).sort((a, b) => b.totalViews - a.totalViews)
 
       // Calculate topic statistics
       const topicStats = topics.map(topic => {
-        const topicLessons = lessons.filter(lesson => lesson.topicId === topic.id)
+        const topicLessons = lessons.filter(lesson => (lesson.topicId || lesson.topic_id) === topic.id)
         // Estimate views based on topic data
         const estimatedViews = Math.floor(Math.random() * 100) + 50
         const estimatedUsers = Math.floor(estimatedViews * 0.6)
