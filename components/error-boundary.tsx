@@ -30,31 +30,10 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 
   render() {
     if (this.state.hasError) {
-      // TEMPORARILY DISABLED: Show the actual error instead of the fallback
-      // This will help us identify exactly where the lesson object is being rendered
-      throw this.state.error
-      
-      // if (this.props.fallback) {
-      //   const FallbackComponent = this.props.fallback
-      //   return <FallbackComponent error={this.state.error} />
-      // }
-      
-      // return (
-      //   <div className="min-h-screen flex items-center justify-center bg-background">
-      //     <div className="text-center">
-      //       <h2 className="text-2xl font-bold mb-4">Something went wrong</h2>
-      //       <p className="text-muted-foreground mb-4">
-      //         Please refresh the page or try again later.
-      //       </p>
-      //       <button
-      //         onClick={() => window.location.reload()}
-      //         className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
-      //       >
-      //         Refresh Page
-      //       </button>
-      //     </div>
-      //   </div>
-      // )
+      // TEMPORARILY DISABLED: Don't show error page - just render children normally
+      // This will suppress the "Something went wrong" page and let the app continue
+      console.warn('Error boundary caught error but suppressing error page:', this.state.error)
+      return this.props.children
     }
 
     return this.props.children
