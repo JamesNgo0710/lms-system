@@ -47,7 +47,9 @@ import {
   List
 } from "lucide-react"
 import Link from "next/link"
-import { useTopics, useLessons, useLessonCompletions } from "@/hooks/use-api-data-store"
+import { useTopics, useLessonCompletions } from "@/hooks/use-api-data-store"
+// TEMPORARILY DISABLED: useLessons to isolate React error #31 source
+// import { useLessons } from "@/hooks/use-api-data-store"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 
@@ -76,17 +78,17 @@ export default function ManageTopicsPage() {
     updateTopic = async () => {}
   }
   
-  // RE-ENABLED: Lessons functionality with bulletproof normalization
+  // TEMPORARILY DISABLED: Lessons functionality to isolate React error #31
   let getLessonsByTopicId, deleteLesson, lessonsLoading
   try {
-    console.log('🔍 RE-ENABLING useLessons with bulletproof normalization...')
-    const lessonsHook = useLessons()
-    getLessonsByTopicId = lessonsHook.getLessonsByTopicId
-    deleteLesson = lessonsHook.deleteLesson
-    lessonsLoading = lessonsHook.loading
-    console.log('🔍 useLessons successfully re-enabled, loading:', lessonsLoading)
+    console.log('🔍 TEMPORARILY DISABLING useLessons to isolate React error #31...')
+    // TEMPORARILY DISABLED: const lessonsHook = useLessons()
+    getLessonsByTopicId = () => []
+    deleteLesson = async () => {}
+    lessonsLoading = false
+    console.log('🔍 useLessons DISABLED for testing, loading:', lessonsLoading)
   } catch (error) {
-    console.error('❌ Error in useLessons hook:', error)
+    console.error('❌ Error in lessons (disabled):', error)
     getLessonsByTopicId = () => []
     deleteLesson = async () => {}
     lessonsLoading = false
