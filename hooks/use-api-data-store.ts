@@ -74,68 +74,61 @@ export function useTopics() {
   }
 }
 
-// Hook for Lessons - TEMPORARILY DISABLED TO ISOLATE REACT ERROR #31
+// Hook for Lessons - RESTORED WITH COMPREHENSIVE NORMALIZATION
 export function useLessons() {
-  console.log('🔍 useLessons hook called - RETURNING EMPTY DATA FOR TESTING')
   const [lessons, setLessons] = useState<any[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const { data: session } = useSession()
-  
-  // Force rebuild indicator - temporarily removed for debugging
-  // console.log('🔄 useLessons hook loaded - FORCED_REBUILD_FOR_REACT_ERROR_FIX')
-  // console.log('🔄 Initial lessons state:', lessons)
 
-  // TEMPORARILY DISABLED - DO NOT LOAD LESSONS
-  // useEffect(() => {
-  //   if (session) {
-  //     loadLessons()
-  //   }
-  // }, [session])
+  useEffect(() => {
+    if (session) {
+      loadLessons()
+    }
+  }, [session])
 
   const loadLessons = async () => {
     setLoading(true)
-    // console.log('🔄 loadLessons called - FORCED_REBUILD_FOR_REACT_ERROR_FIX')
+    console.log('🔄 loadLessons called - COMPREHENSIVE NORMALIZATION')
     try {
       const data = await apiDataStore.getLessons()
-      // console.log('📦 Raw lesson data from API:', data)
-      // Normalize lesson data to ensure consistent structure
-      const normalizedLessons = data.filter(lesson => lesson && typeof lesson === 'object' && lesson.id).map(lesson => {
-        // Create a clean object with only the necessary fields
-        const cleanLesson = {
-          id: lesson.id,
-          topicId: lesson.topic_id || lesson.topicId,
-          videoUrl: lesson.video_url || lesson.videoUrl,
-          socialLinks: lesson.social_links || lesson.socialLinks || {},
-          prerequisites: Array.isArray(lesson.prerequisites) ? lesson.prerequisites : [],
-          downloads: Array.isArray(lesson.downloads) ? lesson.downloads : [],
-          createdAt: lesson.created_at || lesson.createdAt,
-          updatedAt: lesson.updated_at || lesson.updatedAt,
-          order: lesson.order || 0,
-          image: lesson.image || '',
-          // Ensure all required fields are strings
-          title: String(lesson.title || ''),
-          description: String(lesson.description || ''),
-          difficulty: String(lesson.difficulty || 'Beginner'),
-          duration: String(lesson.duration || '15 min'),
-          status: String(lesson.status || 'Draft'),
-          content: String(lesson.content || ''),
-        }
-        return cleanLesson
-      })
-      // Final check - if any lesson still has snake_case properties, log it
-      const lessonWithSnakeCase = normalizedLessons.find(lesson => 
-        lesson.hasOwnProperty('topic_id') || 
-        lesson.hasOwnProperty('video_url') || 
-        lesson.hasOwnProperty('social_links') ||
-        lesson.hasOwnProperty('created_at') ||
-        lesson.hasOwnProperty('updated_at')
-      )
+      console.log('📦 Raw lesson data from API - count:', data.length)
       
-      if (lessonWithSnakeCase) {
-        console.error('FOUND LESSON WITH SNAKE_CASE PROPERTIES:', { id: lessonWithSnakeCase?.id, title: lessonWithSnakeCase?.title, snakeCaseFieldCount: Object.keys(lessonWithSnakeCase).filter(key => key.includes('_')).length })
-      }
+      // BULLETPROOF NORMALIZATION - Completely eliminate snake_case properties
+      const bulletproofLessons = data
+        .filter(lesson => lesson && typeof lesson === 'object' && lesson.id)
+        .map(lesson => {
+          // Create completely clean object - NO snake_case properties possible
+          const bulletproofLesson = {
+            id: lesson.id,
+            topicId: lesson.topic_id || lesson.topicId || 0,
+            title: String(lesson.title || ''),
+            description: String(lesson.description || ''),
+            content: String(lesson.content || ''),
+            duration: String(lesson.duration || '15 min'),
+            difficulty: String(lesson.difficulty || 'Beginner'),
+            status: String(lesson.status || 'Draft'),
+            order: Number(lesson.order || 0),
+            image: String(lesson.image || ''),
+            videoUrl: String(lesson.video_url || lesson.videoUrl || ''),
+            socialLinks: typeof lesson.social_links === 'object' ? lesson.social_links : 
+                        typeof lesson.socialLinks === 'object' ? lesson.socialLinks : {},
+            prerequisites: Array.isArray(lesson.prerequisites) ? lesson.prerequisites : [],
+            downloads: Array.isArray(lesson.downloads) ? lesson.downloads : [],
+            createdAt: lesson.created_at || lesson.createdAt || new Date().toISOString(),
+            updatedAt: lesson.updated_at || lesson.updatedAt || new Date().toISOString(),
+          }
+          
+          // CRITICAL: Verify NO snake_case properties exist
+          const hasSnakeCase = Object.keys(bulletproofLesson).some(key => key.includes('_'))
+          if (hasSnakeCase) {
+            console.error('🚨 CRITICAL: snake_case property found in normalized lesson:', bulletproofLesson)
+          }
+          
+          return bulletproofLesson
+        })
       
-      setLessons(normalizedLessons)
+      console.log('✅ Bulletproof lessons created - count:', bulletproofLessons.length)
+      setLessons(bulletproofLessons)
     } catch (error) {
       console.error('Error loading lessons:', error)
       setLessons([])
@@ -326,33 +319,34 @@ export function useLessons() {
     return true
   })
 
-  // TEMPORARILY RETURN COMPLETELY SAFE EMPTY DATA
+  // Return bulletproof normalized data
   return {
-    lessons: [], // Always return empty array
-    loading: false,
+    lessons: lessons, // Only bulletproof normalized lessons
+    loading,
     getLessonById: (id: number) => {
-      console.log('🔍 getLessonById called - RETURNING NULL FOR TESTING')
-      return null
+      const lesson = getLessonById(id)
+      // Extra safety check
+      if (lesson && Object.keys(lesson).some(key => key.includes('_'))) {
+        console.error('🚨 BLOCKED: snake_case lesson from getLessonById')
+        return null
+      }
+      return lesson
     },
     getLessonsByTopicId: (topicId: number) => {
-      console.log('🔍 getLessonsByTopicId called - RETURNING EMPTY ARRAY FOR TESTING')
-      return []
+      const lessons = getLessonsByTopicId(topicId)
+      // Extra safety check
+      return lessons.filter(lesson => {
+        if (lesson && Object.keys(lesson).some(key => key.includes('_'))) {
+          console.error('🚨 BLOCKED: snake_case lesson from getLessonsByTopicId')
+          return false
+        }
+        return true
+      })
     },
-    addLesson: async () => {
-      console.log('🔍 addLesson called - RETURNING NULL FOR TESTING')
-      return null
-    },
-    updateLesson: async () => {
-      console.log('🔍 updateLesson called - RETURNING NULL FOR TESTING')
-      return null
-    },
-    deleteLesson: async () => {
-      console.log('🔍 deleteLesson called - RETURNING TRUE FOR TESTING')
-      return true
-    },
-    refresh: async () => {
-      console.log('🔍 refresh called - DOING NOTHING FOR TESTING')
-    }
+    addLesson,
+    updateLesson,
+    deleteLesson,
+    refresh: loadLessons
   }
 }
 

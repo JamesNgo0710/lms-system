@@ -76,17 +76,32 @@ export default function ManageTopicsPage() {
     updateTopic = async () => {}
   }
   
-  // TEMPORARY: Disable lessons functionality to isolate error
-  const getLessonsByTopicId = () => []
-  const deleteLesson = async () => {}
-  const lessonsLoading = false
+  // RE-ENABLED: Lessons functionality with bulletproof normalization
+  let getLessonsByTopicId, deleteLesson, lessonsLoading
+  try {
+    console.log('🔍 RE-ENABLING useLessons with bulletproof normalization...')
+    const lessonsHook = useLessons()
+    getLessonsByTopicId = lessonsHook.getLessonsByTopicId
+    deleteLesson = lessonsHook.deleteLesson
+    lessonsLoading = lessonsHook.loading
+    console.log('🔍 useLessons successfully re-enabled, loading:', lessonsLoading)
+  } catch (error) {
+    console.error('❌ Error in useLessons hook:', error)
+    getLessonsByTopicId = () => []
+    deleteLesson = async () => {}
+    lessonsLoading = false
+  }
   
-  console.log('🔍 LESSONS DISABLED FOR TESTING')
-  
-  // TEMPORARY: Disable lesson completions too
-  const isLessonCompleted = () => false
-  
-  console.log('🔍 LESSON COMPLETIONS DISABLED FOR TESTING')
+  // RE-ENABLED: Lesson completions
+  let isLessonCompleted
+  try {
+    const completionsHook = useLessonCompletions()
+    isLessonCompleted = completionsHook.isLessonCompleted
+    console.log('🔍 useLessonCompletions successfully re-enabled')
+  } catch (error) {
+    console.error('❌ Error in useLessonCompletions hook:', error)
+    isLessonCompleted = () => false
+  }
   
   const { toast } = useToast()
 
