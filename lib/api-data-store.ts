@@ -204,7 +204,38 @@ class ApiDataStore {
         throw new Error(`Failed to fetch topics: ${response.status}`)
       }
       
-      return await response.json()
+      const rawTopics = await response.json()
+      console.log('🔍 Raw topics from API (before normalization):', rawTopics.map((t: any) => ({ 
+        id: t.id, 
+        title: t.title, 
+        hasSnakeCase: !!(t.created_at || t.updated_at || t.lessons_count) 
+      })))
+      
+      // NORMALIZE TOPIC DATA - Convert snake_case to camelCase
+      const normalizedTopics = rawTopics.map((topic: any) => ({
+        id: topic.id,
+        title: topic.title || '',
+        description: topic.description || '',
+        category: topic.category || '',
+        difficulty: topic.difficulty || 'Beginner',
+        status: topic.status || 'Draft',
+        image: topic.image || '',
+        lessons: topic.lessons || topic.lessons_count || 0,
+        students: topic.students || topic.students_count || 0,
+        hasAssessment: topic.hasAssessment || topic.has_assessment || false,
+        // Convert snake_case to camelCase
+        createdAt: topic.created_at || topic.createdAt,
+        updatedAt: topic.updated_at || topic.updatedAt,
+        // Remove any snake_case properties by not including them
+      }))
+      
+      console.log('🔍 Normalized topics (after cleanup):', normalizedTopics.map((t: any) => ({ 
+        id: t.id, 
+        title: t.title, 
+        hasSnakeCase: !!(t.created_at || t.updated_at || t.lessons_count) 
+      })))
+      
+      return normalizedTopics
     } catch (error) {
       console.error('Error fetching topics:', error)
       // Fallback to mock data on error
