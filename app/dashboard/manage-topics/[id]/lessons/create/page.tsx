@@ -376,7 +376,7 @@ export default function CreateLessonPage({ params }: { params: Promise<{ id: str
         })
       }
     } catch (error) {
-      console.error('Error creating lesson:', error)
+      // console.error('Error creating lesson:', error)
       toast({
         title: "Error",
         description: "Failed to create lesson. Please check the form and try again.",

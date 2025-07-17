@@ -217,7 +217,7 @@ export default function ManageTopicsPage() {
     try {
       lessons = getLessonsByTopicId(selectedTopic.id) || []
     } catch (error) {
-      console.error('Error loading lessons for topic:', selectedTopic.id, error)
+      // console.error('Error loading lessons for topic:', selectedTopic.id, error)
       lessons = []
     }
     

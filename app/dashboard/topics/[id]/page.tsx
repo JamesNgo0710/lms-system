@@ -258,9 +258,9 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                   }).map((lesson, index) => {
                     const lessonCompleted = user && isHydrated ? isLessonCompleted(user.id, lesson.id) : false
                     
-                    // Debug logging to identify the issue
+                    // Safe validation without object creation
                     if (typeof lesson !== 'object' || !lesson.id) {
-                      console.warn('Invalid lesson object:', { id: lesson?.id, title: lesson?.title, hasSnakeCase: !!(lesson?.topic_id || lesson?.video_url) });
+                      // console.warn('Invalid lesson object - ID:', lesson?.id, 'Title:', lesson?.title);
                       return null;
                     }
                     
