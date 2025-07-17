@@ -76,32 +76,25 @@ export default function ManageTopicsPage() {
     updateTopic = async () => {}
   }
   
-  // RE-ENABLED: Lessons functionality with comprehensive normalization
-  let getLessonsByTopicId, deleteLesson, lessonsLoading
-  try {
-    // console.log('🔍 RE-ENABLING useLessons with comprehensive normalization...')
-    const lessonsHook = useLessons()
-    getLessonsByTopicId = lessonsHook.getLessonsByTopicId
-    deleteLesson = lessonsHook.deleteLesson
-    lessonsLoading = lessonsHook.loading
-    // console.log('🔍 useLessons RE-ENABLED with nuclear normalization, loading:', lessonsLoading)
-  } catch (error) {
-    console.error('❌ Error in useLessons hook:', error)
-    getLessonsByTopicId = () => []
-    deleteLesson = async () => {}
-    lessonsLoading = false
-  }
+  // SIMPLIFIED: Minimal lesson functionality
+  let getLessonsByTopicId = () => []
+  let deleteLesson = async () => {}
+  let lessonsLoading = false
+  let isLessonCompleted = () => false
   
-  // RE-ENABLED: Lesson completions with comprehensive normalization
-  let isLessonCompleted
-  try {
-    // console.log('🔍 RE-ENABLING useLessonCompletions with normalization...')
-    const completionsHook = useLessonCompletions()
-    isLessonCompleted = completionsHook.isLessonCompleted
-    // console.log('🔍 useLessonCompletions RE-ENABLED with nuclear normalization')
-  } catch (error) {
-    console.error('❌ Error in useLessonCompletions hook:', error)
-    isLessonCompleted = () => false
+  // Only load hooks if we really need them (when selectedTopic exists)
+  if (selectedTopic) {
+    try {
+      const lessonsHook = useLessons()
+      getLessonsByTopicId = lessonsHook.getLessonsByTopicId
+      deleteLesson = lessonsHook.deleteLesson
+      lessonsLoading = lessonsHook.loading
+      
+      const completionsHook = useLessonCompletions()
+      isLessonCompleted = completionsHook.isLessonCompleted
+    } catch (error) {
+      // Silently fail and use defaults
+    }
   }
   
   const { toast } = useToast()
@@ -128,17 +121,16 @@ export default function ManageTopicsPage() {
     return <div>Error loading topics. Please refresh the page.</div>
   }
 
-  // Add error handling for filtering
+  // SIMPLIFIED: Safe filtering with minimal operations
   let filteredTopics = []
-  try {
-    filteredTopics = topics.filter(
-      (topic) =>
-        (topic?.title?.toLowerCase?.()?.includes(searchTerm.toLowerCase()) ?? false) ||
-        (topic?.category?.toLowerCase?.()?.includes(searchTerm.toLowerCase()) ?? false),
-    )
-  } catch (error) {
-    console.error('Error filtering topics:', error)
-    filteredTopics = topics || []
+  if (Array.isArray(topics)) {
+    filteredTopics = topics.filter(topic => {
+      if (!topic || typeof topic !== 'object') return false
+      const title = String(topic.title || '')
+      const category = String(topic.category || '')
+      const searchLower = searchTerm.toLowerCase()
+      return title.toLowerCase().includes(searchLower) || category.toLowerCase().includes(searchLower)
+    })
   }
 
   const handleDeleteTopic = (topic: any) => {
@@ -583,301 +575,126 @@ export default function ManageTopicsPage() {
         </div>
       </div>
 
-      {/* Topics Grid/List View */}
+      {/* SIMPLIFIED Topics Display */}
       <Card className="dark:bg-gray-900 dark:border-gray-800">
         <CardHeader>
-          <CardTitle className="dark:text-gray-100">Topics ({filteredTopics.length})</CardTitle>
+          <CardTitle className="dark:text-gray-100">Topics ({Array.isArray(filteredTopics) ? filteredTopics.length : 0})</CardTitle>
         </CardHeader>
         <CardContent>
-          {viewMode === "grid" ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-              {filteredTopics.map((topic) => (
-                <Card 
-                  key={topic.id} 
-                  className="overflow-hidden hover:shadow-lg transition-shadow group dark:bg-gray-900 dark:border-gray-800"
-                >
-                  <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">
-                    <img 
-                      src={topic.image || "/placeholder.svg?height=225&width=400"} 
-                      alt={topic.title || 'Topic'}
-                      className="w-full h-full object-cover opacity-80"
-                    />
-                    <div className="absolute inset-0 bg-black/20" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <BookOpen className="w-12 h-12 text-white opacity-80" />
-                    </div>
-                    <div className="absolute top-2 left-2 right-2 sm:top-4 sm:left-4 sm:right-4 flex items-start justify-between">
-                      <div className="flex flex-col space-y-1 sm:space-y-2 max-w-[60%]">
-                        <Badge variant="secondary" className="bg-white/90 text-gray-800 text-xs truncate">
-                          {topic.category}
-                        </Badge>
-                        <Badge 
-                          className={`text-xs truncate ${
-                            topic.difficulty === "Beginner"
-                              ? "bg-green-500 text-white"
-                              : topic.difficulty === "Intermediate"
-                                ? "bg-yellow-500 text-white"
-                                : "bg-red-500 text-white"
-                          }`}
-                        >
-                          {topic.difficulty}
-                        </Badge>
-                      </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button 
-                            variant="secondary" 
-                            size="icon" 
-                            className="h-8 w-8 bg-white/95 text-gray-700 hover:bg-white hover:text-gray-900 backdrop-blur-sm shadow-md dark:bg-gray-800/95 dark:text-gray-200 dark:hover:bg-gray-800"
-                          >
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="dark:bg-gray-900 dark:border-gray-800">
-                          <DropdownMenuItem asChild className="dark:hover:bg-gray-800 dark:focus:bg-gray-800">
-                            <Link href={`/dashboard/topics/${topic.id}?returnTo=manage&topicId=${topic.id}`}>
-                              <Eye className="w-4 h-4 mr-2" />
-                              Preview
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild className="dark:hover:bg-gray-800 dark:focus:bg-gray-800">
-                            <Link href={`/dashboard/manage-topics/${topic.id}`}>
-                              <Edit className="w-4 h-4 mr-2" />
-                              Manage
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleTogglePublish(topic)}
-                            className={`${
-                              topic.status === "Published" 
-                                ? "text-orange-600 dark:text-orange-400" 
-                                : "text-green-600 dark:text-green-400"
-                            } dark:hover:bg-gray-800 dark:focus:bg-gray-800`}
-                          >
-                            {topic.status === "Published" ? (
-                              <>
-                                <AlertCircle className="w-4 h-4 mr-2" />
-                                Unpublish
-                              </>
-                            ) : (
-                              <>
-                                <CheckCircle className="w-4 h-4 mr-2" />
-                                Publish
-                              </>
-                            )}
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteTopic(topic)}
-                            className="text-red-600 dark:text-red-400 dark:hover:bg-gray-800 dark:focus:bg-gray-800"
-                          >
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4">
-                      <h3 className="text-white font-bold text-sm sm:text-lg mb-1 sm:mb-2 group-hover:text-orange-200 transition-colors line-clamp-2">
-                        {topic.title || 'Untitled Topic'}
-                      </h3>
-                      <div className="flex items-center justify-between text-white/80 text-xs sm:text-sm">
-                        <div className="flex items-center space-x-2 sm:space-x-4">
-                          <div className="flex items-center space-x-1">
-                            <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                            <span className="hidden sm:inline">{topic.students || 0}</span>
-                            <span className="sm:hidden">{topic.students || 0}</span>
-                          </div>
-                          <div className="flex items-center space-x-1">
-                            <BookOpen className="w-3 h-3 sm:w-4 sm:h-4" />
-                            <span className="hidden sm:inline">{topic.lessons || 0} lessons</span>
-                            <span className="sm:hidden">{topic.lessons || 0}</span>
-                          </div>
-                        </div>
-                        <Badge 
-                          className={`text-xs ${
-                            topic.status === "Published" 
-                              ? "bg-green-500/90 text-white" 
-                              : "bg-gray-500/90 text-white"
-                          }`}
-                        >
-                          {topic.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  </div>
-
-                  <CardContent className="p-3 sm:p-4">
-                    <p className="text-gray-600 dark:text-gray-400 text-xs sm:text-sm mb-3 sm:mb-4 line-clamp-2">
-                      {topic.description || "Comprehensive learning material covering essential concepts and practical applications."}
-                    </p>
-
-                    <div className="flex flex-col space-y-2 sm:flex-row sm:items-center sm:justify-between sm:space-y-0">
-                      <div className="flex items-center space-x-2">
-                        <Link href={`/dashboard/topics/${topic.id}?returnTo=manage&topicId=${topic.id}`}>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="text-blue-600 border-blue-500 bg-transparent hover:bg-blue-50 dark:text-blue-400 dark:border-blue-400 dark:hover:bg-gray-800 text-xs px-2 py-1 h-7"
-                          >
-                            <Eye className="w-3 h-3 mr-1" />
-                            <span className="hidden sm:inline">Preview</span>
-                            <span className="sm:hidden">View</span>
-                          </Button>
-                        </Link>
-                        <Link href={`/dashboard/manage-topics/${topic.id}`}>
-                          <Button
-                            size="sm"
-                            className="bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500 text-xs px-2 py-1 h-7"
-                          >
-                            <Edit className="w-3 h-3 mr-1" />
-                            Manage
-                          </Button>
-                        </Link>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDeleteTopic(topic)}
-                        className="text-red-600 border-red-500 hover:bg-red-50 dark:text-red-400 dark:border-red-400 dark:hover:bg-gray-800 text-xs px-2 py-1 h-7 self-end sm:self-auto"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        <span className="ml-1 hidden sm:inline">Delete</span>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+          {!Array.isArray(filteredTopics) ? (
+            <div className="text-center py-8">
+              <p className="text-red-500">Error: Topics data is not properly loaded</p>
             </div>
-          ) : (
-            <div className="border border-gray-200 dark:border-gray-800 rounded-lg overflow-hidden shadow-sm">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-orange-500 hover:bg-orange-500 dark:bg-orange-600 border-b-0">
-                    <TableHead className="text-white font-semibold py-4">Topic</TableHead>
-                    <TableHead className="hidden md:table-cell text-white font-semibold py-4">Category</TableHead>
-                    <TableHead className="hidden lg:table-cell text-white font-semibold py-4">Students</TableHead>
-                    <TableHead className="hidden lg:table-cell text-white font-semibold py-4">Lessons</TableHead>
-                    <TableHead className="hidden sm:table-cell text-white font-semibold py-4">Status</TableHead>
-                    <TableHead className="w-[70px] text-white font-semibold py-4">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredTopics.map((topic) => (
-                    <TableRow
-                      key={topic.id}
-                      className="cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800"
-                      onClick={() => router.push(`/dashboard/manage-topics/${topic.id}`)}
-                    >
-                      <TableCell className="py-4">
-                        <div className="flex items-center space-x-3">
-                          <img 
-                            src={topic.image || "/placeholder.svg?height=48&width=48"} 
-                            alt={topic.title || 'Topic'}
-                            className="w-12 h-12 rounded-lg object-cover"
-                          />
-                          <div>
-                            <p className="font-semibold text-gray-900 dark:text-gray-100">{topic.title || 'Untitled Topic'}</p>
-                            <div className="flex items-center space-x-2 mt-1 flex-wrap gap-1">
-                              <Badge variant="outline" className="text-xs bg-gray-100 dark:bg-gray-700 dark:border-gray-600">
-                                {topic.difficulty || 'Beginner'}
-                              </Badge>
-                              <span className="text-xs text-gray-500 dark:text-gray-400 md:hidden">
-                                {topic.category || 'General'} • {topic.students || 0} students
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="hidden md:table-cell py-4">
-                        <Badge variant="outline" className="bg-gray-100 dark:bg-gray-700 dark:border-gray-600">{topic.category}</Badge>
-                      </TableCell>
-                      <TableCell className="hidden lg:table-cell py-4 font-medium text-gray-900 dark:text-gray-100">{topic.students}</TableCell>
-                      <TableCell className="hidden lg:table-cell py-4 font-medium text-gray-900 dark:text-gray-100">{topic.lessons}</TableCell>
-                      <TableCell className="hidden sm:table-cell py-4">
-                        <Badge variant={topic.status === "Published" ? "default" : "secondary"} className={topic.status === "Published" ? "bg-green-500" : ""}>{topic.status}</Badge>
-                      </TableCell>
-                      <TableCell>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              className="dark:text-gray-300 dark:hover:bg-gray-800 hover:bg-gray-100"
-                            >
-                              <MoreHorizontal className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="dark:bg-gray-900 dark:border-gray-800">
-                            <DropdownMenuItem asChild className="dark:hover:bg-gray-800 dark:focus:bg-gray-800">
-                              <Link href={`/dashboard/topics/${topic.id}?returnTo=manage&topicId=${topic.id}`}>
-                                <Eye className="w-4 h-4 mr-2" />
-                                Preview
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem asChild className="dark:hover:bg-gray-800 dark:focus:bg-gray-800">
-                              <Link href={`/dashboard/manage-topics/${topic.id}`}>
-                                <Edit className="w-4 h-4 mr-2" />
-                                Manage
-                              </Link>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleTogglePublish(topic)
-                              }}
-                              className={`${
-                                topic.status === "Published" 
-                                  ? "text-orange-600 dark:text-orange-400" 
-                                  : "text-green-600 dark:text-green-400"
-                              } dark:hover:bg-gray-800 dark:focus:bg-gray-800`}
-                            >
-                              {topic.status === "Published" ? (
-                                <>
-                                  <AlertCircle className="w-4 h-4 mr-2" />
-                                  Unpublish
-                                </>
-                              ) : (
-                                <>
-                                  <CheckCircle className="w-4 h-4 mr-2" />
-                                  Publish
-                                </>
-                              )}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleDeleteTopic(topic)
-                              }}
-                              className="text-red-600 dark:text-red-400 dark:hover:bg-gray-800 dark:focus:bg-gray-800"
-                            >
-                              <Trash2 className="w-4 h-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-
-          {filteredTopics.length === 0 && (
+          ) : filteredTopics.length === 0 ? (
             <div className="text-center py-8">
               <BookOpen className="w-12 h-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
               <h3 className="text-lg font-semibold mb-2 dark:text-gray-100">No topics found</h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm sm:text-base">
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
                 {searchTerm ? "Try adjusting your search terms." : "Get started by creating your first topic."}
               </p>
               {!searchTerm && (
                 <Link href="/dashboard/manage-topics/create">
-                  <Button className="bg-orange-500 hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-500">
+                  <Button className="bg-orange-500 hover:bg-orange-600">
                     <Plus className="w-4 h-4 mr-2" />
                     Create First Topic
                   </Button>
                 </Link>
               )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredTopics.map((topic, index) => {
+                // Safely extract only primitive values
+                const topicId = String(topic?.id || '')
+                const topicTitle = String(topic?.title || 'Untitled Topic')
+                const topicCategory = String(topic?.category || 'General')
+                const topicStatus = String(topic?.status || 'Draft')
+                const topicDifficulty = String(topic?.difficulty || 'Beginner')
+                const topicDescription = String(topic?.description || 'No description available')
+                const topicStudents = Number(topic?.students || 0)
+                const topicLessons = Number(topic?.lessons || 0)
+                const topicImage = String(topic?.image || '/placeholder.svg?height=200&width=300')
+                
+                if (!topicId) return null
+                
+                return (
+                  <Card key={topicId} className="overflow-hidden hover:shadow-lg transition-shadow">
+                    <div className="h-48 bg-gradient-to-br from-orange-400 to-orange-600 relative">
+                      <img 
+                        src={topicImage}
+                        alt={topicTitle}
+                        className="w-full h-full object-cover opacity-80"
+                      />
+                      <div className="absolute inset-0 bg-black/20" />
+                      <div className="absolute top-4 left-4">
+                        <Badge variant="secondary" className="bg-white/90 text-gray-800">
+                          {topicCategory}
+                        </Badge>
+                      </div>
+                      <div className="absolute top-4 right-4">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="secondary" size="icon" className="h-8 w-8 bg-white/95">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link href={`/dashboard/topics/${topicId}`}>
+                                <Eye className="w-4 h-4 mr-2" />
+                                Preview
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link href={`/dashboard/manage-topics/${topicId}`}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Manage
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleDeleteTopic(topic)}>
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <h3 className="text-white font-bold text-lg mb-2">{topicTitle}</h3>
+                        <div className="flex items-center justify-between text-white/80 text-sm">
+                          <div className="flex items-center space-x-4">
+                            <span>{topicStudents} students</span>
+                            <span>{topicLessons} lessons</span>
+                          </div>
+                          <Badge className={topicStatus === 'Published' ? 'bg-green-500' : 'bg-gray-500'}>
+                            {topicStatus}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <CardContent className="p-4">
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">{topicDescription}</p>
+                      <div className="flex items-center justify-between">
+                        <Badge variant="outline">{topicDifficulty}</Badge>
+                        <div className="flex items-center space-x-2">
+                          <Link href={`/dashboard/topics/${topicId}`}>
+                            <Button size="sm" variant="outline">
+                              <Eye className="w-4 h-4 mr-1" />
+                              Preview
+                            </Button>
+                          </Link>
+                          <Link href={`/dashboard/manage-topics/${topicId}`}>
+                            <Button size="sm" className="bg-orange-500 hover:bg-orange-600">
+                              <Edit className="w-4 h-4 mr-1" />
+                              Manage
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           )}
         </CardContent>
