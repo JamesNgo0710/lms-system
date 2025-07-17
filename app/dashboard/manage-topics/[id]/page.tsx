@@ -442,18 +442,7 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                 </div>
               ) : viewMode === "grid" ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {lessons.filter(lesson => {
-                    // Ensure lesson is properly normalized (has camelCase properties, not snake_case)
-                    return lesson && 
-                           lesson.id && 
-                           typeof lesson === 'object' && 
-                           lesson.topicId && // This is camelCase, not topic_id
-                           !lesson.topic_id && // Ensure no snake_case properties
-                           !lesson.created_at && 
-                           !lesson.updated_at &&
-                           !lesson.video_url &&
-                           !lesson.social_links
-                  }).map((lesson, index) => (
+                  {lessons.map((lesson, index) => (
                     <Card key={lesson.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
                       <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">
                         <img
@@ -590,18 +579,7 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {lessons.filter(lesson => {
-                        // Ensure lesson is properly normalized (has camelCase properties, not snake_case)
-                        return lesson && 
-                               lesson.id && 
-                               typeof lesson === 'object' && 
-                               lesson.topicId && // This is camelCase, not topic_id
-                               !lesson.topic_id && // Ensure no snake_case properties
-                               !lesson.created_at && 
-                               !lesson.updated_at &&
-                               !lesson.video_url &&
-                               !lesson.social_links
-                      }).map((lesson) => (
+                      {lessons.map((lesson) => (
                         <TableRow key={lesson.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors border-b border-gray-100 dark:border-gray-800">
                           <TableCell className="py-4">
                             <div>

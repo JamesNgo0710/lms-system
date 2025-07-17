@@ -309,18 +309,7 @@ export default function ManageTopicsPage() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {lessons.filter(lesson => {
-                      // Ensure lesson is properly normalized (has camelCase properties, not snake_case)
-                      return lesson && 
-                             lesson.id && 
-                             typeof lesson === 'object' && 
-                             lesson.topicId && // This is camelCase, not topic_id
-                             !lesson.topic_id && // Ensure no snake_case properties
-                             !lesson.created_at && 
-                             !lesson.updated_at &&
-                             !lesson.video_url &&
-                             !lesson.social_links
-                    }).map((lesson, index) => (
+                    {lessons.map((lesson, index) => (
                       <Card key={lesson.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                         <div className="aspect-video relative overflow-hidden">
                           <img

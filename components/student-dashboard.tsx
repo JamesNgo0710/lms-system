@@ -287,7 +287,7 @@ export function StudentDashboard() {
             <div className="space-y-2">
               {availableAssessments.length > 0 ? (
                 <>
-                  <Link href={`/dashboard/assessment/${assessments.find(a => a.topicId === availableAssessments[0].id)?.id}`}>
+                  <Link href={`/dashboard/assessment/${assessments.find(a => a.topicId === availableAssessments[0]?.id)?.id}`}>
                     <Button className="w-full bg-blue-500 hover:bg-blue-600">
                       <Target className="mr-2 h-4 w-4" />
                       Take Assessment

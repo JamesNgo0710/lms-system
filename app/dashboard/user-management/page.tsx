@@ -363,7 +363,7 @@ export default function UserManagementPage() {
                     <Avatar className="w-8 h-8 sm:w-10 sm:h-10">
                       <AvatarImage src={user.profileImage} alt={`${user.firstName} ${user.lastName}`} />
                       <AvatarFallback className="text-xs sm:text-sm bg-orange-100 text-orange-600 dark:bg-orange-900 dark:text-orange-300">
-                        {user.firstName[0]}{user.lastName[0]}
+                        {user?.firstName?.[0] || '?'}{user?.lastName?.[0] || '?'}
                       </AvatarFallback>
                     </Avatar>
                   </TableCell>

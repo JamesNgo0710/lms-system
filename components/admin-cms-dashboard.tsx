@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -34,8 +34,20 @@ import { useUsers } from "@/hooks/use-api-data-store"
 
 export function AdminCMSDashboard() {
   const [activeTab, setActiveTab] = useState("overview")
-  const { admin: dashboardStats } = getApiDashboardStats()
+  const [dashboardStats, setDashboardStats] = useState<any>(null)
   const { users } = useUsers()
+
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const stats = await getApiDashboardStats()
+        setDashboardStats(stats.admin)
+      } catch (error) {
+        console.error('Error loading dashboard stats:', error)
+      }
+    }
+    loadStats()
+  }, [])
   
   const totalUsers = users.length
   const activeUsers = users.filter(user => {
@@ -183,11 +195,11 @@ export function AdminCMSDashboard() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Content Views</span>
-                  <Badge variant="outline">{dashboardStats.totalContentViews || 1250}</Badge>
+                  <Badge variant="outline">{dashboardStats?.totalViews || 1250}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Assessment Completions</span>
-                  <Badge variant="outline">{dashboardStats.totalAssessments || 89}</Badge>
+                  <Badge variant="outline">{dashboardStats?.totalCompletions || 89}</Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Learning Streaks Active</span>
