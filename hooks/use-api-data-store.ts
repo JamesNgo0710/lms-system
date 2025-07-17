@@ -121,7 +121,7 @@ export function useLessons() {
           // CRITICAL: Verify NO snake_case properties exist
           const hasSnakeCase = Object.keys(bulletproofLesson).some(key => key.includes('_'))
           if (hasSnakeCase) {
-            console.error('🚨 CRITICAL: snake_case property found in normalized lesson:', bulletproofLesson)
+            // console.error('🚨 CRITICAL: snake_case property found in normalized lesson:', bulletproofLesson)
           }
           
           return bulletproofLesson
@@ -130,7 +130,7 @@ export function useLessons() {
       // console.log('✅ Bulletproof lessons created - count:', bulletproofLessons.length)
       setLessons(bulletproofLessons)
     } catch (error) {
-      console.error('Error loading lessons:', error)
+      // console.error('Error loading lessons:', error)
       setLessons([])
     }
     setLoading(false)
@@ -139,7 +139,7 @@ export function useLessons() {
   const getLessonById = (id: number) => {
     const lesson = lessons.find(lesson => lesson.id === id)
     if (!lesson || typeof lesson !== 'object' || !lesson.id) {
-      console.error('Invalid lesson in getLessonById:', { id: lesson?.id, title: lesson?.title, hasSnakeCase: !!(lesson?.topic_id || lesson?.video_url) })
+      // console.error('Invalid lesson in getLessonById:', { id: lesson?.id, title: lesson?.title, hasSnakeCase: !!(lesson?.topic_id || lesson?.video_url) })
       return null
     }
     
@@ -177,13 +177,13 @@ export function useLessons() {
     return filtered.map(lesson => {
       // Double-check that we return a clean object
       if (!lesson || typeof lesson !== 'object' || !lesson.id) {
-        console.error('Invalid lesson in getLessonsByTopicId:', { id: lesson?.id, title: lesson?.title, hasSnakeCase: !!(lesson?.topic_id || lesson?.video_url) })
+        // console.error('Invalid lesson in getLessonsByTopicId:', { id: lesson?.id, title: lesson?.title, hasSnakeCase: !!(lesson?.topic_id || lesson?.video_url) })
         return null
       }
       
       // Check if this lesson has snake_case properties - if so, DO NOT return it
       if (lesson.topic_id || lesson.video_url || lesson.social_links || lesson.created_at || lesson.updated_at) {
-        console.error('🚨 FOUND LESSON WITH SNAKE_CASE IN getLessonsByTopicId - FILTERING OUT:', { id: lesson?.id, title: lesson?.title, snakeCaseFieldCount: Object.keys(lesson).filter(key => key.includes('_')).length })
+        // console.error('🚨 FOUND LESSON WITH SNAKE_CASE IN getLessonsByTopicId - FILTERING OUT:', { id: lesson?.id, title: lesson?.title, snakeCaseFieldCount: Object.keys(lesson).filter(key => key.includes('_')).length })
         return null // Return null to filter out non-normalized lessons
       }
       
@@ -239,7 +239,7 @@ export function useLessons() {
       }
       return newLesson
     } catch (error) {
-      console.error('Error creating lesson:', error)
+      // console.error('Error creating lesson:', error)
       return null
     }
   }
@@ -276,7 +276,7 @@ export function useLessons() {
       }
       return updatedLesson
     } catch (error) {
-      console.error('Error updating lesson:', error)
+      // console.error('Error updating lesson:', error)
       return null
     }
   }
@@ -327,7 +327,7 @@ export function useLessons() {
       const lesson = getLessonById(id)
       // Extra safety check
       if (lesson && Object.keys(lesson).some(key => key.includes('_'))) {
-        console.error('🚨 BLOCKED: snake_case lesson from getLessonById')
+        // console.error('🚨 BLOCKED: snake_case lesson from getLessonById')
         return null
       }
       return lesson
@@ -337,7 +337,7 @@ export function useLessons() {
       // Extra safety check
       return lessons.filter(lesson => {
         if (lesson && Object.keys(lesson).some(key => key.includes('_'))) {
-          console.error('🚨 BLOCKED: snake_case lesson from getLessonsByTopicId')
+          // console.error('🚨 BLOCKED: snake_case lesson from getLessonsByTopicId')
           return false
         }
         return true

@@ -355,7 +355,7 @@ class ApiDataStore {
           // CRITICAL: Verify NO snake_case properties exist at API level
           const hasSnakeCase = Object.keys(bulletproofLesson).some(key => key.includes('_'))
           if (hasSnakeCase) {
-            console.error('🚨 CRITICAL: snake_case property found in API normalized lesson:', bulletproofLesson)
+            // console.error('🚨 CRITICAL: snake_case property found in API normalized lesson:', bulletproofLesson)
           }
           
           return bulletproofLesson
@@ -420,7 +420,7 @@ class ApiDataStore {
           // CRITICAL: Verify NO snake_case properties exist at API level
           const hasSnakeCase = Object.keys(bulletproofLesson).some(key => key.includes('_'))
           if (hasSnakeCase) {
-            console.error(`🚨 CRITICAL: snake_case property found in API normalized lesson for topic ${topicId}:`, bulletproofLesson)
+            // console.error(`🚨 CRITICAL: snake_case property found in API normalized lesson for topic ${topicId}:`, bulletproofLesson)
           }
           
           return bulletproofLesson
@@ -475,7 +475,7 @@ class ApiDataStore {
       // CRITICAL: Verify NO snake_case properties exist at API level
       const hasSnakeCase = Object.keys(bulletproofLesson).some(key => key.includes('_'))
       if (hasSnakeCase) {
-        console.error(`🚨 CRITICAL: snake_case property found in API normalized single lesson ${id}:`, bulletproofLesson)
+        // console.error(`🚨 CRITICAL: snake_case property found in API normalized single lesson ${id}:`, bulletproofLesson)
       }
       
       // console.log(`🔥 NUCLEAR: Bulletproof single lesson ${id} created at API level`)
