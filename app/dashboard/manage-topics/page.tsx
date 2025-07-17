@@ -52,12 +52,54 @@ import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 
 export default function ManageTopicsPage() {
+  console.log('🔍 ManageTopicsPage component starting...')
+  
   const { data: session } = useSession()
   const user = session?.user
   const router = useRouter()
-  const { topics, deleteTopic, updateTopic } = useTopics()
-  const { getLessonsByTopicId, deleteLesson, loading: lessonsLoading } = useLessons()
-  const { isLessonCompleted } = useLessonCompletions()
+  
+  console.log('🔍 Session data:', { user: user?.id, hasSession: !!session })
+  
+  // Add error logging for hooks
+  let topics, deleteTopic, updateTopic
+  try {
+    console.log('🔍 Calling useTopics...')
+    const topicsHook = useTopics()
+    topics = topicsHook.topics
+    deleteTopic = topicsHook.deleteTopic
+    updateTopic = topicsHook.updateTopic
+    console.log('🔍 useTopics successful, topics count:', topics?.length)
+  } catch (error) {
+    console.error('❌ Error in useTopics hook:', error)
+    topics = []
+    deleteTopic = async () => {}
+    updateTopic = async () => {}
+  }
+  
+  let getLessonsByTopicId, deleteLesson, lessonsLoading
+  try {
+    console.log('🔍 Calling useLessons...')
+    const lessonsHook = useLessons()
+    getLessonsByTopicId = lessonsHook.getLessonsByTopicId
+    deleteLesson = lessonsHook.deleteLesson
+    lessonsLoading = lessonsHook.loading
+    console.log('🔍 useLessons successful, loading:', lessonsLoading)
+  } catch (error) {
+    console.error('❌ Error in useLessons hook:', error)
+    getLessonsByTopicId = () => []
+    deleteLesson = async () => {}
+    lessonsLoading = false
+  }
+  
+  let isLessonCompleted
+  try {
+    const completionsHook = useLessonCompletions()
+    isLessonCompleted = completionsHook.isLessonCompleted
+  } catch (error) {
+    console.error('Error in useLessonCompletions hook:', error)
+    isLessonCompleted = () => false
+  }
+  
   const { toast } = useToast()
 
   const [searchTerm, setSearchTerm] = useState("")
@@ -72,11 +114,28 @@ export default function ManageTopicsPage() {
     setIsHydrated(true)
   }, [])
 
-  const filteredTopics = topics.filter(
-    (topic) =>
-      (topic?.title?.toLowerCase?.()?.includes(searchTerm.toLowerCase()) ?? false) ||
-      (topic?.category?.toLowerCase?.()?.includes(searchTerm.toLowerCase()) ?? false),
-  )
+  // Add comprehensive error checks
+  if (!isHydrated) {
+    return <div>Loading...</div>
+  }
+
+  if (!Array.isArray(topics)) {
+    console.error('Topics is not an array:', topics)
+    return <div>Error loading topics. Please refresh the page.</div>
+  }
+
+  // Add error handling for filtering
+  let filteredTopics = []
+  try {
+    filteredTopics = topics.filter(
+      (topic) =>
+        (topic?.title?.toLowerCase?.()?.includes(searchTerm.toLowerCase()) ?? false) ||
+        (topic?.category?.toLowerCase?.()?.includes(searchTerm.toLowerCase()) ?? false),
+    )
+  } catch (error) {
+    console.error('Error filtering topics:', error)
+    filteredTopics = topics || []
+  }
 
   const handleDeleteTopic = (topic: any) => {
     setTopicToDelete(topic)
@@ -144,15 +203,29 @@ export default function ManageTopicsPage() {
   }
 
   const handleRowClick = (topic: any) => {
-    setSelectedTopic(topic)
+    try {
+      setSelectedTopic(topic)
+    } catch (error) {
+      console.error('Error selecting topic:', error)
+    }
   }
 
   const handleBackToList = () => {
-    setSelectedTopic(null)
+    try {
+      setSelectedTopic(null)
+    } catch (error) {
+      console.error('Error clearing selected topic:', error)
+    }
   }
 
   if (selectedTopic) {
-    const lessons = getLessonsByTopicId(selectedTopic.id) || []
+    let lessons = []
+    try {
+      lessons = getLessonsByTopicId(selectedTopic.id) || []
+    } catch (error) {
+      console.error('Error loading lessons for topic:', selectedTopic.id, error)
+      lessons = []
+    }
     
     // Don't render lessons while they're still loading
     if (lessonsLoading) {
