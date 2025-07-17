@@ -47,11 +47,7 @@ import {
   List
 } from "lucide-react"
 import Link from "next/link"
-import { useTopics } from "@/hooks/use-api-data-store"
-// TEMPORARILY DISABLED: useLessonCompletions to isolate React error #31 source
-// import { useLessonCompletions } from "@/hooks/use-api-data-store"
-// TEMPORARILY DISABLED: useLessons to isolate React error #31 source
-// import { useLessons } from "@/hooks/use-api-data-store"
+import { useTopics, useLessons, useLessonCompletions } from "@/hooks/use-api-data-store"
 import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 
@@ -80,31 +76,31 @@ export default function ManageTopicsPage() {
     updateTopic = async () => {}
   }
   
-  // TEMPORARILY DISABLED: Lessons functionality to isolate React error #31
+  // RE-ENABLED: Lessons functionality with comprehensive normalization
   let getLessonsByTopicId, deleteLesson, lessonsLoading
   try {
-    console.log('🔍 TEMPORARILY DISABLING useLessons to isolate React error #31...')
-    // TEMPORARILY DISABLED: const lessonsHook = useLessons()
-    getLessonsByTopicId = () => []
-    deleteLesson = async () => {}
-    lessonsLoading = false
-    console.log('🔍 useLessons DISABLED for testing, loading:', lessonsLoading)
+    console.log('🔍 RE-ENABLING useLessons with comprehensive normalization...')
+    const lessonsHook = useLessons()
+    getLessonsByTopicId = lessonsHook.getLessonsByTopicId
+    deleteLesson = lessonsHook.deleteLesson
+    lessonsLoading = lessonsHook.loading
+    console.log('🔍 useLessons RE-ENABLED with nuclear normalization, loading:', lessonsLoading)
   } catch (error) {
-    console.error('❌ Error in lessons (disabled):', error)
+    console.error('❌ Error in useLessons hook:', error)
     getLessonsByTopicId = () => []
     deleteLesson = async () => {}
     lessonsLoading = false
   }
   
-  // TEMPORARILY DISABLED: Lesson completions to isolate React error #31
+  // RE-ENABLED: Lesson completions with comprehensive normalization
   let isLessonCompleted
   try {
-    console.log('🔍 TEMPORARILY DISABLING useLessonCompletions to isolate React error #31...')
-    // TEMPORARILY DISABLED: const completionsHook = useLessonCompletions()
-    isLessonCompleted = () => false
-    console.log('🔍 useLessonCompletions DISABLED for testing')
+    console.log('🔍 RE-ENABLING useLessonCompletions with normalization...')
+    const completionsHook = useLessonCompletions()
+    isLessonCompleted = completionsHook.isLessonCompleted
+    console.log('🔍 useLessonCompletions RE-ENABLED with nuclear normalization')
   } catch (error) {
-    console.error('❌ Error in lesson completions (disabled):', error)
+    console.error('❌ Error in useLessonCompletions hook:', error)
     isLessonCompleted = () => false
   }
   
