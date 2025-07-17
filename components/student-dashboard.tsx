@@ -18,7 +18,9 @@ export function StudentDashboard() {
   const { data: session } = useSession()
   const user = session?.user
   const { topics } = useTopics()
-  const { lessons } = useLessons() 
+  // TEMPORARY: Disable lessons to test React error #31
+  const lessons = []
+  console.log('🔍 LESSONS DISABLED IN STUDENT DASHBOARD FOR TESTING')
   const { completions, getTopicProgress, isLessonCompleted } = useLessonCompletions()
   const { views } = useLessonViews()
   const { assessments } = useAssessments()
