@@ -323,7 +323,54 @@ class ApiDataStore {
         throw new Error(`Failed to fetch lessons: ${response.status}`)
       }
       
-      return await response.json()
+      const rawLessons = await response.json()
+      console.log('🔥 NUCLEAR SOLUTION: Raw lessons from API (before normalization):', rawLessons.map((l: any) => ({ 
+        id: l.id, 
+        title: l.title, 
+        hasSnakeCase: !!(l.topic_id || l.video_url || l.social_links || l.created_at || l.updated_at) 
+      })))
+      
+      // NUCLEAR SOLUTION: BULLETPROOF NORMALIZATION AT API LEVEL
+      // This ensures NO snake_case lesson objects can EVER escape the API layer
+      const bulletproofLessons = rawLessons
+        .filter((lesson: any) => lesson && typeof lesson === 'object' && lesson.id)
+        .map((lesson: any) => {
+          // Create completely clean object - NO snake_case properties possible
+          const bulletproofLesson = {
+            id: lesson.id,
+            topicId: lesson.topic_id || lesson.topicId || 0,
+            title: String(lesson.title || ''),
+            description: String(lesson.description || ''),
+            content: String(lesson.content || ''),
+            duration: String(lesson.duration || '15 min'),
+            difficulty: String(lesson.difficulty || 'Beginner'),
+            status: String(lesson.status || 'Draft'),
+            order: Number(lesson.order || 0),
+            image: String(lesson.image || ''),
+            videoUrl: String(lesson.video_url || lesson.videoUrl || ''),
+            socialLinks: typeof lesson.social_links === 'object' ? lesson.social_links : 
+                        typeof lesson.socialLinks === 'object' ? lesson.socialLinks : {},
+            prerequisites: Array.isArray(lesson.prerequisites) ? lesson.prerequisites : [],
+            downloads: Array.isArray(lesson.downloads) ? lesson.downloads : [],
+            createdAt: lesson.created_at || lesson.createdAt || new Date().toISOString(),
+            updatedAt: lesson.updated_at || lesson.updatedAt || new Date().toISOString(),
+          }
+          
+          // CRITICAL: Verify NO snake_case properties exist at API level
+          const hasSnakeCase = Object.keys(bulletproofLesson).some(key => key.includes('_'))
+          if (hasSnakeCase) {
+            console.error('🚨 CRITICAL: snake_case property found in API normalized lesson:', bulletproofLesson)
+          }
+          
+          return bulletproofLesson
+        })
+      
+      console.log('🔥 NUCLEAR: Bulletproof lessons created at API level - count:', bulletproofLessons.length)
+      console.log('🔥 NUCLEAR: Verification - no snake_case lessons can escape:', bulletproofLessons.every((l: any) => 
+        !Object.keys(l).some(key => key.includes('_'))
+      ))
+      
+      return bulletproofLessons
     } catch (error) {
       console.error('Error fetching lessons:', error)
       // Fallback to mock data on error
@@ -346,7 +393,50 @@ class ApiDataStore {
         throw new Error(`Failed to fetch lessons for topic: ${response.status}`)
       }
       
-      return await response.json()
+      const rawLessons = await response.json()
+      console.log(`🔥 NUCLEAR SOLUTION: Raw lessons for topic ${topicId} from API (before normalization):`, rawLessons.map((l: any) => ({ 
+        id: l.id, 
+        title: l.title, 
+        hasSnakeCase: !!(l.topic_id || l.video_url || l.social_links || l.created_at || l.updated_at) 
+      })))
+      
+      // NUCLEAR SOLUTION: BULLETPROOF NORMALIZATION AT API LEVEL FOR TOPIC LESSONS
+      const bulletproofLessons = rawLessons
+        .filter((lesson: any) => lesson && typeof lesson === 'object' && lesson.id)
+        .map((lesson: any) => {
+          // Create completely clean object - NO snake_case properties possible
+          const bulletproofLesson = {
+            id: lesson.id,
+            topicId: lesson.topic_id || lesson.topicId || topicId,
+            title: String(lesson.title || ''),
+            description: String(lesson.description || ''),
+            content: String(lesson.content || ''),
+            duration: String(lesson.duration || '15 min'),
+            difficulty: String(lesson.difficulty || 'Beginner'),
+            status: String(lesson.status || 'Draft'),
+            order: Number(lesson.order || 0),
+            image: String(lesson.image || ''),
+            videoUrl: String(lesson.video_url || lesson.videoUrl || ''),
+            socialLinks: typeof lesson.social_links === 'object' ? lesson.social_links : 
+                        typeof lesson.socialLinks === 'object' ? lesson.socialLinks : {},
+            prerequisites: Array.isArray(lesson.prerequisites) ? lesson.prerequisites : [],
+            downloads: Array.isArray(lesson.downloads) ? lesson.downloads : [],
+            createdAt: lesson.created_at || lesson.createdAt || new Date().toISOString(),
+            updatedAt: lesson.updated_at || lesson.updatedAt || new Date().toISOString(),
+          }
+          
+          // CRITICAL: Verify NO snake_case properties exist at API level
+          const hasSnakeCase = Object.keys(bulletproofLesson).some(key => key.includes('_'))
+          if (hasSnakeCase) {
+            console.error(`🚨 CRITICAL: snake_case property found in API normalized lesson for topic ${topicId}:`, bulletproofLesson)
+          }
+          
+          return bulletproofLesson
+        })
+      
+      console.log(`🔥 NUCLEAR: Bulletproof lessons for topic ${topicId} created at API level - count:`, bulletproofLessons.length)
+      
+      return bulletproofLessons
     } catch (error) {
       console.error('Error fetching lessons by topic:', error)
       // Fallback to mock data on error
@@ -362,7 +452,47 @@ class ApiDataStore {
         throw new Error(`Failed to fetch lesson: ${response.status}`)
       }
       
-      return await response.json()
+      const rawLesson = await response.json()
+      console.log(`🔥 NUCLEAR SOLUTION: Raw lesson ${id} from API (before normalization):`, { 
+        id: rawLesson.id, 
+        title: rawLesson.title, 
+        hasSnakeCase: !!(rawLesson.topic_id || rawLesson.video_url || rawLesson.social_links || rawLesson.created_at || rawLesson.updated_at) 
+      })
+      
+      // NUCLEAR SOLUTION: BULLETPROOF NORMALIZATION FOR SINGLE LESSON
+      if (!rawLesson || typeof rawLesson !== 'object' || !rawLesson.id) {
+        return null
+      }
+      
+      const bulletproofLesson = {
+        id: rawLesson.id,
+        topicId: rawLesson.topic_id || rawLesson.topicId || 0,
+        title: String(rawLesson.title || ''),
+        description: String(rawLesson.description || ''),
+        content: String(rawLesson.content || ''),
+        duration: String(rawLesson.duration || '15 min'),
+        difficulty: String(rawLesson.difficulty || 'Beginner'),
+        status: String(rawLesson.status || 'Draft'),
+        order: Number(rawLesson.order || 0),
+        image: String(rawLesson.image || ''),
+        videoUrl: String(rawLesson.video_url || rawLesson.videoUrl || ''),
+        socialLinks: typeof rawLesson.social_links === 'object' ? rawLesson.social_links : 
+                    typeof rawLesson.socialLinks === 'object' ? rawLesson.socialLinks : {},
+        prerequisites: Array.isArray(rawLesson.prerequisites) ? rawLesson.prerequisites : [],
+        downloads: Array.isArray(rawLesson.downloads) ? rawLesson.downloads : [],
+        createdAt: rawLesson.created_at || rawLesson.createdAt || new Date().toISOString(),
+        updatedAt: rawLesson.updated_at || rawLesson.updatedAt || new Date().toISOString(),
+      }
+      
+      // CRITICAL: Verify NO snake_case properties exist at API level
+      const hasSnakeCase = Object.keys(bulletproofLesson).some(key => key.includes('_'))
+      if (hasSnakeCase) {
+        console.error(`🚨 CRITICAL: snake_case property found in API normalized single lesson ${id}:`, bulletproofLesson)
+      }
+      
+      console.log(`🔥 NUCLEAR: Bulletproof single lesson ${id} created at API level`)
+      
+      return bulletproofLesson
     } catch (error) {
       console.error('Error fetching lesson:', error)
       return null
