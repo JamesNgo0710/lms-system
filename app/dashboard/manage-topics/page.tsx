@@ -52,23 +52,23 @@ import { useToast } from "@/hooks/use-toast"
 import { useRouter } from "next/navigation"
 
 export default function ManageTopicsPage() {
-  console.log('🔍 ManageTopicsPage component starting...')
+  // console.log('🔍 ManageTopicsPage component starting...')
   
   const { data: session } = useSession()
   const user = session?.user
   const router = useRouter()
   
-  console.log('🔍 Session data:', { user: user?.id, hasSession: !!session })
+  // console.log('🔍 Session data:', { user: user?.id, hasSession: !!session })
   
   // Add error logging for hooks
   let topics, deleteTopic, updateTopic
   try {
-    console.log('🔍 Calling useTopics...')
+    // console.log('🔍 Calling useTopics...')
     const topicsHook = useTopics()
     topics = topicsHook.topics
     deleteTopic = topicsHook.deleteTopic
     updateTopic = topicsHook.updateTopic
-    console.log('🔍 useTopics successful, topics count:', topics?.length)
+    // console.log('🔍 useTopics successful, topics count:', topics?.length)
   } catch (error) {
     console.error('❌ Error in useTopics hook:', error)
     topics = []
@@ -79,12 +79,12 @@ export default function ManageTopicsPage() {
   // RE-ENABLED: Lessons functionality with comprehensive normalization
   let getLessonsByTopicId, deleteLesson, lessonsLoading
   try {
-    console.log('🔍 RE-ENABLING useLessons with comprehensive normalization...')
+    // console.log('🔍 RE-ENABLING useLessons with comprehensive normalization...')
     const lessonsHook = useLessons()
     getLessonsByTopicId = lessonsHook.getLessonsByTopicId
     deleteLesson = lessonsHook.deleteLesson
     lessonsLoading = lessonsHook.loading
-    console.log('🔍 useLessons RE-ENABLED with nuclear normalization, loading:', lessonsLoading)
+    // console.log('🔍 useLessons RE-ENABLED with nuclear normalization, loading:', lessonsLoading)
   } catch (error) {
     console.error('❌ Error in useLessons hook:', error)
     getLessonsByTopicId = () => []
@@ -95,10 +95,10 @@ export default function ManageTopicsPage() {
   // RE-ENABLED: Lesson completions with comprehensive normalization
   let isLessonCompleted
   try {
-    console.log('🔍 RE-ENABLING useLessonCompletions with normalization...')
+    // console.log('🔍 RE-ENABLING useLessonCompletions with normalization...')
     const completionsHook = useLessonCompletions()
     isLessonCompleted = completionsHook.isLessonCompleted
-    console.log('🔍 useLessonCompletions RE-ENABLED with nuclear normalization')
+    // console.log('🔍 useLessonCompletions RE-ENABLED with nuclear normalization')
   } catch (error) {
     console.error('❌ Error in useLessonCompletions hook:', error)
     isLessonCompleted = () => false

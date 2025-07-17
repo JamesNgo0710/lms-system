@@ -88,10 +88,10 @@ export function useLessons() {
 
   const loadLessons = async () => {
     setLoading(true)
-    console.log('🔄 loadLessons called - COMPREHENSIVE NORMALIZATION')
+    // console.log('🔄 loadLessons called - COMPREHENSIVE NORMALIZATION')
     try {
       const data = await apiDataStore.getLessons()
-      console.log('📦 Raw lesson data from API - count:', data.length)
+      // console.log('📦 Raw lesson data from API - count:', data.length)
       
       // BULLETPROOF NORMALIZATION - Completely eliminate snake_case properties
       const bulletproofLessons = data
@@ -127,7 +127,7 @@ export function useLessons() {
           return bulletproofLesson
         })
       
-      console.log('✅ Bulletproof lessons created - count:', bulletproofLessons.length)
+      // console.log('✅ Bulletproof lessons created - count:', bulletproofLessons.length)
       setLessons(bulletproofLessons)
     } catch (error) {
       console.error('Error loading lessons:', error)

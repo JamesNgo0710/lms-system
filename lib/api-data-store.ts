@@ -205,11 +205,11 @@ class ApiDataStore {
       }
       
       const rawTopics = await response.json()
-      console.log('🔍 Raw topics from API (before normalization):', rawTopics.map((t: any) => ({ 
-        id: t.id, 
-        title: t.title, 
-        hasSnakeCase: !!(t.created_at || t.updated_at || t.lessons_count) 
-      })))
+      // console.log('🔍 Raw topics from API (before normalization):', rawTopics.map((t: any) => ({ 
+      //   id: t.id, 
+      //   title: t.title, 
+      //   hasSnakeCase: !!(t.created_at || t.updated_at || t.lessons_count) 
+      // })))
       
       // NORMALIZE TOPIC DATA - Convert snake_case to camelCase
       const normalizedTopics = rawTopics.map((topic: any) => ({
@@ -229,11 +229,11 @@ class ApiDataStore {
         // Remove any snake_case properties by not including them
       }))
       
-      console.log('🔍 Normalized topics (after cleanup):', normalizedTopics.map((t: any) => ({ 
-        id: t.id, 
-        title: t.title, 
-        hasSnakeCase: !!(t.created_at || t.updated_at || t.lessons_count) 
-      })))
+      // console.log('🔍 Normalized topics (after cleanup):', normalizedTopics.map((t: any) => ({ 
+      //   id: t.id, 
+      //   title: t.title, 
+      //   hasSnakeCase: !!(t.created_at || t.updated_at || t.lessons_count) 
+      // })))
       
       return normalizedTopics
     } catch (error) {
@@ -324,7 +324,7 @@ class ApiDataStore {
       }
       
       const rawLessons = await response.json()
-      console.log('🔥 NUCLEAR SOLUTION: Raw lessons from API count:', rawLessons.length, 'with snake_case properties:', rawLessons.filter((l: any) => l.topic_id || l.video_url || l.social_links || l.created_at || l.updated_at).length)
+      // console.log('🔥 NUCLEAR SOLUTION: Raw lessons from API count:', rawLessons.length, 'with snake_case properties:', rawLessons.filter((l: any) => l.topic_id || l.video_url || l.social_links || l.created_at || l.updated_at).length)
       
       // NUCLEAR SOLUTION: BULLETPROOF NORMALIZATION AT API LEVEL
       // This ensures NO snake_case lesson objects can EVER escape the API layer
@@ -361,10 +361,10 @@ class ApiDataStore {
           return bulletproofLesson
         })
       
-      console.log('🔥 NUCLEAR: Bulletproof lessons created at API level - count:', bulletproofLessons.length)
-      console.log('🔥 NUCLEAR: Verification - no snake_case lessons can escape:', bulletproofLessons.every((l: any) => 
-        !Object.keys(l).some(key => key.includes('_'))
-      ))
+      // console.log('🔥 NUCLEAR: Bulletproof lessons created at API level - count:', bulletproofLessons.length)
+      // console.log('🔥 NUCLEAR: Verification - no snake_case lessons can escape:', bulletproofLessons.every((l: any) => 
+      //   !Object.keys(l).some(key => key.includes('_'))
+      // ))
       
       return bulletproofLessons
     } catch (error) {
@@ -390,7 +390,7 @@ class ApiDataStore {
       }
       
       const rawLessons = await response.json()
-      console.log(`🔥 NUCLEAR SOLUTION: Raw lessons for topic ${topicId} count:`, rawLessons.length, 'with snake_case properties:', rawLessons.filter((l: any) => l.topic_id || l.video_url || l.social_links || l.created_at || l.updated_at).length)
+      // console.log(`🔥 NUCLEAR SOLUTION: Raw lessons for topic ${topicId} count:`, rawLessons.length, 'with snake_case properties:', rawLessons.filter((l: any) => l.topic_id || l.video_url || l.social_links || l.created_at || l.updated_at).length)
       
       // NUCLEAR SOLUTION: BULLETPROOF NORMALIZATION AT API LEVEL FOR TOPIC LESSONS
       const bulletproofLessons = rawLessons
@@ -426,7 +426,7 @@ class ApiDataStore {
           return bulletproofLesson
         })
       
-      console.log(`🔥 NUCLEAR: Bulletproof lessons for topic ${topicId} created at API level - count:`, bulletproofLessons.length)
+      // console.log(`🔥 NUCLEAR: Bulletproof lessons for topic ${topicId} created at API level - count:`, bulletproofLessons.length)
       
       return bulletproofLessons
     } catch (error) {
@@ -445,7 +445,7 @@ class ApiDataStore {
       }
       
       const rawLesson = await response.json()
-      console.log(`🔥 NUCLEAR SOLUTION: Raw lesson ${id} from API, title: "${rawLesson.title}", has snake_case:`, !!(rawLesson.topic_id || rawLesson.video_url || rawLesson.social_links || rawLesson.created_at || rawLesson.updated_at))
+      // console.log(`🔥 NUCLEAR SOLUTION: Raw lesson ${id} from API, title: "${rawLesson.title}", has snake_case:`, !!(rawLesson.topic_id || rawLesson.video_url || rawLesson.social_links || rawLesson.created_at || rawLesson.updated_at))
       
       // NUCLEAR SOLUTION: BULLETPROOF NORMALIZATION FOR SINGLE LESSON
       if (!rawLesson || typeof rawLesson !== 'object' || !rawLesson.id) {
@@ -478,7 +478,7 @@ class ApiDataStore {
         console.error(`🚨 CRITICAL: snake_case property found in API normalized single lesson ${id}:`, bulletproofLesson)
       }
       
-      console.log(`🔥 NUCLEAR: Bulletproof single lesson ${id} created at API level`)
+      // console.log(`🔥 NUCLEAR: Bulletproof single lesson ${id} created at API level`)
       
       return bulletproofLesson
     } catch (error) {
@@ -806,7 +806,7 @@ class ApiDataStore {
       }
       
       const rawCompletions = await response.json()
-      console.log('🔥 LESSON COMPLETIONS: Raw data from API count:', rawCompletions.length)
+      // console.log('🔥 LESSON COMPLETIONS: Raw data from API count:', rawCompletions.length)
       
       // NUCLEAR SOLUTION: Normalize lesson completion data to prevent snake_case
       const normalizedCompletions = rawCompletions.map((completion: any) => {
@@ -820,6 +820,7 @@ class ApiDataStore {
           timeSpent: completion.time_spent || completion.timeSpent,
           isCompleted: completion.is_completed || completion.isCompleted,
           // Ensure no snake_case properties survive
+          // DO NOT include lesson object to prevent React error #31
         }
         
         // CRITICAL: Verify NO snake_case properties exist
@@ -831,7 +832,7 @@ class ApiDataStore {
         return cleanCompletion
       })
       
-      console.log('🔥 LESSON COMPLETIONS: Normalized count:', normalizedCompletions.length)
+      // console.log('🔥 LESSON COMPLETIONS: Normalized count:', normalizedCompletions.length)
       return normalizedCompletions
     } catch (error) {
       console.error('Error fetching lesson completions:', error)
@@ -856,7 +857,7 @@ class ApiDataStore {
       }
       
       const rawViews = await response.json()
-      console.log('🔥 LESSON VIEWS: Raw data from API count:', rawViews.length)
+      // console.log('🔥 LESSON VIEWS: Raw data from API count:', rawViews.length)
       
       // NUCLEAR SOLUTION: Normalize lesson view data to prevent snake_case
       const normalizedViews = rawViews.map((view: any) => ({
@@ -868,7 +869,7 @@ class ApiDataStore {
         duration: view.duration,
       }))
       
-      console.log('🔥 LESSON VIEWS: Normalized count:', normalizedViews.length)
+      // console.log('🔥 LESSON VIEWS: Normalized count:', normalizedViews.length)
       return normalizedViews
     } catch (error) {
       console.error('Error fetching lesson views:', error)

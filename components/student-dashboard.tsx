@@ -19,7 +19,7 @@ export function StudentDashboard() {
   const user = session?.user
   const { topics } = useTopics()
   const { lessons } = useLessons()
-  console.log('🔍 LESSONS RE-ENABLED IN STUDENT DASHBOARD WITH BULLETPROOF NORMALIZATION')
+  // console.log('🔍 LESSONS RE-ENABLED IN STUDENT DASHBOARD WITH BULLETPROOF NORMALIZATION')
   const { completions, getTopicProgress, isLessonCompleted } = useLessonCompletions()
   const { views } = useLessonViews()
   const { assessments } = useAssessments()
@@ -334,12 +334,24 @@ export function StudentDashboard() {
                 // Combine lesson completions and assessment attempts
                 const recentActivities = [
                   ...userCompletions.map(completion => ({
-                    ...completion,
+                    id: completion.id,
+                    userId: completion.userId,
+                    lessonId: completion.lessonId,
+                    topicId: completion.topicId,
+                    completedAt: completion.completedAt,
+                    timeSpent: completion.timeSpent,
+                    isCompleted: completion.isCompleted,
                     type: 'lesson' as const,
                     date: new Date(completion.completedAt)
                   })),
                   ...userAttempts.map(attempt => ({
-                    ...attempt,
+                    id: attempt.id,
+                    userId: attempt.userId,
+                    assessmentId: attempt.assessmentId,
+                    topicId: attempt.topicId,
+                    completedAt: attempt.completedAt,
+                    score: attempt.score,
+                    isPassed: attempt.isPassed,
                     type: 'assessment' as const,
                     date: new Date(attempt.completedAt)
                   }))
