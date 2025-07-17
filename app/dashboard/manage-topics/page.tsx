@@ -76,25 +76,23 @@ export default function ManageTopicsPage() {
     updateTopic = async () => {}
   }
   
-  // SIMPLIFIED: Minimal lesson functionality
-  let getLessonsByTopicId = () => []
-  let deleteLesson = async () => {}
-  let lessonsLoading = false
-  let isLessonCompleted = () => false
+  // SIMPLIFIED: Always load hooks but with safe defaults
+  let getLessonsByTopicId, deleteLesson, lessonsLoading, isLessonCompleted
   
-  // Only load hooks if we really need them (when selectedTopic exists)
-  if (selectedTopic) {
-    try {
-      const lessonsHook = useLessons()
-      getLessonsByTopicId = lessonsHook.getLessonsByTopicId
-      deleteLesson = lessonsHook.deleteLesson
-      lessonsLoading = lessonsHook.loading
-      
-      const completionsHook = useLessonCompletions()
-      isLessonCompleted = completionsHook.isLessonCompleted
-    } catch (error) {
-      // Silently fail and use defaults
-    }
+  try {
+    const lessonsHook = useLessons()
+    getLessonsByTopicId = lessonsHook.getLessonsByTopicId
+    deleteLesson = lessonsHook.deleteLesson
+    lessonsLoading = lessonsHook.loading
+    
+    const completionsHook = useLessonCompletions()
+    isLessonCompleted = completionsHook.isLessonCompleted
+  } catch (error) {
+    // Provide safe defaults if hooks fail
+    getLessonsByTopicId = () => []
+    deleteLesson = async () => {}
+    lessonsLoading = false
+    isLessonCompleted = () => false
   }
   
   const { toast } = useToast()
