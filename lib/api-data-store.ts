@@ -805,7 +805,34 @@ class ApiDataStore {
         throw new Error(`Failed to fetch lesson completions: ${response.status}`)
       }
       
-      return await response.json()
+      const rawCompletions = await response.json()
+      console.log('🔥 LESSON COMPLETIONS: Raw data from API count:', rawCompletions.length)
+      
+      // NUCLEAR SOLUTION: Normalize lesson completion data to prevent snake_case
+      const normalizedCompletions = rawCompletions.map((completion: any) => {
+        // Create clean completion object with normalized properties
+        const cleanCompletion = {
+          id: completion.id,
+          userId: completion.user_id || completion.userId,
+          lessonId: completion.lesson_id || completion.lessonId,
+          topicId: completion.topic_id || completion.topicId,
+          completedAt: completion.completed_at || completion.completedAt,
+          timeSpent: completion.time_spent || completion.timeSpent,
+          isCompleted: completion.is_completed || completion.isCompleted,
+          // Ensure no snake_case properties survive
+        }
+        
+        // CRITICAL: Verify NO snake_case properties exist
+        const hasSnakeCase = Object.keys(cleanCompletion).some(key => key.includes('_'))
+        if (hasSnakeCase) {
+          console.error('🚨 LESSON COMPLETIONS: snake_case property found:', cleanCompletion)
+        }
+        
+        return cleanCompletion
+      })
+      
+      console.log('🔥 LESSON COMPLETIONS: Normalized count:', normalizedCompletions.length)
+      return normalizedCompletions
     } catch (error) {
       console.error('Error fetching lesson completions:', error)
       // Fallback to mock data on error
@@ -828,7 +855,21 @@ class ApiDataStore {
         throw new Error(`Failed to fetch lesson views: ${response.status}`)
       }
       
-      return await response.json()
+      const rawViews = await response.json()
+      console.log('🔥 LESSON VIEWS: Raw data from API count:', rawViews.length)
+      
+      // NUCLEAR SOLUTION: Normalize lesson view data to prevent snake_case
+      const normalizedViews = rawViews.map((view: any) => ({
+        id: view.id,
+        userId: view.user_id || view.userId,
+        lessonId: view.lesson_id || view.lessonId,
+        topicId: view.topic_id || view.topicId,
+        viewedAt: view.viewed_at || view.viewedAt,
+        duration: view.duration,
+      }))
+      
+      console.log('🔥 LESSON VIEWS: Normalized count:', normalizedViews.length)
+      return normalizedViews
     } catch (error) {
       console.error('Error fetching lesson views:', error)
       // Fallback to mock data on error
@@ -851,7 +892,25 @@ class ApiDataStore {
         throw new Error(`Failed to fetch assessment attempts: ${response.status}`)
       }
       
-      return await response.json()
+      const rawAttempts = await response.json()
+      console.log('🔥 ASSESSMENT ATTEMPTS: Raw data from API count:', rawAttempts.length)
+      
+      // NUCLEAR SOLUTION: Normalize assessment attempt data to prevent snake_case
+      const normalizedAttempts = rawAttempts.map((attempt: any) => ({
+        id: attempt.id,
+        userId: attempt.user_id || attempt.userId,
+        assessmentId: attempt.assessment_id || attempt.assessmentId,
+        topicId: attempt.topic_id || attempt.topicId,
+        score: attempt.score,
+        correctAnswers: attempt.correct_answers || attempt.correctAnswers,
+        totalQuestions: attempt.total_questions || attempt.totalQuestions,
+        timeSpent: attempt.time_spent || attempt.timeSpent,
+        completedAt: attempt.completed_at || attempt.completedAt,
+        answers: attempt.answers || [],
+      }))
+      
+      console.log('🔥 ASSESSMENT ATTEMPTS: Normalized count:', normalizedAttempts.length)
+      return normalizedAttempts
     } catch (error) {
       console.error('Error fetching assessment attempts:', error)
       // Fallback to mock data on error
