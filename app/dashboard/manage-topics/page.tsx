@@ -74,8 +74,8 @@ export default function ManageTopicsPage() {
 
   const filteredTopics = topics.filter(
     (topic) =>
-      topic.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      topic.category.toLowerCase().includes(searchTerm.toLowerCase()),
+      (topic?.title?.toLowerCase?.()?.includes(searchTerm.toLowerCase()) ?? false) ||
+      (topic?.category?.toLowerCase?.()?.includes(searchTerm.toLowerCase()) ?? false),
   )
 
   const handleDeleteTopic = (topic: any) => {
@@ -83,39 +83,63 @@ export default function ManageTopicsPage() {
     setDeleteDialogOpen(true)
   }
 
-  const handleTogglePublish = (topic: any) => {
-    const newStatus = topic.status === "Published" ? "Draft" : "Published"
-    updateTopic(topic.id, { status: newStatus })
-    
-    toast({
-      title: "Success",
-      description: `Topic ${newStatus === "Published" ? "published" : "unpublished"} successfully`,
-    })
-  }
-
-  const confirmDelete = () => {
-    if (topicToDelete) {
-      deleteTopic(topicToDelete.id)
+  const handleTogglePublish = async (topic: any) => {
+    try {
+      const newStatus = topic.status === "Published" ? "Draft" : "Published"
+      await updateTopic(topic.id, { status: newStatus })
+      
       toast({
         title: "Success",
-        description: "Topic deleted successfully",
+        description: `Topic ${newStatus === "Published" ? "published" : "unpublished"} successfully`,
       })
-      setDeleteDialogOpen(false)
-      setTopicToDelete(null)
-      setSelectedTopic(null)
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to update topic status",
+        variant: "destructive"
+      })
     }
   }
 
-  const handleDeleteLesson = (lessonId: number) => {
-    deleteLesson(lessonId)
-    toast({
-      title: "Success",
-      description: "Lesson deleted successfully",
-    })
-    // Refresh selected topic if it's currently selected
-    if (selectedTopic) {
-      const updatedLessons = getLessonsByTopicId(selectedTopic.id) || []
-      setSelectedTopic({ ...selectedTopic, lessons: updatedLessons })
+  const confirmDelete = async () => {
+    if (topicToDelete) {
+      try {
+        await deleteTopic(topicToDelete.id)
+        toast({
+          title: "Success",
+          description: "Topic deleted successfully",
+        })
+        setDeleteDialogOpen(false)
+        setTopicToDelete(null)
+        setSelectedTopic(null)
+      } catch (error) {
+        toast({
+          title: "Error",
+          description: "Failed to delete topic",
+          variant: "destructive"
+        })
+      }
+    }
+  }
+
+  const handleDeleteLesson = async (lessonId: number) => {
+    try {
+      await deleteLesson(lessonId)
+      toast({
+        title: "Success",
+        description: "Lesson deleted successfully",
+      })
+      // Refresh selected topic if it's currently selected
+      if (selectedTopic) {
+        const updatedLessons = getLessonsByTopicId(selectedTopic.id) || []
+        setSelectedTopic({ ...selectedTopic, lessons: updatedLessons })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete lesson",
+        variant: "destructive"
+      })
     }
   }
 
@@ -498,7 +522,7 @@ export default function ManageTopicsPage() {
                   <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">
                     <img 
                       src={topic.image || "/placeholder.svg?height=225&width=400"} 
-                      alt={topic.title}
+                      alt={topic.title || 'Topic'}
                       className="w-full h-full object-cover opacity-80"
                     />
                     <div className="absolute inset-0 bg-black/20" />
@@ -577,19 +601,19 @@ export default function ManageTopicsPage() {
                     </div>
                     <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-4">
                       <h3 className="text-white font-bold text-sm sm:text-lg mb-1 sm:mb-2 group-hover:text-orange-200 transition-colors line-clamp-2">
-                        {topic.title}
+                        {topic.title || 'Untitled Topic'}
                       </h3>
                       <div className="flex items-center justify-between text-white/80 text-xs sm:text-sm">
                         <div className="flex items-center space-x-2 sm:space-x-4">
                           <div className="flex items-center space-x-1">
                             <Users className="w-3 h-3 sm:w-4 sm:h-4" />
-                            <span className="hidden sm:inline">{topic.students}</span>
-                            <span className="sm:hidden">{topic.students}</span>
+                            <span className="hidden sm:inline">{topic.students || 0}</span>
+                            <span className="sm:hidden">{topic.students || 0}</span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <BookOpen className="w-3 h-3 sm:w-4 sm:h-4" />
-                            <span className="hidden sm:inline">{topic.lessons} lessons</span>
-                            <span className="sm:hidden">{topic.lessons}</span>
+                            <span className="hidden sm:inline">{topic.lessons || 0} lessons</span>
+                            <span className="sm:hidden">{topic.lessons || 0}</span>
                           </div>
                         </div>
                         <Badge 
@@ -671,17 +695,17 @@ export default function ManageTopicsPage() {
                         <div className="flex items-center space-x-3">
                           <img 
                             src={topic.image || "/placeholder.svg?height=48&width=48"} 
-                            alt={topic.title}
+                            alt={topic.title || 'Topic'}
                             className="w-12 h-12 rounded-lg object-cover"
                           />
                           <div>
-                            <p className="font-semibold text-gray-900 dark:text-gray-100">{topic.title}</p>
+                            <p className="font-semibold text-gray-900 dark:text-gray-100">{topic.title || 'Untitled Topic'}</p>
                             <div className="flex items-center space-x-2 mt-1 flex-wrap gap-1">
                               <Badge variant="outline" className="text-xs bg-gray-100 dark:bg-gray-700 dark:border-gray-600">
-                                {topic.difficulty}
+                                {topic.difficulty || 'Beginner'}
                               </Badge>
                               <span className="text-xs text-gray-500 dark:text-gray-400 md:hidden">
-                                {topic.category} • {topic.students} students
+                                {topic.category || 'General'} • {topic.students || 0} students
                               </span>
                             </div>
                           </div>
