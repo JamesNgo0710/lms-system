@@ -74,21 +74,23 @@ export function useTopics() {
   }
 }
 
-// Hook for Lessons
+// Hook for Lessons - TEMPORARILY DISABLED TO ISOLATE REACT ERROR #31
 export function useLessons() {
+  console.log('🔍 useLessons hook called - RETURNING EMPTY DATA FOR TESTING')
   const [lessons, setLessons] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const { data: session } = useSession()
   
   // Force rebuild indicator - temporarily removed for debugging
   // console.log('🔄 useLessons hook loaded - FORCED_REBUILD_FOR_REACT_ERROR_FIX')
   // console.log('🔄 Initial lessons state:', lessons)
 
-  useEffect(() => {
-    if (session) {
-      loadLessons()
-    }
-  }, [session])
+  // TEMPORARILY DISABLED - DO NOT LOAD LESSONS
+  // useEffect(() => {
+  //   if (session) {
+  //     loadLessons()
+  //   }
+  // }, [session])
 
   const loadLessons = async () => {
     setLoading(true)
@@ -324,33 +326,33 @@ export function useLessons() {
     return true
   })
 
+  // TEMPORARILY RETURN COMPLETELY SAFE EMPTY DATA
   return {
-    lessons: safeLessons, // Only return completely clean lessons
-    loading,
+    lessons: [], // Always return empty array
+    loading: false,
     getLessonById: (id: number) => {
-      const lesson = getLessonById(id)
-      // Double-check no snake_case properties before returning
-      if (lesson && (lesson.topic_id || lesson.video_url || lesson.social_links || lesson.created_at || lesson.updated_at)) {
-        console.error('🚨 BLOCKED SNAKE_CASE LESSON FROM getLessonById')
-        return null
-      }
-      return lesson
+      console.log('🔍 getLessonById called - RETURNING NULL FOR TESTING')
+      return null
     },
     getLessonsByTopicId: (topicId: number) => {
-      const lessons = getLessonsByTopicId(topicId)
-      // Double-check no snake_case properties before returning
-      return lessons.filter(lesson => {
-        if (lesson && (lesson.topic_id || lesson.video_url || lesson.social_links || lesson.created_at || lesson.updated_at)) {
-          console.error('🚨 BLOCKED SNAKE_CASE LESSON FROM getLessonsByTopicId')
-          return false
-        }
-        return true
-      })
+      console.log('🔍 getLessonsByTopicId called - RETURNING EMPTY ARRAY FOR TESTING')
+      return []
     },
-    addLesson,
-    updateLesson,
-    deleteLesson,
-    refresh: loadLessons
+    addLesson: async () => {
+      console.log('🔍 addLesson called - RETURNING NULL FOR TESTING')
+      return null
+    },
+    updateLesson: async () => {
+      console.log('🔍 updateLesson called - RETURNING NULL FOR TESTING')
+      return null
+    },
+    deleteLesson: async () => {
+      console.log('🔍 deleteLesson called - RETURNING TRUE FOR TESTING')
+      return true
+    },
+    refresh: async () => {
+      console.log('🔍 refresh called - DOING NOTHING FOR TESTING')
+    }
   }
 }
 
