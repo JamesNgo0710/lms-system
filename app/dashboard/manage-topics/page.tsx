@@ -47,7 +47,9 @@ import {
   List
 } from "lucide-react"
 import Link from "next/link"
-import { useTopics, useLessonCompletions } from "@/hooks/use-api-data-store"
+import { useTopics } from "@/hooks/use-api-data-store"
+// TEMPORARILY DISABLED: useLessonCompletions to isolate React error #31 source
+// import { useLessonCompletions } from "@/hooks/use-api-data-store"
 // TEMPORARILY DISABLED: useLessons to isolate React error #31 source
 // import { useLessons } from "@/hooks/use-api-data-store"
 import { useToast } from "@/hooks/use-toast"
@@ -94,14 +96,15 @@ export default function ManageTopicsPage() {
     lessonsLoading = false
   }
   
-  // RE-ENABLED: Lesson completions
+  // TEMPORARILY DISABLED: Lesson completions to isolate React error #31
   let isLessonCompleted
   try {
-    const completionsHook = useLessonCompletions()
-    isLessonCompleted = completionsHook.isLessonCompleted
-    console.log('🔍 useLessonCompletions successfully re-enabled')
+    console.log('🔍 TEMPORARILY DISABLING useLessonCompletions to isolate React error #31...')
+    // TEMPORARILY DISABLED: const completionsHook = useLessonCompletions()
+    isLessonCompleted = () => false
+    console.log('🔍 useLessonCompletions DISABLED for testing')
   } catch (error) {
-    console.error('❌ Error in useLessonCompletions hook:', error)
+    console.error('❌ Error in lesson completions (disabled):', error)
     isLessonCompleted = () => false
   }
   
