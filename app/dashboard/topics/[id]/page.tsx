@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { use } from "react"
 import { useSession } from "next-auth/react"
 import { useSearchParams } from "next/navigation"
-import { notFound } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -16,23 +15,53 @@ import { useTopics, useLessons, useLessonCompletions, useAssessments, useAssessm
 import { useToast } from "@/hooks/use-toast"
 
 export default function TopicDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  // console.log('🔍 TopicDetailPage component starting...')
+  
   const { data: session } = useSession()
   const user = session?.user
   const searchParams = useSearchParams()
-  const { getTopicById } = useTopics()
-  const { getLessonsByTopicId, deleteLesson } = useLessons()
-  const { isLessonCompleted, getTopicProgress } = useLessonCompletions()
-  const { getAssessmentByTopic } = useAssessments()
-  const { canTakeAssessment } = useAssessmentAttempts()
   const { toast } = useToast()
-  const [activeTab, setActiveTab] = useState("overview")
   const [isHydrated, setIsHydrated] = useState(false)
+
+  // Safe hook loading with error handling
+  let getTopicById, getLessonsByTopicId, deleteLesson, topicsLoading, lessonsLoading
+  let isLessonCompleted, getTopicProgress
+  let getAssessmentByTopic, canTakeAssessment
+  
+  try {
+    const topicsHook = useTopics()
+    getTopicById = topicsHook.getTopicById
+    topicsLoading = topicsHook.loading
+    
+    const lessonsHook = useLessons()
+    getLessonsByTopicId = lessonsHook.getLessonsByTopicId
+    deleteLesson = lessonsHook.deleteLesson
+    lessonsLoading = lessonsHook.loading
+    
+    const completionsHook = useLessonCompletions()
+    isLessonCompleted = completionsHook.isLessonCompleted
+    getTopicProgress = completionsHook.getTopicProgress
+    
+    const assessmentsHook = useAssessments()
+    getAssessmentByTopic = assessmentsHook.getAssessmentByTopic
+    
+    const attemptsHook = useAssessmentAttempts()
+    canTakeAssessment = attemptsHook.canTakeAssessment
+  } catch (error) {
+    // Provide safe defaults if hooks fail
+    getTopicById = () => null
+    getLessonsByTopicId = () => []
+    deleteLesson = async () => false
+    topicsLoading = false
+    lessonsLoading = false
+    isLessonCompleted = () => false
+    getTopicProgress = () => ({ completed: 0, total: 0, percentage: 0 })
+    getAssessmentByTopic = () => null
+    canTakeAssessment = () => ({ canTake: true, message: "" })
+  }
 
   const resolvedParams = use(params)
   const topicId = Number.parseInt(resolvedParams.id)
-  const topic = getTopicById(topicId)
-  const lessons = getLessonsByTopicId(topicId)
-  const assessment = getAssessmentByTopic(topicId)
   
   // Get return navigation info
   const returnTo = searchParams.get('returnTo')
@@ -41,38 +70,83 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
   // Determine back navigation URL
   const getBackUrl = () => {
     if (returnTo === 'manage') {
-      // If coming from manage topics, always go back to the specific manage topic page
       const targetTopicId = manageTopicId || topicId
       return `/dashboard/manage-topics/${targetTopicId}`
     }
     return '/dashboard/topics'
   }
-  
-  // Check cooldown for assessments
-  const cooldownCheck = user && assessment && isHydrated 
-    ? canTakeAssessment(user.id, assessment.id) 
-    : { canTake: true, message: "" }
 
   // Handle hydration
   useEffect(() => {
     setIsHydrated(true)
   }, [])
 
-  const handleDeleteLesson = (lessonId: number) => {
-    deleteLesson(lessonId)
-    toast({
-      title: "Success",
-      description: "Lesson deleted successfully",
-    })
+  // Safe topic and lessons loading
+  let topic = null
+  let lessons: any[] = []
+  let assessment = null
+  
+  try {
+    topic = getTopicById(topicId)
+    lessons = getLessonsByTopicId(topicId) || []
+    assessment = getAssessmentByTopic(topicId)
+  } catch (error) {
+    topic = null
+    lessons = []
+    assessment = null
   }
 
-  // Calculate total duration from all lessons
+  // Check cooldown for assessments - SAFE: Only primitive values
+  let cooldownCanTake = true
+  let cooldownMessage = ""
+  
+  if (user && assessment && isHydrated) {
+    try {
+      const cooldownCheck = canTakeAssessment(user.id, assessment.id)
+      if (cooldownCheck && typeof cooldownCheck === 'object') {
+        cooldownCanTake = Boolean(cooldownCheck.canTake)
+        cooldownMessage = String(cooldownCheck.message || "")
+      }
+    } catch (error) {
+      cooldownCanTake = true
+      cooldownMessage = ""
+    }
+  }
+
+  // Safe lesson deletion
+  const handleDeleteLesson = async (lessonId: number) => {
+    try {
+      const success = await deleteLesson(lessonId)
+      if (success) {
+        toast({
+          title: "Success",
+          description: "Lesson deleted successfully",
+        })
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to delete lesson",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to delete lesson",
+        variant: "destructive"
+      })
+    }
+  }
+
+  // Safe duration calculation with primitive values only
   const calculateTotalDuration = () => {
-    if (lessons.length === 0) return "0 min"
+    if (!Array.isArray(lessons) || lessons.length === 0) return "0 min"
     
     let totalMinutes = 0
     lessons.forEach(lesson => {
-      const duration = lesson.duration || "0 min"
+      if (!lesson || typeof lesson !== 'object') return
+      
+      const duration = String(lesson.duration || "0 min")
       const match = duration.match(/(\d+)\s*(min|hour|hr|h)/)
       if (match) {
         const value = parseInt(match[1])
@@ -92,6 +166,10 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
       const minutes = totalMinutes % 60
       return minutes > 0 ? `${hours}h ${minutes}min` : `${hours}h`
     }
+  }
+
+  if (!isHydrated) {
+    return <div>Loading...</div>
   }
 
   if (topicsLoading || lessonsLoading) {
@@ -119,8 +197,83 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
     )
   }
 
-  const topicProgress =
-    user && isHydrated ? getTopicProgress(user.id, topicId) : { completed: 0, total: 0, percentage: 0 }
+  // SAFE: Extract primitive values from topic
+  const topicTitle = String(topic?.title || 'Untitled Topic')
+  const topicDescription = String(topic?.description || 'Topic Overview')
+  const topicCategory = String(topic?.category || 'General')
+  const topicDifficulty = String(topic?.difficulty || 'Beginner')
+  const topicStudents = Number(topic?.students || 0)
+  const topicHasAssessment = Boolean(topic?.hasAssessment || false)
+
+  // SAFE: Get progress with error handling - only primitive values
+  let progressPercentage = 0
+  let progressCompleted = 0
+  let progressTotal = 0
+  
+  if (user && isHydrated) {
+    try {
+      const progress = getTopicProgress(user.id, topicId)
+      if (progress && typeof progress === 'object') {
+        progressPercentage = Number(progress.percentage || 0)
+        progressCompleted = Number(progress.completed || 0)
+        progressTotal = Number(progress.total || 0)
+      }
+    } catch (error) {
+      progressPercentage = 0
+      progressCompleted = 0
+      progressTotal = 0
+    }
+  }
+
+  // SAFE: Filter and normalize lessons - extract primitive values only
+  const safeLessons = Array.isArray(lessons) ? lessons
+    .filter(lesson => lesson && typeof lesson === 'object' && lesson.id)
+    .map((lesson, index) => {
+      // Extract only primitive values to prevent React error #31
+      const lessonId = String(lesson?.id || '')
+      const lessonTitle = String(lesson?.title || 'Untitled Lesson')
+      const lessonDescription = String(lesson?.description || 'No description available')
+      const lessonDuration = String(lesson?.duration || '15 min')
+      const lessonDifficulty = String(lesson?.difficulty || 'Beginner')
+      const lessonStatus = String(lesson?.status || 'Draft')
+      const lessonImage = String(lesson?.image || '/placeholder.svg?height=200&width=300')
+      
+      // Safe prerequisite handling
+      let lessonPrerequisites: string[] = []
+      try {
+        if (Array.isArray(lesson.prerequisites)) {
+          lessonPrerequisites = lesson.prerequisites.map((prereq: any) => String(prereq)).filter(p => p.length > 0)
+        }
+      } catch (error) {
+        lessonPrerequisites = []
+      }
+      
+      if (!lessonId) return null
+      
+      // Safe completion check
+      let isCompleted = false
+      try {
+        if (user && isHydrated) {
+          isCompleted = Boolean(isLessonCompleted(user.id, Number(lessonId)))
+        }
+      } catch (error) {
+        isCompleted = false
+      }
+      
+      return {
+        id: lessonId,
+        title: lessonTitle,
+        description: lessonDescription,
+        duration: lessonDuration,
+        difficulty: lessonDifficulty,
+        status: lessonStatus,
+        image: lessonImage,
+        prerequisites: lessonPrerequisites,
+        isCompleted: isCompleted,
+        index: index + 1
+      }
+    })
+    .filter(lesson => lesson !== null) : []
 
   return (
     <div className="space-y-6">
@@ -132,8 +285,8 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">{topic.title}</h1>
-          <p className="text-gray-600">{topic.category}</p>
+          <h1 className="text-3xl font-bold">{topicTitle}</h1>
+          <p className="text-gray-600">{topicCategory}</p>
           {returnTo === 'manage' && (
             <Badge variant="outline" className="mt-2">
               <Eye className="w-3 h-3 mr-1" />
@@ -170,28 +323,30 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">{topic.description || "Topic Overview"}</h2>
-                <Badge variant="outline">{topic.difficulty}</Badge>
+                <h2 className="text-xl font-semibold">{topicDescription}</h2>
+                <Badge variant="outline">{topicDifficulty}</Badge>
               </div>
               <p className="text-gray-600 mb-4">
-                {topic.description ||
-                  "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore dolore magna aliquat enim ad minim consectetur."}
+                {topicDescription === 'Topic Overview' 
+                  ? "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore dolore magna aliquat enim ad minim consectetur."
+                  : topicDescription
+                }
               </p>
               <p className="text-gray-600 mb-6">
                 This comprehensive course covers all the essential concepts and practical applications you need to
                 master this topic.
               </p>
 
-              {/* Progress for students */}
+              {/* Progress for students - SAFE: Only primitive values */}
               {user?.role === "student" && isHydrated && (
                 <div className="mb-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
                   <div className="flex items-center justify-between mb-2">
                     <h3 className="font-semibold text-orange-800">Your Progress</h3>
-                    <span className="text-orange-600 font-bold">{topicProgress.percentage}%</span>
+                    <span className="text-orange-600 font-bold">{progressPercentage}%</span>
                   </div>
-                  <Progress value={topicProgress.percentage} className="h-3 mb-2" />
+                  <Progress value={progressPercentage} className="h-3 mb-2" />
                   <p className="text-sm text-orange-700">
-                    {topicProgress.completed} of {topicProgress.total} lessons completed
+                    {progressCompleted} of {progressTotal} lessons completed
                   </p>
                 </div>
               )}
@@ -214,11 +369,11 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
             </CardContent>
           </Card>
 
-          {/* Lessons Section */}
+          {/* Lessons Section - SAFE: Only primitive values */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Lessons ({lessons.length})</CardTitle>
+                <CardTitle>Lessons ({safeLessons.length})</CardTitle>
                 {user?.role === "admin" && (
                   <Link href={`/dashboard/manage-topics/${topicId}/lessons/create`}>
                     <Button size="sm" className="bg-orange-500 hover:bg-orange-600">
@@ -230,7 +385,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </CardHeader>
             <CardContent>
-              {lessons.length === 0 ? (
+              {safeLessons.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-gray-500 mb-4">No lessons available for this topic yet.</p>
                   {user?.role === "admin" && (
@@ -244,152 +399,131 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {lessons.filter(lesson => {
-                    // Ensure lesson is properly normalized (has camelCase properties, not snake_case)
-                    return lesson && 
-                           lesson.id && 
-                           typeof lesson === 'object' && 
-                           lesson.topicId && // This is camelCase, not topic_id
-                           !lesson.topic_id && // Ensure no snake_case properties
-                           !lesson.created_at && 
-                           !lesson.updated_at &&
-                           !lesson.video_url &&
-                           !lesson.social_links
-                  }).map((lesson, index) => {
-                    const lessonCompleted = user && isHydrated ? isLessonCompleted(user.id, lesson.id) : false
-                    
-                    // Safe validation without object creation
-                    if (typeof lesson !== 'object' || !lesson.id) {
-                      // console.warn('Invalid lesson object - ID:', lesson?.id, 'Title:', lesson?.title);
-                      return null;
-                    }
-                    
-                    return (
-                      <Card key={lesson.id} className="overflow-hidden hover:shadow-lg transition-shadow">
-                        <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">
-                          <img
-                            src="/placeholder.svg?height=200&width=300"
-                            alt={lesson.title}
-                            className="w-full h-full object-cover opacity-80"
-                          />
-                          <div className="absolute inset-0 bg-black/20" />
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            {isHydrated && lessonCompleted ? (
-                              <CheckCircle className="w-12 h-12 text-white opacity-80" />
-                            ) : (
-                              <Play className="w-12 h-12 text-white opacity-80" />
+                  {safeLessons.map((lesson) => (
+                    <Card key={lesson.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                      <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">
+                        <img
+                          src={lesson.image}
+                          alt={lesson.title}
+                          className="w-full h-full object-cover opacity-80"
+                        />
+                        <div className="absolute inset-0 bg-black/20" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          {isHydrated && lesson.isCompleted ? (
+                            <CheckCircle className="w-12 h-12 text-white opacity-80" />
+                          ) : (
+                            <Play className="w-12 h-12 text-white opacity-80" />
+                          )}
+                        </div>
+                        <div className="absolute top-4 left-4">
+                          <div className="flex items-center space-x-2">
+                            <div className="bg-white/20 text-white px-2 py-1 rounded text-sm font-medium">
+                              Lesson {lesson.index}
+                            </div>
+                            {isHydrated && lesson.isCompleted && (
+                              <Badge className="bg-green-500">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Completed
+                              </Badge>
                             )}
                           </div>
-                          <div className="absolute top-4 left-4">
-                            <div className="flex items-center space-x-2">
-                              <div className="bg-white/20 text-white px-2 py-1 rounded text-sm font-medium">
-                                Lesson {index + 1}
-                              </div>
-                              {isHydrated && lessonCompleted && (
-                                <Badge className="bg-green-500">
-                                  <CheckCircle className="w-3 h-3 mr-1" />
-                                  Completed
+                        </div>
+                        <div className="absolute bottom-4 left-4 right-4">
+                          <h3 className="text-white font-semibold text-lg mb-2">{lesson.title}</h3>
+                          <div className="flex items-center justify-between">
+                            <Badge variant="secondary" className="bg-white/20 text-white">
+                              {lesson.difficulty}
+                            </Badge>
+                            <Badge variant="secondary" className="bg-white/20 text-white">
+                              <Clock className="w-3 h-3 mr-1" />
+                              {lesson.duration}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+
+                      <CardContent className="p-4">
+                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{lesson.description}</p>
+
+                        {lesson.prerequisites.length > 0 && (
+                          <div className="mb-3">
+                            <p className="text-xs font-medium text-gray-500 mb-1">Prerequisites:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {lesson.prerequisites.slice(0, 2).map((prereq, index) => (
+                                <Badge key={index} variant="outline" className="text-xs">
+                                  {prereq}
+                                </Badge>
+                              ))}
+                              {lesson.prerequisites.length > 2 && (
+                                <Badge variant="outline" className="text-xs">
+                                  +{lesson.prerequisites.length - 2} more
                                 </Badge>
                               )}
                             </div>
                           </div>
-                          <div className="absolute bottom-4 left-4 right-4">
-                            <h3 className="text-white font-semibold text-lg mb-2">{lesson.title || 'Untitled Lesson'}</h3>
-                            <div className="flex items-center justify-between">
-                              <Badge variant="secondary" className="bg-white/20 text-white">
-                                {lesson.difficulty || 'Beginner'}
-                              </Badge>
-                              <Badge variant="secondary" className="bg-white/20 text-white">
-                                <Clock className="w-3 h-3 mr-1" />
-                                {lesson.duration || '15 min'}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
+                        )}
 
-                        <CardContent className="p-4">
-                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{lesson.description || 'No description available'}</p>
-
-                          {lesson.prerequisites.length > 0 && (
-                            <div className="mb-3">
-                              <p className="text-xs font-medium text-gray-500 mb-1">Prerequisites:</p>
-                              <div className="flex flex-wrap gap-1">
-                                {lesson.prerequisites.slice(0, 2).map((prereq, index) => (
-                                  <Badge key={index} variant="outline" className="text-xs">
-                                    {typeof prereq === 'string' ? prereq : String(prereq)}
-                                  </Badge>
-                                ))}
-                                {lesson.prerequisites.length > 2 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{lesson.prerequisites.length - 2} more
-                                  </Badge>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          <div className="flex items-center justify-between">
-                            {user?.role === "admin" ? (
-                              <div className="flex items-center space-x-2">
-                                <Link href={`/dashboard/topics/${topicId}/lessons/${lesson.id}${returnTo ? `?returnTo=${returnTo}&topicId=${manageTopicId || topicId}` : ''}`}>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-blue-500 border-blue-500 bg-transparent"
-                                  >
-                                    <Eye className="w-4 h-4 mr-1" />
-                                    Preview
-                                  </Button>
-                                </Link>
-                                <Link href={`/dashboard/manage-topics/${topicId}/lessons/${lesson.id}/edit`}>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-orange-500 border-orange-500 bg-transparent"
-                                  >
-                                    <Edit className="w-4 h-4 mr-1" />
-                                    Edit
-                                  </Button>
-                                </Link>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => handleDeleteLesson(lesson.id)}
-                                  className="text-red-500 border-red-500"
-                                >
-                                  <Trash2 className="w-4 h-4 mr-1" />
-                                  Delete
-                                </Button>
-                              </div>
-                            ) : (
+                        <div className="flex items-center justify-between">
+                          {user?.role === "admin" ? (
+                            <div className="flex items-center space-x-2">
                               <Link href={`/dashboard/topics/${topicId}/lessons/${lesson.id}${returnTo ? `?returnTo=${returnTo}&topicId=${manageTopicId || topicId}` : ''}`}>
                                 <Button
                                   size="sm"
-                                  className={
-                                    isHydrated && lessonCompleted
-                                      ? "bg-green-500 hover:bg-green-600"
-                                      : "bg-orange-500 hover:bg-orange-600"
-                                  }
+                                  variant="outline"
+                                  className="text-blue-500 border-blue-500 bg-transparent"
                                 >
-                                  {isHydrated && lessonCompleted ? "Review Lesson" : "Start Lesson"}
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  Preview
                                 </Button>
                               </Link>
-                            )}
-                            <Badge variant={lesson.status === "Published" ? "default" : "secondary"}>
-                              {lesson.status || 'Draft'}
-                            </Badge>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    )
-                  })}
+                              <Link href={`/dashboard/manage-topics/${topicId}/lessons/${lesson.id}/edit`}>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-orange-500 border-orange-500 bg-transparent"
+                                >
+                                  <Edit className="w-4 h-4 mr-1" />
+                                  Edit
+                                </Button>
+                              </Link>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteLesson(Number(lesson.id))}
+                                className="text-red-500 border-red-500"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                Delete
+                              </Button>
+                            </div>
+                          ) : (
+                            <Link href={`/dashboard/topics/${topicId}/lessons/${lesson.id}${returnTo ? `?returnTo=${returnTo}&topicId=${manageTopicId || topicId}` : ''}`}>
+                              <Button
+                                size="sm"
+                                className={
+                                  isHydrated && lesson.isCompleted
+                                    ? "bg-green-500 hover:bg-green-600"
+                                    : "bg-orange-500 hover:bg-orange-600"
+                                }
+                              >
+                                {isHydrated && lesson.isCompleted ? "Review Lesson" : "Start Lesson"}
+                              </Button>
+                            </Link>
+                          )}
+                          <Badge variant={lesson.status === "Published" ? "default" : "secondary"}>
+                            {lesson.status}
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar - SAFE: Only primitive values */}
         <div className="space-y-6">
           {/* Topic Info */}
           <Card>
@@ -401,7 +535,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Students</span>
-                  <span className="font-medium">{topic.students}</span>
+                  <span className="font-medium">{topicStudents}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Rating</span>
@@ -412,7 +546,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Category</span>
-                  <Badge variant="outline">{topic.category}</Badge>
+                  <Badge variant="outline">{topicCategory}</Badge>
                 </div>
                 <Separator />
                 {user?.role === "student" && isHydrated && (
@@ -420,46 +554,46 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span>Progress</span>
-                        <span className="font-medium">{topicProgress.percentage}%</span>
+                        <span className="font-medium">{progressPercentage}%</span>
                       </div>
-                      <Progress value={topicProgress.percentage} className="h-2" />
+                      <Progress value={progressPercentage} className="h-2" />
                       <p className="text-xs text-gray-500">
-                        {topicProgress.completed} of {topicProgress.total} lessons completed
+                        {progressCompleted} of {progressTotal} lessons completed
                       </p>
                     </div>
                     <Separator />
                   </>
                 )}
-                {topic.hasAssessment ? (
+                {topicHasAssessment ? (
                   user?.role === "student" && isHydrated ? (
-                    topicProgress.completed !== topicProgress.total ? (
+                    progressCompleted !== progressTotal ? (
                       <div className="space-y-2">
                         <Button className="w-full" disabled>
                           Complete All Lessons First
                         </Button>
                         <p className="text-xs text-center text-orange-600">
-                          {topicProgress.total - topicProgress.completed} lesson(s) remaining
+                          {progressTotal - progressCompleted} lesson(s) remaining
                         </p>
                       </div>
-                    ) : !cooldownCheck.canTake ? (
+                    ) : !cooldownCanTake ? (
                       <div className="space-y-2">
                         <Button className="w-full" disabled>
                           Assessment Cooldown Active
                         </Button>
                         <p className="text-xs text-center text-red-600">
-                          {cooldownCheck.message}
+                          {cooldownMessage}
                         </p>
                       </div>
                     ) : (
                       <Button className="w-full" asChild>
-                        <Link href={returnTo === 'manage' ? `/dashboard/manage-assessments/edit/${topic.id}` : `/dashboard/assessment/${topic.id}`}>
+                        <Link href={returnTo === 'manage' ? `/dashboard/manage-assessments/edit/${topicId}` : `/dashboard/assessment/${topicId}`}>
                           {returnTo === 'manage' ? 'Manage Assessment' : 'Take Assessment'}
                         </Link>
                       </Button>
                     )
                   ) : (
                     <Button className="w-full" asChild>
-                      <Link href={returnTo === 'manage' ? `/dashboard/manage-assessments/edit/${topic.id}` : `/dashboard/assessment/${topic.id}`}>
+                      <Link href={returnTo === 'manage' ? `/dashboard/manage-assessments/edit/${topicId}` : `/dashboard/assessment/${topicId}`}>
                         {returnTo === 'manage' ? 'Manage Assessment' : 'Take Assessment'}
                       </Link>
                     </Button>
@@ -481,7 +615,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
             </CardContent>
           </Card>
 
-          {/* Topic Stats */}
+          {/* Topic Stats - SAFE: Only primitive values */}
           <Card>
             <CardHeader>
               <CardTitle>Topic Statistics</CardTitle>
@@ -490,22 +624,22 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Total Lessons</span>
-                  <span className="font-semibold">{lessons.length}</span>
+                  <span className="font-semibold">{safeLessons.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Published Lessons</span>
-                  <span className="font-semibold">{lessons.filter((l) => l.status === "Published").length}</span>
+                  <span className="font-semibold">{safeLessons.filter(l => l.status === "Published").length}</span>
                 </div>
                 {user?.role === "student" && isHydrated && (
                   <>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Completed Lessons</span>
-                      <span className="font-semibold text-green-600">{topicProgress.completed}</span>
+                      <span className="font-semibold text-green-600">{progressCompleted}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Remaining Lessons</span>
                       <span className="font-semibold text-orange-600">
-                        {topicProgress.total - topicProgress.completed}
+                        {progressTotal - progressCompleted}
                       </span>
                     </div>
                   </>
