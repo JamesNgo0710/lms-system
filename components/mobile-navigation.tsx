@@ -112,13 +112,13 @@ export function MobileNavigation() {
   return (
     <>
       {/* Mobile Top Bar */}
-      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 h-16">
+      <div className="md:hidden fixed top-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 h-16">
         <div className="flex items-center justify-between px-4 h-full">
           {/* Left side - Menu and Logo */}
           <div className="flex items-center space-x-3">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="sm" className="p-2">
+                <Button variant="ghost" size="sm" className="p-2 dark:text-gray-200">
                   <Menu className="w-5 h-5" />
                 </Button>
               </SheetTrigger>
@@ -178,7 +178,7 @@ export function MobileNavigation() {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200">
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
         <div className="grid grid-cols-5 h-16">
           {navigationItems.slice(0, 5).map((item, index) => {
             const isActive = pathname === item.href
@@ -189,8 +189,8 @@ export function MobileNavigation() {
                 className={cn(
                   "flex flex-col items-center justify-center space-y-1 relative transition-colors",
                   isActive
-                    ? "text-orange-600 bg-orange-50"
-                    : "text-gray-600 hover:text-orange-600"
+                    ? "text-orange-600 bg-orange-50 dark:bg-orange-900/20 dark:text-orange-400"
+                    : "text-gray-600 hover:text-orange-600 dark:text-gray-400 dark:hover:text-orange-400"
                 )}
                 onClick={() => setIsOpen(false)}
               >
@@ -260,9 +260,9 @@ function MobileSidebar({
   const stats = quickStats()
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white dark:bg-gray-900">
       {/* Header */}
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-3">
             <div className="h-10 w-10 relative">
@@ -276,10 +276,10 @@ function MobileSidebar({
             </div>
             <div>
               <div className="font-bold text-orange-600">Learning Management</div>
-              <div className="text-sm text-gray-500">System</div>
+              <div className="text-sm text-gray-500 dark:text-gray-400">System</div>
             </div>
           </div>
-          <Button variant="ghost" size="sm" onClick={onClose}>
+          <Button variant="ghost" size="sm" onClick={onClose} className="dark:text-gray-200">
             <X className="w-5 h-5" />
           </Button>
         </div>
@@ -287,7 +287,7 @@ function MobileSidebar({
         {/* User Profile */}
         <Link
           href="/dashboard/profile"
-          className="flex items-center space-x-3 p-3 hover:bg-gray-50 rounded-lg"
+          className="flex items-center space-x-3 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg"
           onClick={onClose}
         >
           <div className="w-12 h-12 rounded-full overflow-hidden">
@@ -310,17 +310,17 @@ function MobileSidebar({
         {/* Quick Stats */}
         {user?.role === "student" && (
           <div className="mt-4 grid grid-cols-3 gap-2">
-            <div className="text-center p-2 bg-gray-50 rounded">
+            <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded">
               <div className="text-lg font-bold text-orange-600">{stats.completedTopics}</div>
-              <div className="text-xs text-gray-500">Completed</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Completed</div>
             </div>
-            <div className="text-center p-2 bg-gray-50 rounded">
+            <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded">
               <div className="text-lg font-bold text-blue-600">{Math.round((stats.completedTopics / stats.totalTopics) * 100)}%</div>
-              <div className="text-xs text-gray-500">Progress</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Progress</div>
             </div>
-            <div className="text-center p-2 bg-gray-50 rounded">
+            <div className="text-center p-2 bg-gray-50 dark:bg-gray-800 rounded">
               <div className="text-lg font-bold text-green-600">{stats.currentStreak}</div>
-              <div className="text-xs text-gray-500">Streak</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400">Streak</div>
             </div>
           </div>
         )}
@@ -338,8 +338,8 @@ function MobileSidebar({
                 className={cn(
                   "flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors relative",
                   isActive
-                    ? "bg-orange-100 text-orange-600"
-                    : "hover:bg-gray-50 text-gray-700"
+                    ? "bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-400"
+                    : "hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
                 )}
                 onClick={onClose}
               >

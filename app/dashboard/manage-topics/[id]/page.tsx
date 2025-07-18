@@ -257,24 +257,24 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case "Beginner":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
       case "Intermediate":
-        return "bg-yellow-100 text-yellow-800"
+        return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
       case "Advanced":
-        return "bg-red-100 text-red-800"
+        return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
     }
   }
 
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Published":
-        return "bg-green-100 text-green-800"
+        return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
       case "Draft":
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
       default:
-        return "bg-gray-100 text-gray-800"
+        return "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
     }
   }
 
@@ -469,13 +469,13 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                             <Badge variant="secondary" className="bg-white/20 text-white w-fit">
                               Lesson {index + 1}
                             </Badge>
-                            <Badge className={`w-fit ${getDifficultyColor(lesson.difficulty)} bg-white/90`}>
+                            <Badge className={`w-fit ${getDifficultyColor(lesson.difficulty)}`}>
                               {lesson.difficulty}
                             </Badge>
                           </div>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                              <Button variant="secondary" size="icon" className="h-8 w-8 bg-white/90 backdrop-blur-sm">
+                              <Button variant="secondary" size="icon" className="h-8 w-8 bg-white/90 backdrop-blur-sm dark:bg-gray-800/90 dark:text-gray-200">
                                 <MoreVertical className="w-4 h-4" />
                               </Button>
                             </DropdownMenuTrigger>
@@ -511,7 +511,7 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                               <Clock className="w-4 h-4" />
                               <span>{lesson.duration || "Not specified"}</span>
                             </div>
-                            <Badge className={`${getStatusColor(lesson.status)} bg-white/90 text-gray-800`}>
+                            <Badge className={getStatusColor(lesson.status)}>
                               {lesson.status}
                             </Badge>
                           </div>

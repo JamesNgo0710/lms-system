@@ -625,14 +625,14 @@ export default function ManageTopicsPage() {
                       />
                       <div className="absolute inset-0 bg-black/20" />
                       <div className="absolute top-4 left-4">
-                        <Badge variant="secondary" className="bg-white/90 text-gray-800">
+                        <Badge variant="secondary" className="bg-white/90 text-gray-800 dark:bg-gray-800/90 dark:text-gray-200">
                           {topicCategory}
                         </Badge>
                       </div>
                       <div className="absolute top-4 right-4">
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="secondary" size="icon" className="h-8 w-8 bg-white/95">
+                            <Button variant="secondary" size="icon" className="h-8 w-8 bg-white/95 dark:bg-gray-800/95 dark:text-gray-200">
                               <MoreHorizontal className="w-4 h-4" />
                             </Button>
                           </DropdownMenuTrigger>
@@ -663,7 +663,7 @@ export default function ManageTopicsPage() {
                             <span>{topicStudents} students</span>
                             <span>{topicLessons} lessons</span>
                           </div>
-                          <Badge className={topicStatus === 'Published' ? 'bg-green-500' : 'bg-gray-500'}>
+                          <Badge className={topicStatus === 'Published' ? 'bg-green-500 dark:bg-green-600' : 'bg-gray-500 dark:bg-gray-600'}>
                             {topicStatus}
                           </Badge>
                         </div>
@@ -671,7 +671,7 @@ export default function ManageTopicsPage() {
                     </div>
                     
                     <CardContent className="p-4">
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">{topicDescription}</p>
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">{topicDescription}</p>
                       <div className="flex items-center justify-between">
                         <Badge variant="outline">{topicDifficulty}</Badge>
                         <div className="flex items-center space-x-2">
