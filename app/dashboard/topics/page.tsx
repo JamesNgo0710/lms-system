@@ -8,59 +8,90 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
-import { BookOpen, Clock, Users, Star, Search, CheckCircle, Map } from "lucide-react"
+import { BookOpen, Users, Star, Search, CheckCircle, Map } from "lucide-react"
 import Link from "next/link"
 import { useTopics, useLessonCompletions } from "@/hooks/use-api-data-store"
 import { LearningJourneyMap } from "@/components/learning-journey-map"
-import { CourseMetadata } from "@/components/course-metadata"
 
 export default function TopicsPage() {
+  // console.log('🔍 TopicsPage component starting...')
+  
   const { data: session } = useSession()
   const user = session?.user
-  const { topics, loading: topicsLoading } = useTopics()
-  const { getTopicProgress } = useLessonCompletions()
+  
+  // Safe hook loading with error handling
+  let topics, topicsLoading, getTopicProgress
+  try {
+    const topicsHook = useTopics()
+    topics = topicsHook.topics
+    topicsLoading = topicsHook.loading
+    
+    const completionsHook = useLessonCompletions()
+    getTopicProgress = completionsHook.getTopicProgress
+  } catch (error) {
+    // Provide safe defaults if hooks fail
+    topics = []
+    topicsLoading = false
+    getTopicProgress = () => ({ completed: 0, total: 0, percentage: 0 })
+  }
+
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [difficultyFilter, setDifficultyFilter] = useState("all")
   const [isHydrated, setIsHydrated] = useState(false)
   const [viewMode, setViewMode] = useState<"journey" | "grid">("grid")
-  const [topicProgressCache, setTopicProgressCache] = useState<Record<number, any>>({})
 
   // Handle hydration
   useEffect(() => {
     setIsHydrated(true)
   }, [])
 
-  // Load topic progress for all topics
-  useEffect(() => {
-    if (user?.id && topics.length > 0 && user.role === "student") {
-      const loadProgress = async () => {
-        const progressData: Record<number, any> = {}
-        for (const topic of topics) {
-          try {
-            const progress = await getTopicProgress(user.id, topic.id)
-            progressData[topic.id] = progress || { completed: 0, total: 0, percentage: 0 }
-          } catch (error) {
-            progressData[topic.id] = { completed: 0, total: 0, percentage: 0 }
-          }
-        }
-        setTopicProgressCache(progressData)
-      }
-      loadProgress()
-    }
-  }, [user?.id, topics, getTopicProgress])
+  // Add comprehensive error checks
+  if (!isHydrated) {
+    return <div>Loading...</div>
+  }
 
-  const categories = Array.from(new Set(topics.map((topic) => topic.category)))
+  if (!Array.isArray(topics)) {
+    // console.error('Topics is not an array:', topics)
+    return <div>Error loading topics. Please refresh the page.</div>
+  }
+
+  // SAFE: Extract primitive values for categories
+  let categories: string[] = []
+  try {
+    categories = Array.from(new Set(
+      topics
+        .filter(topic => topic && typeof topic === 'object' && topic.category)
+        .map(topic => String(topic.category || ''))
+        .filter(cat => cat.length > 0)
+    ))
+  } catch (error) {
+    categories = []
+  }
+  
   const difficulties = ["Beginner", "Intermediate", "Advanced"]
 
-  const filteredTopics = topics.filter((topic) => {
-    const matchesSearch =
-      topic.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      topic.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = categoryFilter === "all" || topic.category === categoryFilter
-    const matchesDifficulty = difficultyFilter === "all" || topic.difficulty === difficultyFilter
-    return matchesSearch && matchesCategory && matchesDifficulty
-  })
+  // SAFE: Filter topics with bulletproof checks
+  let filteredTopics: any[] = []
+  if (Array.isArray(topics)) {
+    filteredTopics = topics.filter(topic => {
+      if (!topic || typeof topic !== 'object' || !topic.id) return false
+      
+      const topicTitle = String(topic.title || '')
+      const topicDescription = String(topic.description || '')
+      const topicCategory = String(topic.category || '')
+      const topicDifficulty = String(topic.difficulty || 'Beginner')
+      
+      const searchLower = searchTerm.toLowerCase()
+      const matchesSearch = 
+        topicTitle.toLowerCase().includes(searchLower) ||
+        topicDescription.toLowerCase().includes(searchLower)
+      const matchesCategory = categoryFilter === "all" || topicCategory === categoryFilter
+      const matchesDifficulty = difficultyFilter === "all" || topicDifficulty === difficultyFilter
+      
+      return matchesSearch && matchesCategory && matchesDifficulty
+    })
+  }
 
   return (
     <div className="space-y-6">
@@ -100,7 +131,7 @@ export default function TopicsPage() {
             </Button>
           </div>
           <Badge variant="outline" className="text-sm">
-            {filteredTopics.length} Topics Available
+            {Array.isArray(filteredTopics) ? filteredTopics.length : 0} Topics Available
           </Badge>
         </div>
       </div>
@@ -155,129 +186,170 @@ export default function TopicsPage() {
       {viewMode === "journey" ? (
         <LearningJourneyMap topics={topics} />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-          {filteredTopics.map((topic) => {
-            const topicProgress = topicProgressCache[topic.id] || { completed: 0, total: 0, percentage: 0 }
-            const isCompleted = topicProgress.percentage === 100
-
-            return (
-              <Link key={topic.id} href={`/dashboard/topics/${topic.id}`} className="block">
-                <Card className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer h-full">
-                <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">
-                  <img
-                    src={topic.image || "/placeholder.svg?height=200&width=300"}
-                    alt={topic.title}
-                    className="w-full h-full object-cover opacity-80"
-                  />
-                  <div className="absolute inset-0 bg-black/20" />
-                  <div className="absolute top-4 left-4 right-4 flex items-start justify-between">
-                    <div className="flex flex-col space-y-2">
-                      <Badge variant="secondary" className="bg-white/20 text-white w-fit">
-                        {topic.category}
-                      </Badge>
-                      <Badge
-                        variant="secondary"
-                        className={`w-fit ${
-                          topic.difficulty === "Beginner"
-                            ? "bg-green-500/80 text-white"
-                            : topic.difficulty === "Intermediate"
-                              ? "bg-yellow-500/80 text-white"
-                              : "bg-red-500/80 text-white"
-                        }`}
-                      >
-                        {topic.difficulty}
-                      </Badge>
-                    </div>
-                    {user?.role === "student" && isCompleted && (
-                      <Badge className="bg-green-500">
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        Completed
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <h3 className="text-white font-bold text-xl mb-2 group-hover:text-orange-200 transition-colors">
-                      {topic.title}
-                    </h3>
-                    <div className="flex items-center justify-between text-white/80 text-sm">
-                      <div className="flex items-center space-x-4">
-                        <div className="flex items-center space-x-1">
-                          <BookOpen className="w-4 h-4" />
-                          <span>{topic.lessons} lessons</span>
-                        </div>
-                        <div className="flex items-center space-x-1">
-                          <Users className="w-4 h-4" />
-                          <span>{topic.students}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                        <span>4.8</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <CardContent className="p-6">
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                    {topic.description ||
-                      "Comprehensive learning material covering all essential concepts and practical applications."}
-                  </p>
-
-                  {/* Progress for students */}
-                  {user?.role === "student" && (
-                    <div className="mb-4">
-                      <div className="flex items-center justify-between text-sm mb-2">
-                        <span className="text-gray-600">Progress</span>
-                        <span className="font-medium text-orange-600">{topicProgress.percentage}%</span>
-                      </div>
-                      <Progress value={topicProgress.percentage} className="h-2" />
-                      <p className="text-xs text-gray-500 mt-1">
-                        {topicProgress.completed} of {topicProgress.total} lessons completed
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <CourseMetadata topic={topic} showDetailed={false} className="mb-2" />
-                      {user?.role !== "student" && (
-                        <Badge variant={topic.status === "Published" ? "default" : "secondary"} className="text-xs">
-                          {topic.status}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-2 ml-4">
-                      <Button
-                        size="sm"
-                        className={
-                          user?.role === "student" && isCompleted
-                            ? "bg-green-500 hover:bg-green-600"
-                            : "bg-orange-500 hover:bg-orange-600"
-                        }
-                        onClick={(e) => {
-                          e.preventDefault()
-                          window.location.href = `/dashboard/topics/${topic.id}`
-                        }}
-                      >
-                        {user?.role === "student" && isCompleted ? "Review" : "Start Learning"}
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-                </Card>
-              </Link>
-            )
-          })}
-        </div>
-      )}
-
-      {viewMode === "grid" && filteredTopics.length === 0 && (
         <Card>
-          <CardContent className="p-12 text-center">
-            <BookOpen className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No topics found</h3>
-            <p className="text-gray-600">Try adjusting your search terms or filters.</p>
+          <CardContent className="p-6">
+            {!Array.isArray(filteredTopics) ? (
+              <div className="text-center py-8">
+                <p className="text-red-500">Error: Topics data is not properly loaded</p>
+              </div>
+            ) : filteredTopics.length === 0 ? (
+              <div className="text-center py-8">
+                <BookOpen className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No topics found</h3>
+                <p className="text-gray-600">
+                  {searchTerm ? "Try adjusting your search terms or filters." : "No topics available at the moment."}
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                {filteredTopics.map((topic, index) => {
+                  // Safely extract only primitive values to prevent React error #31
+                  const topicId = String(topic?.id || '')
+                  const topicTitle = String(topic?.title || 'Untitled Topic')
+                  const topicDescription = String(topic?.description || 'Comprehensive learning material covering all essential concepts and practical applications.')
+                  const topicCategory = String(topic?.category || 'General')
+                  const topicDifficulty = String(topic?.difficulty || 'Beginner')
+                  const topicStatus = String(topic?.status || 'Draft')
+                  const topicImage = String(topic?.image || '/placeholder.svg?height=200&width=300')
+                  const topicLessons = Number(topic?.lessons || 0)
+                  const topicStudents = Number(topic?.students || 0)
+                  
+                  if (!topicId) return null
+                  
+                  // SAFE: Get progress with error handling - only primitive values
+                  let progressPercentage = 0
+                  let progressCompleted = 0
+                  let progressTotal = 0
+                  let isCompleted = false
+                  
+                  if (user?.id && user.role === "student" && topicId) {
+                    try {
+                      const progress = getTopicProgress(user.id, Number(topicId))
+                      if (progress && typeof progress === 'object') {
+                        progressPercentage = Number(progress.percentage || 0)
+                        progressCompleted = Number(progress.completed || 0)
+                        progressTotal = Number(progress.total || 0)
+                        isCompleted = progressPercentage === 100
+                      }
+                    } catch (error) {
+                      // Safe defaults if progress fails
+                      progressPercentage = 0
+                      progressCompleted = 0
+                      progressTotal = 0
+                      isCompleted = false
+                    }
+                  }
+                  
+                  return (
+                    <Link key={topicId} href={`/dashboard/topics/${topicId}`} className="block">
+                      <Card className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer h-full">
+                        <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">
+                          <img
+                            src={topicImage}
+                            alt={topicTitle}
+                            className="w-full h-full object-cover opacity-80"
+                          />
+                          <div className="absolute inset-0 bg-black/20" />
+                          <div className="absolute top-4 left-4 right-4 flex items-start justify-between">
+                            <div className="flex flex-col space-y-2">
+                              <Badge variant="secondary" className="bg-white/20 text-white w-fit">
+                                {topicCategory}
+                              </Badge>
+                              <Badge
+                                variant="secondary"
+                                className={`w-fit ${
+                                  topicDifficulty === "Beginner"
+                                    ? "bg-green-500/80 text-white"
+                                    : topicDifficulty === "Intermediate"
+                                      ? "bg-yellow-500/80 text-white"
+                                      : "bg-red-500/80 text-white"
+                                }`}
+                              >
+                                {topicDifficulty}
+                              </Badge>
+                            </div>
+                            {user?.role === "student" && isCompleted && (
+                              <Badge className="bg-green-500">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Completed
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="absolute bottom-4 left-4 right-4">
+                            <h3 className="text-white font-bold text-xl mb-2 group-hover:text-orange-200 transition-colors">
+                              {topicTitle}
+                            </h3>
+                            <div className="flex items-center justify-between text-white/80 text-sm">
+                              <div className="flex items-center space-x-4">
+                                <div className="flex items-center space-x-1">
+                                  <BookOpen className="w-4 h-4" />
+                                  <span>{topicLessons} lessons</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <Users className="w-4 h-4" />
+                                  <span>{topicStudents}</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center space-x-1">
+                                <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                                <span>4.8</span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        <CardContent className="p-6">
+                          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                            {topicDescription}
+                          </p>
+
+                          {/* Progress for students - SAFE: Only primitive values */}
+                          {user?.role === "student" && (
+                            <div className="mb-4">
+                              <div className="flex items-center justify-between text-sm mb-2">
+                                <span className="text-gray-600">Progress</span>
+                                <span className="font-medium text-orange-600">{progressPercentage}%</span>
+                              </div>
+                              <Progress value={progressPercentage} className="h-2" />
+                              <p className="text-xs text-gray-500 mt-1">
+                                {progressCompleted} of {progressTotal} lessons completed
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex-1">
+                              {/* Course metadata removed to prevent object issues */}
+                              {user?.role !== "student" && (
+                                <Badge variant={topicStatus === "Published" ? "default" : "secondary"} className="text-xs">
+                                  {topicStatus}
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="flex items-center space-x-2 ml-4">
+                              <Button
+                                size="sm"
+                                className={
+                                  user?.role === "student" && isCompleted
+                                    ? "bg-green-500 hover:bg-green-600"
+                                    : "bg-orange-500 hover:bg-orange-600"
+                                }
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  window.location.href = `/dashboard/topics/${topicId}`
+                                }}
+                              >
+                                {user?.role === "student" && isCompleted ? "Review" : "Start Learning"}
+                              </Button>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
