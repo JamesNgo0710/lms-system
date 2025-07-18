@@ -65,6 +65,7 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
     category: "",
     difficulty: "",
     image: "",
+    status: "",
   })
   const [isEditing, setIsEditing] = useState(false)
   const [imageUploadMethod, setImageUploadMethod] = useState<"upload" | "url">("upload")
@@ -79,6 +80,7 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
         category: topic.category,
         difficulty: topic.difficulty,
         image: topic.image || "",
+        status: topic.status || "Draft",
       })
     }
   }, [topic])
@@ -188,6 +190,7 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
       category: editFormData.category,
       difficulty: editFormData.difficulty,
       image: editFormData.image,
+      status: editFormData.status,
     }
 
     updateTopic(topic.id, updates)
@@ -205,6 +208,7 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
       category: topic?.category || "",
       difficulty: topic?.difficulty || "",
       image: topic?.image || "",
+      status: topic?.status || "Draft",
     })
     setIsEditing(false)
   }
@@ -355,7 +359,13 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                   </div>
                   <div>
                     <p className="text-sm text-gray-600 dark:text-gray-400">Created</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{topic.createdAt}</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                      {topic.createdAt ? new Date(topic.createdAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric'
+                      }) : 'Unknown'}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -706,6 +716,21 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="status">Status *</Label>
+                      <Select 
+                        value={editFormData.status}
+                        onValueChange={(value) => setEditFormData({ ...editFormData, status: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Draft">Draft</SelectItem>
+                          <SelectItem value="Published">Published</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                     <div className="space-y-4">
                       <Label>Topic Image</Label>
                       <Tabs value={imageUploadMethod} onValueChange={(value) => setImageUploadMethod(value as "upload" | "url")}>
@@ -841,10 +866,25 @@ export default function TopicDetailsPage({ params }: { params: Promise<{ id: str
                     </div>
                     <div>
                       <Label className="text-sm font-medium text-gray-600 dark:text-gray-400">Status</Label>
-                      <div className="mt-1">
+                      <div className="mt-1 flex items-center space-x-3">
                         <Badge variant={topic.status === "Published" ? "default" : "secondary"}>
                           {topic.status}
                         </Badge>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            const newStatus = topic.status === "Published" ? "Draft" : "Published"
+                            updateTopic(topic.id, { status: newStatus })
+                            toast({
+                              title: "Success",
+                              description: `Topic ${newStatus === "Published" ? 'published' : 'set to draft'} successfully`,
+                            })
+                          }}
+                          className="text-xs px-3 py-1 h-7"
+                        >
+                          {topic.status === "Published" ? "Set to Draft" : "Publish Topic"}
+                        </Button>
                       </div>
                     </div>
                     <div>
