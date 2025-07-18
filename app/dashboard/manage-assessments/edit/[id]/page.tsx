@@ -35,7 +35,7 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
   const router = useRouter()
   const { toast } = useToast()
   const { getTopicById } = useTopics()
-  const { getAssessmentByTopic, updateAssessment } = useAssessments()
+  const { getAssessmentByTopicAsync, updateAssessment } = useAssessments()
   
   // Helper function to format cooldown period
   const formatCooldownPeriod = (hours: number) => {
@@ -56,8 +56,18 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
     const loadData = async () => {
       setIsLoading(true)
       try {
+        // console.log('🔍 Loading assessment edit data for topicId:', topicId)
+        
+        // Validate topicId
+        if (!topicId || isNaN(topicId)) {
+          throw new Error('Invalid topic ID')
+        }
+        
         const topicData = getTopicById(topicId)
-        const assessmentData = await getAssessmentByTopic(topicId)
+        // console.log('📊 Topic data:', topicData)
+        
+        const assessmentData = await getAssessmentByTopicAsync(topicId)
+        // console.log('📝 Assessment data:', assessmentData)
         
         setTopic(topicData)
         setExistingAssessment(assessmentData)
@@ -79,19 +89,22 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
           setTimeLimit("01:00") // Default 1 hour time limit
         }
       } catch (error) {
-        console.error('Error loading assessment data:', error)
+        // console.error('Error loading assessment data:', error)
         toast({
           title: "Error",
           description: "Failed to load assessment data",
           variant: "destructive",
         })
+        // Don't stay in loading state if there's an error
+        setTopic(null)
+        setExistingAssessment(null)
       } finally {
         setIsLoading(false)
       }
     }
     
     loadData()
-  }, [topicId, getTopicById, getAssessmentByTopic])
+  }, [topicId, getTopicById, getAssessmentByTopicAsync])
 
   // Listen for storage quota exceeded events
   useEffect(() => {
