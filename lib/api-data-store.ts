@@ -591,19 +591,37 @@ class ApiDataStore {
     }
   }
 
+  // Cache for 404 responses to prevent repeated API calls
+  private assessmentCache = new Map<number, Assessment | null>()
+  private assessment404Cache = new Set<number>()
+
   async getAssessmentByTopic(topicId: number): Promise<Assessment | null> {
     try {
+      // Check if we already know this topic has no assessment (404 cache)
+      if (this.assessment404Cache.has(topicId)) {
+        return null
+      }
+
+      // Check if we have cached result
+      if (this.assessmentCache.has(topicId)) {
+        return this.assessmentCache.get(topicId) || null
+      }
+
       const backend = await this.getBackendConfig()
       
       // Use mock data if backend not connected
       if (!backend.isConnected) {
-        return await mockDataService.getAssessmentByTopic(topicId)
+        const result = await mockDataService.getAssessmentByTopic(topicId)
+        this.assessmentCache.set(topicId, result)
+        return result
       }
 
       const response = await this.makeApiRequest(`/api/topics/${topicId}/assessment`)
       
       if (response.status === 404) {
-        // Return null for 404s instead of throwing error to reduce console spam
+        // Cache the 404 to prevent repeated requests
+        this.assessment404Cache.add(topicId)
+        this.assessmentCache.set(topicId, null)
         return null
       }
       
@@ -611,7 +629,9 @@ class ApiDataStore {
         throw new Error(`Failed to fetch assessment for topic: ${response.status}`)
       }
       
-      return await response.json()
+      const assessment = await response.json()
+      this.assessmentCache.set(topicId, assessment)
+      return assessment
     } catch (error) {
       // Only log errors that aren't 404s
       if (!error.message?.includes('404')) {
@@ -645,7 +665,16 @@ class ApiDataStore {
         throw new Error(`Failed to create assessment: ${response.status}`)
       }
       
-      return await response.json()
+      const newAssessment = await response.json()
+      
+      // Clear cache for this topic since assessment was created
+      if (newAssessment.topic_id || newAssessment.topicId) {
+        const topicId = newAssessment.topic_id || newAssessment.topicId
+        this.assessmentCache.delete(topicId)
+        this.assessment404Cache.delete(topicId)
+      }
+      
+      return newAssessment
     } catch (error) {
       console.error('Error creating assessment:', error)
       return null
@@ -660,7 +689,16 @@ class ApiDataStore {
         throw new Error(`Failed to update assessment: ${response.status}`)
       }
       
-      return await response.json()
+      const updatedAssessment = await response.json()
+      
+      // Clear cache for this topic since assessment was updated
+      if (updatedAssessment.topic_id || updatedAssessment.topicId) {
+        const topicId = updatedAssessment.topic_id || updatedAssessment.topicId
+        this.assessmentCache.delete(topicId)
+        this.assessment404Cache.delete(topicId)
+      }
+      
+      return updatedAssessment
     } catch (error) {
       console.error('Error updating assessment:', error)
       return null
@@ -669,7 +707,19 @@ class ApiDataStore {
 
   async deleteAssessment(id: number): Promise<boolean> {
     try {
+      // First get the assessment to know which topic cache to clear
+      const assessment = await this.getAssessment(id)
+      
       const response = await this.makeApiRequest(`/api/assessments/${id}`, { method: 'DELETE', })
+      
+      // Clear cache if deletion was successful
+      if (response.ok && assessment) {
+        const topicId = assessment.topic_id || assessment.topicId
+        if (topicId) {
+          this.assessmentCache.delete(topicId)
+          // Don't add to 404 cache since it was deleted, not missing
+        }
+      }
       
       return response.ok
     } catch (error) {
