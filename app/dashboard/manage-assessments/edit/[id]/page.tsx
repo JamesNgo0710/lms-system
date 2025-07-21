@@ -35,7 +35,7 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
   const router = useRouter()
   const { toast } = useToast()
   const { getTopicById } = useTopics()
-  const { getAssessmentByTopicAsync, updateAssessment } = useAssessments()
+  const { getAssessmentByTopic, getAssessmentByTopicAsync, updateAssessment, createAssessment } = useAssessments()
   
   // Helper function to format cooldown period
   const formatCooldownPeriod = (hours: number) => {
@@ -66,6 +66,7 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
         const topicData = getTopicById(topicId)
         // console.log('📊 Topic data:', topicData)
         
+        // Try to get assessment - cache will handle 404s without repeated API calls
         const assessmentData = await getAssessmentByTopicAsync(topicId)
         // console.log('📝 Assessment data:', assessmentData)
         
@@ -240,15 +241,6 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
 
 
   const handleSave = async () => {
-    if (!existingAssessment) {
-      toast({
-        title: "Error",
-        description: "No assessment found to save",
-        variant: "destructive",
-      })
-      return
-    }
-
     // Validate questions
     const validQuestions = questions.filter(q => q.question.trim() !== "")
     if (validQuestions.length === 0) {
@@ -261,20 +253,36 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
     }
 
     try {
-      // Update the assessment with new questions, cooldown, and time limit
-      const updatedAssessment = await updateAssessment(existingAssessment.id, {
-        questions: validQuestions,
-        totalQuestions: validQuestions.length,
-        timeLimit: timeLimit,
-        cooldownPeriod: cooldownPeriod,
-      })
+      let result
+      
+      if (existingAssessment) {
+        // Update existing assessment
+        result = await updateAssessment(existingAssessment.id, {
+          questions: validQuestions,
+          totalQuestions: validQuestions.length,
+          timeLimit: timeLimit,
+          cooldownPeriod: cooldownPeriod,
+        })
+      } else {
+        // Create new assessment
+        result = await createAssessment({
+          topic_id: topicId,
+          title: `${topic?.title || 'Topic'} Assessment`,
+          description: `Assessment for ${topic?.title || 'this topic'}`,
+          questions: validQuestions,
+          totalQuestions: validQuestions.length,
+          timeLimit: timeLimit,
+          cooldownPeriod: cooldownPeriod,
+          status: 'Draft'
+        })
+      }
 
-      if (updatedAssessment) {
-        setExistingAssessment(updatedAssessment)
+      if (result) {
+        setExistingAssessment(result)
         setHasUnsavedChanges(false)
         toast({
           title: "Success",
-          description: "Assessment saved as draft successfully",
+          description: existingAssessment ? "Assessment updated successfully" : "Assessment created successfully",
         })
       } else {
         throw new Error("Failed to save assessment")
@@ -380,33 +388,6 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
     )
   }
 
-  if (!existingAssessment) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/dashboard/manage-assessments">
-              <Button variant="ghost" size="icon">
-                <ChevronLeft className="w-5 h-5" />
-              </Button>
-            </Link>
-            <h1 className="text-3xl font-bold text-red-500">No Assessment Found</h1>
-          </div>
-        </div>
-        <div className="max-w-4xl mx-auto">
-          <Card>
-            <CardContent className="p-8 text-center">
-              <h2 className="text-2xl font-bold mb-4">No Assessment Available</h2>
-              <p className="text-gray-600 mb-4">No assessment has been created for "{topic.title}" yet.</p>
-              <Link href="/dashboard/manage-assessments">
-                <Button>Back to Assessments</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className="space-y-6">
@@ -419,7 +400,9 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-orange-500">Edit Assessment</h1>
+            <h1 className="text-3xl font-bold text-orange-500">
+              {existingAssessment ? 'Edit Assessment' : 'Create Assessment'}
+            </h1>
             <p className="text-gray-600">Topic: {topic.title}</p>
           </div>
         </div>
@@ -800,7 +783,7 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
             variant="outline"
             className={hasUnsavedChanges ? "border-orange-500 text-orange-600" : ""}
           >
-            Save Draft
+            {existingAssessment ? 'Save Draft' : 'Create Assessment'}
             {hasUnsavedChanges && " *"}
           </Button>
         </div>
