@@ -240,7 +240,17 @@ export default function ProfilePage() {
       const topic = getTopicById(Number(topicId))
       const assessmentAttempts = getTopicAssessmentAttempts(user.id, Number(topicId))
       
-      console.log(`🔍 Profile: Topic ${topicId} assessment attempts:`, assessmentAttempts.length, assessmentAttempts)
+      console.log(`🔍 Profile: Topic ${topicId} assessment attempts:`, assessmentAttempts.length)
+      assessmentAttempts.forEach((attempt, i) => {
+        console.log(`🔍 Profile: Attempt ${i}:`, {
+          id: attempt.id,
+          userId: attempt.userId,
+          assessmentId: attempt.assessmentId,
+          topicId: attempt.topicId,
+          score: attempt.score,
+          completedAt: attempt.completedAt
+        })
+      })
       
       // Get the best assessment score for this topic
       const bestAttempt = assessmentAttempts.length > 0 
@@ -249,7 +259,7 @@ export default function ProfilePage() {
           )
         : null
       
-      console.log(`🔍 Profile: Topic ${topicId} best attempt:`, bestAttempt)
+      console.log(`🔍 Profile: Topic ${topicId} best attempt score:`, bestAttempt?.score)
       
       return {
         course: topic?.title || `Topic ${topicId}`,

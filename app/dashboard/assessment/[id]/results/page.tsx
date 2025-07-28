@@ -67,13 +67,33 @@ export default function AssessmentResultsPage({ params }: { params: Promise<{ id
   useEffect(() => {
     if (user?.id && assessment?.id && assessment?.questions && !isCalculated) {
       const userAttempts = getUserAssessmentAttempts(user.id)
-      console.log('🔍 Results: All user attempts:', userAttempts.length, userAttempts)
+      console.log('🔍 Results: All user attempts:', userAttempts.length)
+      userAttempts.forEach((attempt, i) => {
+        console.log(`🔍 Results: User attempt ${i}:`, {
+          id: attempt.id,
+          userId: attempt.userId,
+          assessmentId: attempt.assessmentId,
+          topicId: attempt.topicId,
+          score: attempt.score,
+          completedAt: attempt.completedAt
+        })
+      })
       
       const assessmentAttempts = userAttempts.filter(attempt => attempt.assessmentId === assessment.id)
-      console.log('🔍 Results: Assessment attempts for this assessment:', assessmentAttempts.length, assessmentAttempts)
+      console.log('🔍 Results: Assessment attempts for this assessment:', assessmentAttempts.length)
+      assessmentAttempts.forEach((attempt, i) => {
+        console.log(`🔍 Results: Filtered attempt ${i}:`, {
+          id: attempt.id,
+          userId: attempt.userId,
+          assessmentId: attempt.assessmentId,
+          topicId: attempt.topicId,
+          score: attempt.score,
+          completedAt: attempt.completedAt
+        })
+      })
       
       const latestAttempt = assessmentAttempts.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())[0]
-      console.log('🔍 Results: Latest attempt:', latestAttempt)
+      console.log('🔍 Results: Latest attempt score:', latestAttempt?.score)
 
       if (latestAttempt) {
         // Calculate wrong answers
