@@ -368,7 +368,9 @@ export function useLessonCompletions() {
     
     setLoading(true)
     const data = await apiDataStore.getUserLessonCompletions(session.user.id)
+    console.log('🔄 loadCompletions: Raw data from API:', data)
     setCompletions(data)
+    console.log('🔄 loadCompletions: Completions set to:', data)
     setLoading(false)
   }
 
@@ -437,11 +439,14 @@ export function useLessonCompletions() {
   }
 
   const isLessonCompleted = (userId: string, lessonId: number) => {
-    return completions.some(completion => 
+    const isCompleted = completions.some(completion => 
       completion.user_id === userId && 
       completion.lesson_id === lessonId && 
       completion.is_completed
     )
+    console.log('🔍 isLessonCompleted check:', { userId, lessonId, isCompleted, totalCompletions: completions.length })
+    console.log('🔍 Matching completions:', completions.filter(c => c.user_id === userId && c.lesson_id === lessonId))
+    return isCompleted
   }
 
   return {

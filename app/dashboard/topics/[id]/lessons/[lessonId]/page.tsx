@@ -58,7 +58,10 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
 
   useEffect(() => {
     if (user && isHydrated) {
-      setIsCompleted(isLessonCompleted(user.id, lessonId))
+      const completed = isLessonCompleted(user.id, lessonId)
+      console.log('🔄 useEffect: Checking completion status:', { userId: user.id, lessonId, completed, completionsCount: completions?.length })
+      console.log('🔄 useEffect: Current completions:', completions)
+      setIsCompleted(completed)
     }
   }, [user, lessonId, isLessonCompleted, isHydrated, completions])
 
