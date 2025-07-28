@@ -27,6 +27,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
   let getTopicById, getLessonsByTopicId, deleteLesson, topicsLoading, lessonsLoading
   let isLessonCompleted, getTopicProgress
   let getAssessmentByTopic, canTakeAssessment
+  let refreshLessons
   
   try {
     const topicsHook = useTopics()
@@ -37,7 +38,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
     getLessonsByTopicId = lessonsHook.getLessonsByTopicId
     deleteLesson = lessonsHook.deleteLesson
     lessonsLoading = lessonsHook.loading
-    const refreshLessons = lessonsHook.refresh
+    refreshLessons = lessonsHook.refresh
     
     const completionsHook = useLessonCompletions()
     isLessonCompleted = completionsHook.isLessonCompleted
@@ -55,7 +56,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
     deleteLesson = async () => false
     topicsLoading = false
     lessonsLoading = false
-    const refreshLessons = () => {}
+    refreshLessons = () => {}
     isLessonCompleted = () => false
     getTopicProgress = () => ({ completed: 0, total: 0, percentage: 0 })
     getAssessmentByTopic = () => null
