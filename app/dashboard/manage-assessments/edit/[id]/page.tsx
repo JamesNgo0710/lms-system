@@ -111,8 +111,8 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
             setQuestions(safeQuestions)
           }
           
-          setCooldownPeriod(Number(existingAssessment.cooldownPeriod) || 1)
-          setTimeLimit(String(existingAssessment.timeLimit) || "01:00")
+          setCooldownPeriod(Number(existingAssessment.cooldownPeriod || existingAssessment.cooldown_period) || 1)
+          setTimeLimit(String(existingAssessment.timeLimit || existingAssessment.time_limit) || "01:00")
         }
       } catch (error) {
         // console.error('Error loading assessment data:', error)
@@ -160,7 +160,7 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
     updateQuestion(id, updates)
   }
 
-  const handleSave = async () => {
+  const handleSave = async (publishStatus: 'Draft' | 'Published' = 'Draft') => {
     try {
       // Validate questions
       const validQuestions = questions.filter(q => String(q.question).trim() !== "")
@@ -191,6 +191,7 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
           total_questions: backendQuestions.length,
           time_limit: timeLimit,
           cooldown_period: cooldownPeriod,
+          status: publishStatus
         })
       } else {
         // Create new assessment with proper snake_case field names for Laravel backend
@@ -203,7 +204,7 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
           time_limit: timeLimit,
           retake_period: "24 hours",
           cooldown_period: cooldownPeriod,
-          status: 'Draft'
+          status: publishStatus
         }
         
         // Debug: Log the payload being sent
@@ -219,6 +220,11 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
           title: "Success",
           description: existingAssessment ? "Assessment updated successfully" : "Assessment created successfully",
         })
+        
+        // Redirect to manage assessments page after successful save
+        setTimeout(() => {
+          router.push('/dashboard/manage-assessments')
+        }, 1500)
       } else {
         throw new Error("Failed to save assessment")
       }
@@ -435,13 +441,33 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
 
         {/* Actions */}
         <div className="flex justify-end space-x-4">
+          {existingAssessment && (
+            <Button 
+              onClick={() => router.push(`/dashboard/manage-assessments/preview/${topicId}`)}
+              variant="secondary"
+              disabled={hasUnsavedChanges}
+            >
+              Preview
+              {hasUnsavedChanges && " (Save First)"}
+            </Button>
+          )}
+          
           <Button 
-            onClick={handleSave} 
+            onClick={() => handleSave('Draft')} 
             variant="outline"
             className={hasUnsavedChanges ? "border-orange-500 text-orange-600" : ""}
           >
-            {existingAssessment ? 'Save Draft' : 'Create Assessment'}
+            {existingAssessment ? 'Save Draft' : 'Create Draft'}
             {hasUnsavedChanges && " *"}
+          </Button>
+          
+          <Button 
+            onClick={() => handleSave('Published')} 
+            className="bg-green-600 hover:bg-green-700"
+            disabled={hasUnsavedChanges}
+          >
+            {existingAssessment ? 'Publish' : 'Create & Publish'}
+            {hasUnsavedChanges && " (Save First)"}
           </Button>
         </div>
       </div>
