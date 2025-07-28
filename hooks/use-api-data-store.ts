@@ -375,7 +375,7 @@ export function useLessonCompletions() {
   }
 
   const getUserLessonCompletions = (userId: string) => {
-    return completions.filter(completion => completion.userId === userId)
+    return completions.filter(completion => String(completion.userId) === String(userId))
   }
 
   const markLessonComplete = async (lessonId: number, timeSpent?: number) => {
@@ -414,7 +414,7 @@ export function useLessonCompletions() {
     
     // Calculate progress from completions synchronously
     const userCompletions = completions.filter(completion => 
-      completion.userId === userId && completion.topicId === topicId
+      String(completion.userId) === String(userId) && Number(completion.topicId) === Number(topicId)
     )
     
     // For now, return a default progress structure
@@ -444,9 +444,10 @@ export function useLessonCompletions() {
     const isCompleted = completions.some(completion => {
       console.log(`🔍 RECORD: userId="${completion.userId}" (${typeof completion.userId}), lessonId=${completion.lessonId} (${typeof completion.lessonId}), isCompleted=${completion.isCompleted}`)
       
-      const userMatch = completion.userId === userId
-      const lessonMatch = completion.lessonId === lessonId
-      const isComplete = completion.isCompleted
+      // Fix type comparison: convert both to string for comparison
+      const userMatch = String(completion.userId) === String(userId)
+      const lessonMatch = Number(completion.lessonId) === Number(lessonId)
+      const isComplete = Boolean(completion.isCompleted)
       
       console.log(`🔍 MATCH: user=${userMatch}, lesson=${lessonMatch}, complete=${isComplete}`)
       

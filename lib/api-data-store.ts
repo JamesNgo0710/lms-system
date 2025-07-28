@@ -942,10 +942,12 @@ class ApiDataStore {
       }
       
       const rawCompletions = await response.json()
-      // console.log('🔥 LESSON COMPLETIONS: Raw data from API count:', rawCompletions.length)
+      console.log('🔥 LESSON COMPLETIONS: Raw data from API:', rawCompletions)
       
       // NUCLEAR SOLUTION: Normalize lesson completion data to prevent snake_case
       const normalizedCompletions = rawCompletions.map((completion: any) => {
+        console.log('🔥 PROCESSING completion:', completion)
+        
         // Create clean completion object with normalized properties
         const cleanCompletion = {
           id: completion.id,
@@ -954,10 +956,12 @@ class ApiDataStore {
           topicId: completion.topic_id || completion.topicId,
           completedAt: completion.completed_at || completion.completedAt,
           timeSpent: completion.time_spent || completion.timeSpent,
-          isCompleted: completion.is_completed || completion.isCompleted,
+          isCompleted: completion.is_completed !== undefined ? completion.is_completed : (completion.isCompleted !== undefined ? completion.isCompleted : true),
           // Ensure no snake_case properties survive
           // DO NOT include lesson object to prevent React error #31
         }
+        
+        console.log('🔥 CLEAN completion:', cleanCompletion)
         
         // CRITICAL: Verify NO snake_case properties exist
         const hasSnakeCase = Object.keys(cleanCompletion).some(key => key.includes('_'))
