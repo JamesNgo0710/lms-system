@@ -685,6 +685,14 @@ class ApiDataStore {
         const topicId = newAssessment.topic_id || newAssessment.topicId
         this.assessmentCache.delete(topicId)
         this.assessment404Cache.delete(topicId)
+        
+        // Update topic's hasAssessment flag to true
+        try {
+          await this.updateTopic(topicId, { has_assessment: true })
+          console.log('✅ Updated topic hasAssessment flag to true')
+        } catch (error) {
+          console.error('❌ Failed to update topic hasAssessment flag:', error)
+        }
       }
       
       return newAssessment
@@ -731,6 +739,14 @@ class ApiDataStore {
         if (topicId) {
           this.assessmentCache.delete(topicId)
           // Don't add to 404 cache since it was deleted, not missing
+          
+          // Update topic's hasAssessment flag to false
+          try {
+            await this.updateTopic(topicId, { has_assessment: false })
+            console.log('✅ Updated topic hasAssessment flag to false after deletion')
+          } catch (error) {
+            console.error('❌ Failed to update topic hasAssessment flag after deletion:', error)
+          }
         }
       }
       
