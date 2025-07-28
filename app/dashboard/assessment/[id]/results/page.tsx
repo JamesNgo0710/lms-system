@@ -67,8 +67,13 @@ export default function AssessmentResultsPage({ params }: { params: Promise<{ id
   useEffect(() => {
     if (user?.id && assessment?.id && assessment?.questions && !isCalculated) {
       const userAttempts = getUserAssessmentAttempts(user.id)
+      console.log('🔍 Results: All user attempts:', userAttempts.length, userAttempts)
+      
       const assessmentAttempts = userAttempts.filter(attempt => attempt.assessmentId === assessment.id)
+      console.log('🔍 Results: Assessment attempts for this assessment:', assessmentAttempts.length, assessmentAttempts)
+      
       const latestAttempt = assessmentAttempts.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())[0]
+      console.log('🔍 Results: Latest attempt:', latestAttempt)
 
       if (latestAttempt) {
         // Calculate wrong answers
@@ -78,6 +83,18 @@ export default function AssessmentResultsPage({ params }: { params: Promise<{ id
           const userAnswer = latestAttempt.answers[index]
           const isCorrect = userAnswer === question.correctAnswer || 
                           (question.type === "true-false" && userAnswer?.toString() === question.correctAnswer?.toString())
+          
+          console.log(`🔍 Results: Question ${index + 1}:`, {
+            question: question.question,
+            type: question.type,
+            userAnswer,
+            correctAnswer: question.correctAnswer,
+            userAnswerType: typeof userAnswer,
+            correctAnswerType: typeof question.correctAnswer,
+            userAnswerString: userAnswer?.toString(),
+            correctAnswerString: question.correctAnswer?.toString(),
+            isCorrect
+          })
           
           if (!isCorrect) {
             // Format the answers based on question type

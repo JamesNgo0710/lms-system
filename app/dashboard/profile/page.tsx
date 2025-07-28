@@ -206,28 +206,41 @@ export default function ProfilePage() {
     if (!user || !isHydrated) return []
     
     const completions = getUserLessonCompletions(user.id)
+    console.log('🔍 Profile: User completions:', completions.length, completions)
     
     // Group completions by topic and get unique topics
     const topicCompletions: { [key: number]: { completedAt: string; lessons: number } } = {}
     
     completions.forEach(completion => {
-      if (!topicCompletions[completion.topicId]) {
-        topicCompletions[completion.topicId] = {
+      const topicId = Number(completion.topicId)
+      console.log('🔍 Profile: Processing completion:', { 
+        completionId: completion.id, 
+        topicId, 
+        completedAt: completion.completedAt,
+        isCompleted: completion.isCompleted 
+      })
+      
+      if (!topicCompletions[topicId]) {
+        topicCompletions[topicId] = {
           completedAt: completion.completedAt,
           lessons: 0
         }
       }
-      topicCompletions[completion.topicId].lessons += 1
+      topicCompletions[topicId].lessons += 1
       // Keep the latest completion date
-      if (completion.completedAt > topicCompletions[completion.topicId].completedAt) {
-        topicCompletions[completion.topicId].completedAt = completion.completedAt
+      if (completion.completedAt > topicCompletions[topicId].completedAt) {
+        topicCompletions[topicId].completedAt = completion.completedAt
       }
     })
+
+    console.log('🔍 Profile: Topic completions:', topicCompletions)
 
     // Convert to array of completed courses with assessment scores
     return Object.entries(topicCompletions).map(([topicId, data]) => {
       const topic = getTopicById(Number(topicId))
       const assessmentAttempts = getTopicAssessmentAttempts(user.id, Number(topicId))
+      
+      console.log(`🔍 Profile: Topic ${topicId} assessment attempts:`, assessmentAttempts.length, assessmentAttempts)
       
       // Get the best assessment score for this topic
       const bestAttempt = assessmentAttempts.length > 0 
@@ -235,6 +248,8 @@ export default function ProfilePage() {
             current.score > best.score ? current : best
           )
         : null
+      
+      console.log(`🔍 Profile: Topic ${topicId} best attempt:`, bestAttempt)
       
       return {
         course: topic?.title || `Topic ${topicId}`,
