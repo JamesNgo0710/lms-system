@@ -589,25 +589,40 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                 )}
                 {assessment ? (
                   user?.role === "student" ? (
-                    progress.completed !== progress.total ? (
-                      <div className="space-y-2">
-                        <Button className="w-full" disabled>
-                          Complete All Lessons First
-                        </Button>
-                        <p className="text-xs text-center text-orange-600 dark:text-orange-400">
-                          {progress.total - progress.completed} lesson(s) remaining
-                        </p>
-                      </div>
-                    ) : !cooldownInfo.canTake ? (
-                      <div className="space-y-2">
-                        <Button className="w-full" disabled>
-                          Assessment Cooldown Active
-                        </Button>
-                        <p className="text-xs text-center text-red-600 dark:text-red-400">
-                          {cooldownInfo.message}
-                        </p>
-                      </div>
-                    ) : (
+                    (() => {
+                      console.log('🔍 STUDENT ASSESSMENT SECTION - CONDITIONS CHECK:', {
+                        progressCompleted: progress.completed,
+                        progressTotal: progress.total,
+                        allLessonsComplete: progress.completed === progress.total,
+                        canTakeAssessment: cooldownInfo.canTake,
+                        cooldownMessage: cooldownInfo.message,
+                        assessmentStatusAtRender: assessmentStatus
+                      })
+                      
+                      if (progress.completed !== progress.total) {
+                        return (
+                          <div className="space-y-2">
+                            <Button className="w-full" disabled>
+                              Complete All Lessons First
+                            </Button>
+                            <p className="text-xs text-center text-orange-600 dark:text-orange-400">
+                              {progress.total - progress.completed} lesson(s) remaining
+                            </p>
+                          </div>
+                        )
+                      } else if (!cooldownInfo.canTake) {
+                        return (
+                          <div className="space-y-2">
+                            <Button className="w-full" disabled>
+                              Assessment Cooldown Active
+                            </Button>
+                            <p className="text-xs text-center text-red-600 dark:text-red-400">
+                              {cooldownInfo.message}
+                            </p>
+                          </div>
+                        )
+                      } else {
+                        return (
                       <div className="space-y-2">
                         <Button className="w-full" asChild>
                           <Link href={returnTo === 'manage' ? `/dashboard/manage-assessments/edit/${topicId}` : `/dashboard/assessment/${topicId}`}>
@@ -665,7 +680,9 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                           )
                         })()}
                       </div>
-                    )
+                        )
+                      }
+                    })()
                   ) : (
                     <Button className="w-full" asChild>
                       <Link href={returnTo === 'manage' ? `/dashboard/manage-assessments/edit/${topicId}` : `/dashboard/assessment/${topicId}`}>
