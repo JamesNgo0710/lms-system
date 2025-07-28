@@ -377,17 +377,27 @@ export function useLessonCompletions() {
   }
 
   const markLessonComplete = async (lessonId: number, timeSpent?: number) => {
+    console.log('🔄 Hook: markLessonComplete called:', { lessonId, timeSpent })
     const success = await apiDataStore.markLessonComplete(lessonId, timeSpent)
+    console.log('📡 Hook: API result:', success)
+    
     if (success) {
+      console.log('🔄 Hook: Refreshing completions...')
       await loadCompletions() // Refresh the completions
+      console.log('✅ Hook: Completions refreshed')
     }
     return success
   }
 
   const markLessonIncomplete = async (lessonId: number) => {
+    console.log('🔄 Hook: markLessonIncomplete called:', { lessonId })
     const success = await apiDataStore.markLessonIncomplete(lessonId)
+    console.log('📡 Hook: API result:', success)
+    
     if (success) {
+      console.log('🔄 Hook: Refreshing completions...')
       await loadCompletions() // Refresh the completions
+      console.log('✅ Hook: Completions refreshed')
     }
     return success
   }

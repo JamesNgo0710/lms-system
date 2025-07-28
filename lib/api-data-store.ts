@@ -553,23 +553,37 @@ class ApiDataStore {
   // Lesson Completions API
   async markLessonComplete(lessonId: number, timeSpent?: number): Promise<boolean> {
     try {
+      console.log('🔄 API: Marking lesson complete:', { lessonId, timeSpent })
       const response = await this.makeApiRequest(`/api/lessons/${lessonId}/complete`, { method: 'POST',body: JSON.stringify({ time_spent: timeSpent }),
       })
       
+      console.log('📡 API Response:', { status: response.status, ok: response.ok })
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.log('❌ API Error Response:', errorText)
+      }
+      
       return response.ok
     } catch (error) {
-      console.error('Error marking lesson complete:', error)
+      console.error('❌ Error marking lesson complete:', error)
       return false
     }
   }
 
   async markLessonIncomplete(lessonId: number): Promise<boolean> {
     try {
+      console.log('🔄 API: Marking lesson incomplete:', { lessonId })
       const response = await this.makeApiRequest(`/api/lessons/${lessonId}/complete`, { method: 'DELETE', })
+      
+      console.log('📡 API Response:', { status: response.status, ok: response.ok })
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.log('❌ API Error Response:', errorText)
+      }
       
       return response.ok
     } catch (error) {
-      console.error('Error marking lesson incomplete:', error)
+      console.error('❌ Error marking lesson incomplete:', error)
       return false
     }
   }

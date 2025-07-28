@@ -74,18 +74,24 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
   const handleToggleCompletion = async () => {
     if (!user) return
 
+    console.log('🔄 Toggling completion for lesson:', lessonId, 'Current state:', isCompleted)
     const timeSpent = startTime ? Math.round((new Date().getTime() - startTime.getTime()) / 60000) : undefined
 
     try {
       if (isCompleted) {
+        console.log('⏳ Marking lesson as incomplete...')
         const success = await markLessonIncomplete(lessonId)
+        console.log('✅ markLessonIncomplete result:', success)
+        
         if (success) {
           setIsCompleted(false)
+          console.log('✅ Local state updated to incomplete')
           toast({
             title: "Lesson marked as incomplete",
             description: "You can complete it again anytime.",
           })
         } else {
+          console.log('❌ Failed to mark lesson as incomplete')
           toast({
             title: "Error",
             description: "Failed to mark lesson as incomplete. Please try again.",
@@ -93,14 +99,19 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
           })
         }
       } else {
+        console.log('⏳ Marking lesson as complete...')
         const success = await markLessonComplete(lessonId, timeSpent)
+        console.log('✅ markLessonComplete result:', success)
+        
         if (success) {
           setIsCompleted(true)
+          console.log('✅ Local state updated to complete')
           toast({
             title: "Congratulations! 🎉",
             description: "Lesson completed successfully!",
           })
         } else {
+          console.log('❌ Failed to mark lesson as complete')
           toast({
             title: "Error", 
             description: "Failed to mark lesson as complete. Please try again.",
@@ -109,7 +120,7 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
         }
       }
     } catch (error) {
-      console.error('Error toggling lesson completion:', error)
+      console.error('❌ Error toggling lesson completion:', error)
       toast({
         title: "Error",
         description: "Something went wrong. Please try again.",
