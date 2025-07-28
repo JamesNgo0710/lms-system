@@ -351,6 +351,9 @@ export function StudentDashboard() {
                     topicId: attempt.topicId,
                     completedAt: attempt.completedAt,
                     score: attempt.score,
+                    correctAnswers: attempt.correct_answers || attempt.correctAnswers || 0,
+                    totalQuestions: attempt.total_questions || attempt.totalQuestions || 0,
+                    timeSpent: attempt.time_spent || attempt.timeSpent,
                     isPassed: attempt.isPassed,
                     type: 'assessment' as const,
                     date: new Date(attempt.completedAt)
@@ -389,7 +392,9 @@ export function StudentDashboard() {
                   } else {
                     const assessment = assessments.find(a => a.id === activity.assessmentId)
                     const topic = topics.find(t => t.id === activity.topicId)
-                    const scorePercentage = Math.round((activity.correctAnswers / activity.totalQuestions) * 100)
+                    const scorePercentage = activity.totalQuestions > 0 
+                      ? Math.round((activity.correctAnswers / activity.totalQuestions) * 100)
+                      : activity.score || 0
                     const isPassed = scorePercentage >= 70
                     const cooldownCheck = canTakeAssessment(user.id, activity.assessmentId)
                     

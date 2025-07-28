@@ -120,24 +120,69 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
         
         // Set cooldown info and assessment status from backend response
         if (assessmentData) {
+          console.log('🔍 Assessment data received:', {
+            id: assessmentData.id,
+            can_take: assessmentData.can_take,
+            message: assessmentData.message,
+            last_attempt: assessmentData.last_attempt
+          })
+          
           setCooldownInfo({
             canTake: assessmentData.can_take !== false, // Default to true if not specified
             message: assessmentData.message || ""
           })
           
-          // Set assessment attempt status
-          if (assessmentData.last_attempt) {
-            setAssessmentStatus({
-              hasAttempted: true,
-              bestScore: assessmentData.last_attempt.score || 0,
-              lastAttemptId: assessmentData.last_attempt.id
-            })
-          } else {
-            setAssessmentStatus({
-              hasAttempted: false,
-              bestScore: 0,
-              lastAttemptId: null
-            })
+          // Get all user attempts to find best score
+          try {
+            const userAttempts = await apiDataStore.getUserAssessmentAttempts(user.id)
+            const assessmentAttempts = userAttempts.filter(attempt => 
+              Number(attempt.assessmentId) === Number(assessmentData.id)
+            )
+            
+            console.log('🔍 All user attempts for this assessment:', assessmentAttempts)
+            
+            if (assessmentAttempts.length > 0) {
+              // Find best score attempt
+              const bestAttempt = assessmentAttempts.reduce((best, current) => 
+                (Number(current.score) || 0) > (Number(best.score) || 0) ? current : best
+              )
+              
+              console.log('🔍 Best attempt found:', {
+                id: bestAttempt.id,
+                score: bestAttempt.score,
+                correct_answers: bestAttempt.correct_answers || bestAttempt.correctAnswers,
+                total_questions: bestAttempt.total_questions || bestAttempt.totalQuestions
+              })
+              
+              setAssessmentStatus({
+                hasAttempted: true,
+                bestScore: Number(bestAttempt.score) || 0,
+                lastAttemptId: bestAttempt.id
+              })
+            } else {
+              console.log('🔍 No attempts found for this assessment')
+              setAssessmentStatus({
+                hasAttempted: false,
+                bestScore: 0,
+                lastAttemptId: null
+              })
+            }
+          } catch (error) {
+            console.error('Error getting user attempts:', error)
+            // Fallback to last_attempt from assessment data
+            if (assessmentData.last_attempt) {
+              setAssessmentStatus({
+                hasAttempted: true,
+                bestScore: assessmentData.last_attempt.score || 0,
+                lastAttemptId: assessmentData.last_attempt.id
+              })
+            } else {
+              setAssessmentStatus({
+                hasAttempted: false,
+                bestScore: 0,
+                lastAttemptId: null
+              })
+            }
           }
         }
       }
