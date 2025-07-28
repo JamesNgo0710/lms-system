@@ -22,7 +22,7 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
   const searchParams = useSearchParams()
   const { getTopicById } = useTopics()
   const { getLessonById, getLessonsByTopicId } = useLessons()
-  const { isLessonCompleted, markLessonComplete, markLessonIncomplete, getTopicProgress, trackLessonView } = useLessonCompletions()
+  const { isLessonCompleted, markLessonComplete, markLessonIncomplete, getTopicProgress, trackLessonView, completions } = useLessonCompletions()
   const { toast } = useToast()
 
   const resolvedParams = use(params)
@@ -60,36 +60,62 @@ export default function LessonViewPage({ params }: { params: Promise<{ id: strin
     if (user && isHydrated) {
       setIsCompleted(isLessonCompleted(user.id, lessonId))
     }
-  }, [user, lessonId, isLessonCompleted, isHydrated])
+  }, [user, lessonId, isLessonCompleted, isHydrated, completions])
 
   useEffect(() => {
     // Track when lesson starts and track view only once
     if (!hasTracked.current && isHydrated && user) {
       setStartTime(new Date())
-      trackLessonView(user.id, lessonId)
+      trackLessonView(lessonId)
       hasTracked.current = true
     }
   }, [isHydrated, user, lessonId, trackLessonView])
 
-  const handleToggleCompletion = () => {
+  const handleToggleCompletion = async () => {
     if (!user) return
 
     const timeSpent = startTime ? Math.round((new Date().getTime() - startTime.getTime()) / 60000) : undefined
 
-    if (isCompleted) {
-      markLessonIncomplete(user.id, lessonId)
+    try {
+      if (isCompleted) {
+        const success = await markLessonIncomplete(lessonId)
+        if (success) {
+          setIsCompleted(false)
+          toast({
+            title: "Lesson marked as incomplete",
+            description: "You can complete it again anytime.",
+          })
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to mark lesson as incomplete. Please try again.",
+            variant: "destructive"
+          })
+        }
+      } else {
+        const success = await markLessonComplete(lessonId, timeSpent)
+        if (success) {
+          setIsCompleted(true)
+          toast({
+            title: "Congratulations! 🎉",
+            description: "Lesson completed successfully!",
+          })
+        } else {
+          toast({
+            title: "Error", 
+            description: "Failed to mark lesson as complete. Please try again.",
+            variant: "destructive"
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling lesson completion:', error)
       toast({
-        title: "Lesson marked as incomplete",
-        description: "You can complete it again anytime.",
-      })
-    } else {
-      markLessonComplete(user.id, lessonId, timeSpent)
-      toast({
-        title: "Congratulations! 🎉",
-        description: "Lesson completed successfully!",
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive"
       })
     }
-    setIsCompleted(!isCompleted)
   }
 
   if (!topic || !lesson) {
