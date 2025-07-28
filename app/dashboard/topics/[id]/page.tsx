@@ -154,11 +154,15 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                 total_questions: bestAttempt.total_questions || bestAttempt.totalQuestions
               })
               
-              setAssessmentStatus({
+              const assessmentStatusToSet = {
                 hasAttempted: true,
                 bestScore: Number(bestAttempt.score) || 0,
                 lastAttemptId: bestAttempt.id
-              })
+              }
+              
+              console.log('🔍 Setting assessment status:', assessmentStatusToSet)
+              
+              setAssessmentStatus(assessmentStatusToSet)
             } else {
               console.log('🔍 No attempts found for this assessment')
               setAssessmentStatus({
@@ -617,6 +621,10 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                         </Button>
                         {(() => {
                           // Enhanced debugging for assessment review section
+                          console.log('🔍 CURRENT ASSESSMENT STATUS WHEN RENDERING:', assessmentStatus)
+                          console.log('🔍 CURRENT RETURN TO VALUE:', returnTo)
+                          console.log('🔍 CURRENT ASSESSMENT OBJECT:', assessment)
+                          
                           const showReview = assessmentStatus.hasAttempted && assessmentStatus.lastAttemptId && returnTo !== 'manage'
                           
                           console.log('🔍 REVIEW SECTION DEBUG:', {
@@ -626,6 +634,11 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                             bestScore: assessmentStatus.bestScore,
                             returnTo,
                             showReview,
+                            conditions: {
+                              hasAttempted: assessmentStatus.hasAttempted,
+                              hasLastAttemptId: !!assessmentStatus.lastAttemptId,
+                              notManageMode: returnTo !== 'manage'
+                            },
                             assessment: assessment ? {
                               id: assessment.id,
                               total_questions: assessment.total_questions,
