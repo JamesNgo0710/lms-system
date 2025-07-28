@@ -40,7 +40,10 @@
       "Bash(npm cache clean:*)",
       "Bash(mv:*)",
       "Bash(npx vercel:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "deny": []
   }
