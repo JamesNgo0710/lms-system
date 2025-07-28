@@ -659,13 +659,26 @@ class ApiDataStore {
 
   async createAssessment(assessment: Omit<Assessment, 'id'>): Promise<Assessment | null> {
     try {
+      console.log('🔍 API: Creating assessment with data:', JSON.stringify(assessment, null, 2))
+      
       const response = await this.makeApiRequest(`/api/assessments`, { method: 'POST',body: JSON.stringify(assessment), })
       
       if (!response.ok) {
-        throw new Error(`Failed to create assessment: ${response.status}`)
+        // Get detailed error response from backend
+        let errorDetails = 'Unknown error'
+        try {
+          const errorResponse = await response.json()
+          errorDetails = JSON.stringify(errorResponse, null, 2)
+          console.error('❌ Backend validation errors:', errorDetails)
+        } catch (e) {
+          console.error('❌ Could not parse error response')
+        }
+        
+        throw new Error(`Failed to create assessment: ${response.status} - ${errorDetails}`)
       }
       
       const newAssessment = await response.json()
+      console.log('✅ Assessment created successfully:', newAssessment)
       
       // Clear cache for this topic since assessment was created
       if (newAssessment.topic_id || newAssessment.topicId) {

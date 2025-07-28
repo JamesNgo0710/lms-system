@@ -185,7 +185,7 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
         })
       } else {
         // Create new assessment with proper snake_case field names for Laravel backend
-        result = await createAssessment({
+        const assessmentPayload = {
           topic_id: topicId,
           title: `${topicTitle} Assessment`,
           description: `Assessment for ${topicTitle}`,
@@ -195,7 +195,13 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
           retake_period: "24 hours",
           cooldown_period: cooldownPeriod,
           status: 'Draft'
-        })
+        }
+        
+        // Debug: Log the payload being sent
+        console.log('🚀 Creating assessment with payload:', JSON.stringify(assessmentPayload, null, 2))
+        console.log('📝 Valid questions:', validQuestions)
+        
+        result = await createAssessment(assessmentPayload)
       }
 
       if (result) {
