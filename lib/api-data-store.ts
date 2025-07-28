@@ -800,25 +800,59 @@ class ApiDataStore {
     }
   }
 
-  async getAssessmentWithAnswers(assessmentId: number): Promise<Assessment | null> {
+  async getAssessmentWithAnswers(assessmentId: number, userId?: string): Promise<Assessment | null> {
     try {
       const backend = await this.getBackendConfig()
       
       // Use mock data if backend not connected
       if (!backend.isConnected) {
-        // For mock data, we need to return assessment with correct answers
-        // This is a simplified version for testing
         return null
       }
 
-      const response = await this.makeApiRequest(`/api/assessments/${assessmentId}/with-answers`)
-      
-      if (response.status === 404) {
-        return null
+      // Get user's latest attempt for this assessment to use the existing backend endpoint
+      // The backend has /api/assessments/{assessmentId}/attempts/{attemptId} which returns detailed results
+      if (userId) {
+        try {
+          // Get user's assessment attempts to find the latest one
+          const attemptsData = await this.getUserAssessmentAttempts(userId)
+          const assessmentAttempts = attemptsData.filter(attempt => 
+            Number(attempt.assessmentId) === Number(assessmentId)
+          )
+          
+          if (assessmentAttempts.length > 0) {
+            // Get the latest attempt
+            const latestAttempt = assessmentAttempts.sort((a, b) => 
+              new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
+            )[0]
+            
+            console.log('🔍 Found latest attempt for assessment review:', {
+              assessmentId,
+              attemptId: latestAttempt.id,
+              score: latestAttempt.score
+            })
+            
+            // Use the existing backend endpoint that returns assessment with answers
+            const response = await this.makeApiRequest(
+              `/api/assessments/${assessmentId}/attempts/${latestAttempt.id}`
+            )
+            
+            if (response.ok) {
+              const attemptResults = await response.json()
+              console.log('🔍 Got attempt results from backend:', attemptResults)
+              return attemptResults
+            }
+          }
+        } catch (error) {
+          console.error('Error getting latest attempt:', error)
+        }
       }
       
+      // Fallback to regular assessment if no attempts found or userId not provided
+      console.log('🔧 No attempts found or userId not provided, using regular assessment')
+      const response = await this.makeApiRequest(`/api/assessments/${assessmentId}`)
+      
       if (!response.ok) {
-        throw new Error(`Failed to fetch assessment with answers: ${response.status}`)
+        throw new Error(`Failed to fetch assessment: ${response.status}`)
       }
       
       return await response.json()

@@ -67,16 +67,16 @@ export default function AssessmentResultsPage({ params }: { params: Promise<{ id
 
   // Load assessment with correct answers
   useEffect(() => {
-    if (assessment?.id && !assessmentWithAnswers) {
+    if (assessment?.id && user?.id && !assessmentWithAnswers) {
       loadAssessmentWithAnswers()
     }
-  }, [assessment?.id, assessmentWithAnswers])
+  }, [assessment?.id, user?.id, assessmentWithAnswers])
 
   const loadAssessmentWithAnswers = async () => {
-    if (!assessment?.id) return
+    if (!assessment?.id || !user?.id) return
     
     try {
-      const assessmentData = await apiDataStore.getAssessmentWithAnswers(assessment.id)
+      const assessmentData = await apiDataStore.getAssessmentWithAnswers(assessment.id, user.id)
       console.log('🔍 Results: Assessment with answers:', assessmentData)
       setAssessmentWithAnswers(assessmentData)
     } catch (error) {
@@ -88,68 +88,48 @@ export default function AssessmentResultsPage({ params }: { params: Promise<{ id
 
   // Calculate wrong answers once when we have the necessary data
   useEffect(() => {
-    if (user?.id && assessmentWithAnswers?.id && assessmentWithAnswers?.questions && !isCalculated) {
-      const userAttempts = getUserAssessmentAttempts(user.id)
-      console.log('🔍 Results: All user attempts:', userAttempts.length)
-      userAttempts.forEach((attempt, i) => {
-        console.log(`🔍 Results: User attempt ${i}:`, {
-          id: attempt.id,
-          userId: attempt.userId,
-          assessmentId: attempt.assessmentId,
-          topicId: attempt.topicId,
-          score: attempt.score,
-          completedAt: attempt.completedAt
-        })
-      })
+    if (user?.id && assessmentWithAnswers?.id && !isCalculated) {
+      // Check if we have questions with results from backend (attempt results format)
+      const questionsData = assessmentWithAnswers.questions_with_results || assessmentWithAnswers.questions
       
-      const assessmentAttempts = userAttempts.filter(attempt => attempt.assessmentId === assessmentWithAnswers.id)
-      console.log('🔍 Results: Assessment attempts for this assessment:', assessmentAttempts.length)
-      assessmentAttempts.forEach((attempt, i) => {
-        console.log(`🔍 Results: Filtered attempt ${i}:`, {
-          id: attempt.id,
-          userId: attempt.userId,
-          assessmentId: attempt.assessmentId,
-          topicId: attempt.topicId,
-          score: attempt.score,
-          completedAt: attempt.completedAt
+      if (questionsData && questionsData.length > 0) {
+        console.log('🔍 Results: Processing questions data:', {
+          hasQuestionsWithResults: !!assessmentWithAnswers.questions_with_results,
+          questionsCount: questionsData.length,
+          firstQuestion: questionsData[0]
         })
-      })
-      
-      const latestAttempt = assessmentAttempts.sort((a, b) => new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime())[0]
-      console.log('🔍 Results: Latest attempt score:', latestAttempt?.score)
-
-      if (latestAttempt) {
-        // Calculate wrong answers
+        
         const wrongAnswersData: WrongAnswer[] = []
         
-        assessmentWithAnswers.questions.forEach((question: any, index: number) => {
-          const userAnswer = latestAttempt.answers[index]
-          const isCorrect = userAnswer === question.correctAnswer || 
-                          (question.type === "true-false" && userAnswer?.toString() === question.correctAnswer?.toString())
+        questionsData.forEach((question: any, index: number) => {
+          // Handle both formats: attempt results (has user_answer, is_correct) or regular questions
+          const userAnswer = question.user_answer !== undefined ? question.user_answer : null
+          const correctAnswer = question.correct_answer || question.correctAnswer
+          const isCorrect = question.is_correct !== undefined 
+            ? question.is_correct 
+            : (userAnswer === correctAnswer || 
+               (question.type === "true-false" && userAnswer?.toString() === correctAnswer?.toString()))
           
           console.log(`🔍 Results: Question ${index + 1}:`, {
             question: question.question,
             type: question.type,
             userAnswer,
-            correctAnswer: question.correctAnswer,
-            userAnswerType: typeof userAnswer,
-            correctAnswerType: typeof question.correctAnswer,
-            userAnswerString: userAnswer?.toString(),
-            correctAnswerString: question.correctAnswer?.toString(),
-            isCorrect
+            correctAnswer,
+            isCorrect,
+            hasBackendResult: question.is_correct !== undefined
           })
           
-          if (!isCorrect) {
+          if (!isCorrect && userAnswer !== null) {
             // Format the answers based on question type
             let formattedUserAnswer: string | number = userAnswer ?? "No answer"
-            let formattedCorrectAnswer: string | number = question.correctAnswer
+            let formattedCorrectAnswer: string | number = correctAnswer
 
             if (question.type === "multiple-choice" && question.options) {
               formattedUserAnswer = typeof userAnswer === "number" ? question.options[userAnswer] || "No answer" : "No answer"
-              formattedCorrectAnswer = typeof question.correctAnswer === "number" ? question.options[question.correctAnswer] || question.correctAnswer : question.correctAnswer
+              formattedCorrectAnswer = typeof correctAnswer === "number" ? question.options[correctAnswer] || correctAnswer : correctAnswer
             } else if (question.type === "true-false") {
               formattedUserAnswer = userAnswer?.toString() || "No answer"
-              formattedCorrectAnswer = question.correctAnswer?.toString() || "No answer"
+              formattedCorrectAnswer = correctAnswer?.toString() || "No answer"
             }
 
             wrongAnswersData.push({
@@ -164,11 +144,12 @@ export default function AssessmentResultsPage({ params }: { params: Promise<{ id
           }
         })
 
+        console.log('🔍 Results: Wrong answers calculated:', wrongAnswersData.length)
         setWrongAnswers(wrongAnswersData)
         setIsCalculated(true)
       }
     }
-  }, [user?.id, assessmentWithAnswers?.id, assessmentWithAnswers?.questions?.length, isCalculated, getUserAssessmentAttempts])
+  }, [user?.id, assessmentWithAnswers?.id, assessmentWithAnswers?.questions_with_results?.length, assessmentWithAnswers?.questions?.length, isCalculated])
 
   const passed = score >= 70
   const timeSpentFormatted = `${Math.floor(timeSpent / 3600)}:${Math.floor((timeSpent % 3600) / 60)
@@ -245,7 +226,7 @@ export default function AssessmentResultsPage({ params }: { params: Promise<{ id
           </CardContent>
         </Card>
 
-        {/* Wrong Answers */}
+        {/* Wrong Answers or Review Unavailable Message */}
         {wrongAnswers.length > 0 && (
           <Card>
             <CardHeader className="bg-red-50 dark:bg-red-900/20 border-b dark:border-gray-700">
@@ -369,6 +350,35 @@ export default function AssessmentResultsPage({ params }: { params: Promise<{ id
               <p className="text-gray-600 dark:text-gray-300 text-lg">
                 Congratulations! You answered all questions correctly. Outstanding performance!
               </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Review functionality unavailable message - only show if we don't have proper backend data and no wrong answers to show */}
+        {isCalculated && wrongAnswers.length === 0 && !assessmentWithAnswers?.questions_with_results && (
+          <Card>
+            <CardHeader className="bg-blue-50 dark:bg-blue-900/20 border-b dark:border-gray-700">
+              <div className="flex items-center space-x-2">
+                <Eye className="w-5 h-5 text-blue-600" />
+                <CardTitle className="text-xl text-blue-700 dark:text-blue-400">
+                  Assessment Review
+                </CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="text-center space-y-4">
+                <p className="text-gray-600 dark:text-gray-300">
+                  Detailed question review is not available for this assessment attempt.
+                </p>
+                <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
+                    <strong>Your Score:</strong> {score}% ({correct} out of {total} questions correct)
+                  </p>
+                  <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
+                    Your assessment has been graded and recorded successfully.
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         )}

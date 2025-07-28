@@ -131,35 +131,27 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
     setSelectedAnswer(answer)
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const finalAnswers = [...answers]
     if (selectedAnswer !== null) {
       finalAnswers[currentQuestion] = selectedAnswer
     }
 
-    // Calculate score
-    let correctCount = 0
-    questions.forEach((q, index) => {
-      if (finalAnswers[index] === q.correctAnswer) {
-        correctCount++
-      }
-    })
-
-    const score = questions.length > 0 ? Math.round((correctCount / questions.length) * 100) : 0
     const timeSpent = assessment?.timeLimit
       ? Number.parseInt(assessment.timeLimit.split(":")[0]) * 3600 +
         Number.parseInt(assessment.timeLimit.split(":")[1]) * 60 -
         timeLeft
       : 3600 - timeLeft
 
-    // Record the assessment attempt
+    // Submit to backend and get the actual calculated score
+    let submissionResult = null
     if (user && assessment) {
-      addAssessmentAttempt({
+      submissionResult = await addAssessmentAttempt({
         userId: user.id,
         assessmentId: assessment.id,
         topicId: topicId,
-        score: score,
-        correctAnswers: correctCount,
+        score: 0, // Will be calculated by backend
+        correctAnswers: 0, // Will be calculated by backend
         totalQuestions: questions.length,
         timeSpent: timeSpent,
         completedAt: new Date().toISOString(),
@@ -169,9 +161,20 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
 
     setIsCompleted(true)
 
-    // Redirect to results page
+    // Use backend-calculated score if available, otherwise fallback to 0
+    const actualScore = submissionResult?.score || 0
+    const actualCorrect = submissionResult?.correctAnswers || 0
+
+    console.log('🔍 Assessment submission result:', {
+      backendScore: actualScore,
+      backendCorrect: actualCorrect,
+      totalQuestions: questions.length,
+      submissionResult
+    })
+
+    // Redirect to results page with actual calculated values
     router.push(
-      `/dashboard/assessment/${resolvedParams.id}/results?score=${score}&timeSpent=${timeSpent}&correct=${correctCount}&total=${questions.length}`,
+      `/dashboard/assessment/${resolvedParams.id}/results?score=${actualScore}&timeSpent=${timeSpent}&correct=${actualCorrect}&total=${questions.length}`,
     )
   }
 
