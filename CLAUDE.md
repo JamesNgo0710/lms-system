@@ -22,33 +22,72 @@
 - Backend: `php artisan serve` (Laravel)
 - Database: Use Laravel migrations and seeders
 
-## Recent Work & Solutions (Latest Session)
+## Recent Work & Solutions (Latest Session - Assessment Functionality Fixes)
 
-### MAJOR BUG FIX: React Error #31 "Objects are not valid as a React child"
+### MAJOR ASSESSMENT FIXES COMPLETED
+**Session Goal**: Fix assessment functionality issues including scoring, review sections, cooldown timers, and NaN displays
+
+### Critical Issues Fixed (Current Session)
+1. **Assessment Review Section Not Showing**: Fixed logic where review button wasn't appearing for completed assessments during cooldown period
+2. **Cooldown Timer Restarting**: Fixed timer that kept resetting to 1 hour on each page render
+3. **Assessment Score Display Issues**: Fixed "0/2" showing instead of correct "2/2" for perfect scores
+4. **NaN% Scores in Recent Activity**: Fixed field mapping issues causing "NaN%" displays
+5. **"NaN lessons" Display**: Fixed invalid number conversion across dashboard pages
+6. **Assessment Results Mismatch**: Fixed scoring inconsistencies between frontend and backend
+
+### Root Causes Identified & Fixed
+1. **Snake_case vs camelCase Field Mapping**: Backend returns `correct_answers` but frontend expected `correctAnswers`
+   - **Solution**: Added dual field mapping with fallbacks in all data processing layers
+   - **Files**: `hooks/use-api-data-store.ts`, `components/student-dashboard.tsx`
+
+2. **Review Section Logic Flaw**: Review button only showed when `cooldownInfo.canTake` was true
+   - **Solution**: Modified conditional logic to show review section even during cooldown when user has attempted assessment
+   - **File**: `app/dashboard/topics/[id]/page.tsx:613-649`
+
+3. **Unstable Cooldown Timer**: Timer endTime was recalculated on every render
+   - **Solution**: Modified `canTakeAssessment` function to return stable `endTime` based on attempt time + cooldown period
+   - **File**: `hooks/use-api-data-store.ts:571`
+
+4. **Number Conversion Errors**: Invalid data causing NaN displays across dashboard
+   - **Solution**: Added comprehensive `isNaN()` checks and safe number conversion
+   - **Files**: `app/dashboard/topics/page.tsx`, `components/student-dashboard.tsx`
+
+### Key Files Modified (Current Session)
+- `app/dashboard/topics/[id]/page.tsx` - Fixed review section logic and added comprehensive debugging
+- `hooks/use-api-data-store.ts` - Fixed cooldown timer endTime calculation and field mapping
+- `components/student-dashboard.tsx` - Fixed NaN% scores and enhanced cooldown timer integration
+- `app/dashboard/topics/page.tsx` - Fixed "NaN lessons" display with proper number validation
+
+### Assessment Review Section Fix Details
+**Problem**: Despite achieving 100% score on assessment 14, review section wasn't showing
+**Root Cause**: Code took cooldown path (`!cooldownInfo.canTake`) and showed "Assessment Cooldown Active" without review option
+**Solution**: Added review section inside cooldown condition when user has attempted assessment:
+```typescript
+{assessmentStatus.hasAttempted && assessmentStatus.lastAttemptId && returnTo !== 'manage' && (
+  <div className="space-y-1 mt-2">
+    <Button variant="outline" size="sm" className="w-full" asChild>
+      <Link href={`/dashboard/assessment/${assessment.id}/results?...`}>
+        Review Assessment
+      </Link>
+    </Button>
+    <p className="text-xs text-center text-green-600">
+      Best Score: {assessmentStatus.bestScore}%
+    </p>
+  </div>
+)}
+```
+
+### Debugging Methodology Used (Current Session)
+1. **Systematic Console Logging**: Added comprehensive debug logs to trace data flow and conditional logic
+2. **Field Mapping Analysis**: Identified snake_case vs camelCase mismatches through detailed logging
+3. **State Tracking**: Added logs to track assessment status, cooldown state, and render conditions
+4. **Conditional Logic Debugging**: Enhanced logs to show exactly which code paths were being taken
+5. **TodoWrite Task Management**: Used systematic task tracking to ensure all issues were addressed
+
+### Previous Session: React Error #31 Fix
 **Problem**: Infinite console spam of React error #31 on manage topics page
-**Root Cause**: Console.log and console.error statements were creating objects with snake_case properties that React DevTools tried to render
-**Solution Timeline**:
-1. **Data Normalization**: Added comprehensive snake_case to camelCase conversion in all API methods and hooks
-2. **Console Statement Cleanup**: Disabled all console.log/console.error statements that logged lesson objects
-3. **Nuclear Option**: Completely rebuilt manage topics display with simplified, safe rendering
-4. **Final Fix**: Resolved "Cannot access 'B' before initialization" temporal dead zone error
-
-**Key Discovery**: The error was NOT from JSX rendering objects directly, but from console statements creating objects that React DevTools tried to display.
-
-### Technical Issues Fixed (This Session)
-1. **React Error #31**: Complete elimination of "Objects are not valid as a React child" infinite console spam
-2. **Snake_case Data Normalization**: Bulletproof conversion at API level, hook level, and component level
-3. **Temporal Dead Zone Error**: Fixed variable initialization order in manage topics page
-4. **Topics Display**: Rebuilt with simplified, crash-proof rendering using only primitive values
-5. **Error Boundary Management**: Properly configured error boundaries to suppress error pages while debugging
-
-### Key Files Created/Modified (This Session)
-- `app/dashboard/manage-topics/page.tsx` - Completely rebuilt with simplified, safe rendering
-- `hooks/use-api-data-store.ts` - Added comprehensive lesson data normalization and disabled problematic console statements
-- `lib/api-data-store.ts` - Nuclear-level data normalization at API layer to prevent any snake_case data escape
-- `components/student-dashboard.tsx` - Disabled console statements that were creating objects
-- `components/error-boundary-enhanced.tsx` - Enhanced error boundary that suppresses error pages during debugging
-- `components/error-boundary.tsx` - Basic error boundary with improved logging
+**Root Cause**: Console.log statements creating objects with snake_case properties that React DevTools tried to render
+**Solution**: Complete data normalization and console statement cleanup
 
 ### Previous Session: Coding Curriculum Content
 - Created comprehensive coding curriculum scripts in `scripts/` folder
@@ -82,6 +121,21 @@ Each topic includes:
 - Database seeders use `firstOrCreate()` to handle existing data
 - Vercel sometimes truncates long environment variable values
 - Missing assessments return 404s (now handled gracefully)
+
+## Assessment System Status (Post-Fix)
+✅ **FIXED ISSUES:**
+- Assessment review sections now show during cooldown periods for attempted assessments
+- Cooldown timers maintain stable countdown without restarting
+- Assessment scores display correctly (2/2 instead of 0/2 for perfect scores)
+- "NaN%" and "NaN lessons" displays eliminated across all dashboard pages
+- Field mapping between snake_case (backend) and camelCase (frontend) standardized
+- "Take Assessment" changes to "Redo Assessment" for previously attempted assessments
+
+✅ **CURRENT FUNCTIONALITY:**
+- Assessment 14 (and others) now properly show "Review Assessment" button during cooldown
+- Users can review their assessment answers and see correct/incorrect responses
+- Best scores are tracked and displayed accurately
+- Cooldown timers show proper remaining time without restarting
 
 ## CRITICAL React Error Prevention Guidelines
 **Never do these things that cause React error #31:**
@@ -135,6 +189,21 @@ Each topic includes:
 - Git commits for each step to track progress
 - TodoWrite tool for systematic task tracking
 - Systematic file reading to understand data flow
+
+## Assessment Debugging Guidelines
+**For Assessment-Related Issues:**
+1. **Field Mapping First**: Always check snake_case vs camelCase field names between backend and frontend
+2. **Conditional Logic**: Use comprehensive console logging to trace which conditional paths are being taken
+3. **State Timing**: Add logs before setState and during render to catch timing issues
+4. **Data Structure**: Log the full data structure to understand what fields are actually available
+5. **Backend Integration**: Verify the backend endpoint is returning expected data structure
+
+**Common Assessment Patterns:**
+- Backend returns: `correct_answers`, `total_questions`, `assessment_id`, `topic_id`
+- Frontend expects: `correctAnswers`, `totalQuestions`, `assessmentId`, `topicId`  
+- Always provide fallbacks: `attempt.correct_answers || attempt.correctAnswers || 0`
+- Use dual field mapping in all data processing layers
+- Test both first-time and repeat assessment scenarios
 
 ## Performance Considerations
 - Manage topics page now loads faster with simplified rendering
