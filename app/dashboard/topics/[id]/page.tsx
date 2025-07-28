@@ -28,6 +28,11 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
   const [loading, setLoading] = useState(true)
   const [progress, setProgress] = useState({ completed: 0, total: 0, percentage: 0 })
   const [cooldownInfo, setCooldownInfo] = useState({ canTake: true, message: "" })
+  const [assessmentStatus, setAssessmentStatus] = useState({ 
+    hasAttempted: false, 
+    bestScore: 0, 
+    lastAttemptId: null 
+  })
 
   const resolvedParams = use(params)
   const topicId = Number.parseInt(resolvedParams.id)
@@ -113,9 +118,27 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
       if (user?.role === "student" && user.id) {
         await loadProgressData(cleanLessons, user.id)
         
-        // Check assessment cooldown
-        if (assessmentData && user.id) {
-          await checkAssessmentCooldown(assessmentData, user.id)
+        // Set cooldown info and assessment status from backend response
+        if (assessmentData) {
+          setCooldownInfo({
+            canTake: assessmentData.can_take !== false, // Default to true if not specified
+            message: assessmentData.message || ""
+          })
+          
+          // Set assessment attempt status
+          if (assessmentData.last_attempt) {
+            setAssessmentStatus({
+              hasAttempted: true,
+              bestScore: assessmentData.last_attempt.score || 0,
+              lastAttemptId: assessmentData.last_attempt.id
+            })
+          } else {
+            setAssessmentStatus({
+              hasAttempted: false,
+              bestScore: 0,
+              lastAttemptId: null
+            })
+          }
         }
       }
       
@@ -148,15 +171,6 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
     }
   }
 
-  const checkAssessmentCooldown = async (assessmentData: any, userId: string) => {
-    try {
-      // This would call the assessment attempts API to check cooldown
-      // For now, we'll assume no cooldown
-      setCooldownInfo({ canTake: true, message: "" })
-    } catch (error) {
-      setCooldownInfo({ canTake: true, message: "" })
-    }
-  }
 
   const handleDeleteLesson = async (lessonId: number) => {
     try {
@@ -545,11 +559,35 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                         </p>
                       </div>
                     ) : (
-                      <Button className="w-full" asChild>
-                        <Link href={returnTo === 'manage' ? `/dashboard/manage-assessments/edit/${topicId}` : `/dashboard/assessment/${topicId}`}>
-                          {returnTo === 'manage' ? 'Manage Assessment' : 'Take Assessment'}
-                        </Link>
-                      </Button>
+                      <div className="space-y-2">
+                        <Button className="w-full" asChild>
+                          <Link href={returnTo === 'manage' ? `/dashboard/manage-assessments/edit/${topicId}` : `/dashboard/assessment/${topicId}`}>
+                            {returnTo === 'manage' 
+                              ? 'Manage Assessment' 
+                              : assessmentStatus.hasAttempted 
+                                ? 'Redo Assessment' 
+                                : 'Take Assessment'
+                            }
+                          </Link>
+                        </Button>
+                        {assessmentStatus.hasAttempted && assessmentStatus.lastAttemptId && returnTo !== 'manage' && (
+                          <div className="space-y-1">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="w-full" 
+                              asChild
+                            >
+                              <Link href={`/dashboard/assessment/${assessment.id}/results?score=${assessmentStatus.bestScore}&timeSpent=0&correct=0&total=${assessment.total_questions || 0}`}>
+                                Review Assessment
+                              </Link>
+                            </Button>
+                            <p className="text-xs text-center text-green-600 dark:text-green-400">
+                              Best Score: {assessmentStatus.bestScore}%
+                            </p>
+                          </div>
+                        )}
+                      </div>
                     )
                   ) : (
                     <Button className="w-full" asChild>
