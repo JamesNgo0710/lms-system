@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress"
 import { BookOpen, Users, Star, Search, CheckCircle, Map } from "lucide-react"
 import Link from "next/link"
-import { useTopics, useLessonCompletions } from "@/hooks/use-api-data-store"
+import { useTopics, useLessonCompletions, useLessons } from "@/hooks/use-api-data-store"
 import { LearningJourneyMap } from "@/components/learning-journey-map"
 
 export default function TopicsPage() {
@@ -20,7 +20,7 @@ export default function TopicsPage() {
   const user = session?.user
   
   // Safe hook loading with error handling
-  let topics, topicsLoading, getTopicProgress
+  let topics, topicsLoading, getTopicProgress, getLessonsByTopicId, getUserLessonCompletions
   try {
     const topicsHook = useTopics()
     topics = topicsHook.topics
@@ -28,11 +28,17 @@ export default function TopicsPage() {
     
     const completionsHook = useLessonCompletions()
     getTopicProgress = completionsHook.getTopicProgress
+    getUserLessonCompletions = completionsHook.getUserLessonCompletions
+    
+    const lessonsHook = useLessons()
+    getLessonsByTopicId = lessonsHook.getLessonsByTopicId
   } catch (error) {
     // Provide safe defaults if hooks fail
     topics = []
     topicsLoading = false
     getTopicProgress = () => ({ completed: 0, total: 0, percentage: 0 })
+    getUserLessonCompletions = () => []
+    getLessonsByTopicId = () => []
   }
 
   const [searchTerm, setSearchTerm] = useState("")
@@ -216,7 +222,7 @@ export default function TopicsPage() {
                   
                   if (!topicId) return null
                   
-                  // SAFE: Get progress with error handling - only primitive values
+                  // SAFE: Calculate progress properly using both lessons and completions data
                   let progressPercentage = 0
                   let progressCompleted = 0
                   let progressTotal = 0
@@ -224,15 +230,27 @@ export default function TopicsPage() {
                   
                   if (user?.id && user.role === "student" && topicId) {
                     try {
-                      const progress = getTopicProgress(user.id, Number(topicId))
-                      if (progress && typeof progress === 'object') {
-                        progressPercentage = Number(progress.percentage || 0)
-                        progressCompleted = Number(progress.completed || 0)
-                        progressTotal = Number(progress.total || 0)
-                        isCompleted = progressPercentage === 100
-                      }
+                      // Get lessons for this topic
+                      const topicLessons = getLessonsByTopicId(Number(topicId)) || []
+                      // Only count published lessons for students
+                      const publishedLessons = topicLessons.filter(lesson => 
+                        lesson && lesson.status === 'Published'
+                      )
+                      
+                      // Get user's completions for this topic
+                      const userCompletions = getUserLessonCompletions(user.id) || []
+                      const topicCompletions = userCompletions.filter(completion => 
+                        completion && completion.topic_id === Number(topicId)
+                      )
+                      
+                      // Calculate progress
+                      progressTotal = publishedLessons.length
+                      progressCompleted = topicCompletions.length
+                      progressPercentage = progressTotal > 0 ? Math.round((progressCompleted / progressTotal) * 100) : 0
+                      isCompleted = progressPercentage === 100
+                      
                     } catch (error) {
-                      // Safe defaults if progress fails
+                      // Safe defaults if progress calculation fails
                       progressPercentage = 0
                       progressCompleted = 0
                       progressTotal = 0
