@@ -439,25 +439,21 @@ export function useLessonCompletions() {
   }
 
   const isLessonCompleted = (userId: string, lessonId: number) => {
-    console.log('🔍 isLessonCompleted input:', { userId, lessonId, userIdType: typeof userId, lessonIdType: typeof lessonId })
-    console.log('🔍 All completions:', completions)
+    console.log(`🔍 INPUT: userId="${userId}" (${typeof userId}), lessonId=${lessonId} (${typeof lessonId})`)
     
     const isCompleted = completions.some(completion => {
+      console.log(`🔍 RECORD: user_id="${completion.user_id}" (${typeof completion.user_id}), lesson_id=${completion.lesson_id} (${typeof completion.lesson_id}), is_completed=${completion.is_completed}`)
+      
       const userMatch = completion.user_id === userId
       const lessonMatch = completion.lesson_id === lessonId
       const isComplete = completion.is_completed
       
-      console.log('🔍 Checking completion:', { 
-        completion, 
-        userMatch: `${completion.user_id} === ${userId} = ${userMatch}`, 
-        lessonMatch: `${completion.lesson_id} === ${lessonId} = ${lessonMatch}`,
-        isComplete 
-      })
+      console.log(`🔍 MATCH: user=${userMatch}, lesson=${lessonMatch}, complete=${isComplete}`)
       
       return userMatch && lessonMatch && isComplete
     })
     
-    console.log('🔍 Final result:', isCompleted)
+    console.log(`🔍 RESULT: ${isCompleted}`)
     return isCompleted
   }
 
