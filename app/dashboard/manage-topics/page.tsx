@@ -61,19 +61,21 @@ export default function ManageTopicsPage() {
   // console.log('🔍 Session data:', { user: user?.id, hasSession: !!session })
   
   // Add error logging for hooks
-  let topics, deleteTopic, updateTopic
+  let topics, deleteTopic, updateTopic, topicsLoading
   try {
     // console.log('🔍 Calling useTopics...')
     const topicsHook = useTopics()
     topics = topicsHook.topics
     deleteTopic = topicsHook.deleteTopic
     updateTopic = topicsHook.updateTopic
+    topicsLoading = topicsHook.loading
     // console.log('🔍 useTopics successful, topics count:', topics?.length)
   } catch (error) {
     console.error('❌ Error in useTopics hook:', error)
     topics = []
     deleteTopic = async () => {}
     updateTopic = async () => {}
+    topicsLoading = false
   }
   
   // SIMPLIFIED: Always load hooks but with safe defaults
@@ -579,7 +581,13 @@ export default function ManageTopicsPage() {
           <CardTitle className="dark:text-gray-100">Topics ({Array.isArray(filteredTopics) ? filteredTopics.length : 0})</CardTitle>
         </CardHeader>
         <CardContent>
-          {!Array.isArray(filteredTopics) ? (
+          {topicsLoading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+              <h3 className="text-lg font-semibold mb-2 dark:text-gray-100">Loading topics...</h3>
+              <p className="text-gray-600 dark:text-gray-400">Please wait while we fetch your topics.</p>
+            </div>
+          ) : !Array.isArray(filteredTopics) ? (
             <div className="text-center py-8">
               <p className="text-red-500">Error: Topics data is not properly loaded</p>
             </div>

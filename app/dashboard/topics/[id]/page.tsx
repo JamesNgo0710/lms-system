@@ -346,7 +346,13 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </CardHeader>
             <CardContent>
-              {lessons.length === 0 ? (
+              {loading ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                  <h3 className="text-lg font-semibold mb-2">Loading lessons...</h3>
+                  <p className="text-gray-600 dark:text-gray-400">Please wait while we fetch the lessons.</p>
+                </div>
+              ) : lessons.length === 0 ? (
                 <div className="text-center py-8">
                   {user?.role === "student" ? (
                     <div>

@@ -163,7 +163,7 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
 
     // Use backend-calculated score if available, otherwise fallback to 0
     const actualScore = submissionResult?.score || 0
-    const actualCorrect = submissionResult?.correctAnswers || 0
+    const actualCorrect = submissionResult?.correct_answers || submissionResult?.correctAnswers || 0
 
     console.log('🔍 Assessment submission result:', {
       backendScore: actualScore,

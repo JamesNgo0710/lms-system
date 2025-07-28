@@ -244,7 +244,13 @@ export default function TopicsPage() {
       ) : (
         <Card>
           <CardContent className="p-6">
-            {filteredTopics.length === 0 ? (
+            {loading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Loading topics...</h3>
+                <p className="text-gray-600 dark:text-gray-400">Please wait while we fetch your topics.</p>
+              </div>
+            ) : filteredTopics.length === 0 ? (
               <div className="text-center py-8">
                 <BookOpen className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                 <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">No topics found</h3>
