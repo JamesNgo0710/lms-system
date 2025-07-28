@@ -37,6 +37,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
     getLessonsByTopicId = lessonsHook.getLessonsByTopicId
     deleteLesson = lessonsHook.deleteLesson
     lessonsLoading = lessonsHook.loading
+    const refreshLessons = lessonsHook.refresh
     
     const completionsHook = useLessonCompletions()
     isLessonCompleted = completionsHook.isLessonCompleted
@@ -54,11 +55,19 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
     deleteLesson = async () => false
     topicsLoading = false
     lessonsLoading = false
+    const refreshLessons = () => {}
     isLessonCompleted = () => false
     getTopicProgress = () => ({ completed: 0, total: 0, percentage: 0 })
     getAssessmentByTopic = () => null
     canTakeAssessment = () => ({ canTake: true, message: "" })
   }
+
+  // Force refresh lessons when page loads to get latest data
+  useEffect(() => {
+    if (refreshLessons) {
+      refreshLessons()
+    }
+  }, [refreshLessons])
 
   const resolvedParams = use(params)
   const topicId = Number.parseInt(resolvedParams.id)
@@ -90,7 +99,14 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
     topic = getTopicById(topicId)
     lessons = getLessonsByTopicId(topicId) || []
     assessment = getAssessmentByTopic(topicId)
+    
+    // Debug: Log what we're getting for students
+    console.log('🔍 Student Topic View - Topic:', topic)
+    console.log('🔍 Student Topic View - Lessons:', lessons)
+    console.log('🔍 Student Topic View - User Role:', user?.role)
+    console.log('🔍 Student Topic View - Topic ID:', topicId)
   } catch (error) {
+    console.error('🚨 Error loading topic/lessons:', error)
     topic = null
     lessons = []
     assessment = null
@@ -227,7 +243,16 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
 
   // SAFE: Filter and normalize lessons - extract primitive values only
   const safeLessons = Array.isArray(lessons) ? lessons
-    .filter(lesson => lesson && typeof lesson === 'object' && lesson.id)
+    .filter(lesson => {
+      if (!lesson || typeof lesson !== 'object' || !lesson.id) return false
+      
+      // Students should only see Published lessons, admins see all
+      if (user?.role === 'student' && lesson.status !== 'Published') {
+        return false
+      }
+      
+      return true
+    })
     .map((lesson, index) => {
       // Extract only primitive values to prevent React error #31
       const lessonId = String(lesson?.id || '')
@@ -274,6 +299,11 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
       }
     })
     .filter(lesson => lesson !== null) : []
+
+  // Debug: Log lesson filtering results
+  console.log('🔍 Student Topic View - Raw lessons count:', lessons.length)
+  console.log('🔍 Student Topic View - Safe lessons count:', safeLessons.length)
+  console.log('🔍 Student Topic View - Safe lessons:', safeLessons)
 
   return (
     <div className="space-y-6">
@@ -387,14 +417,21 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
             <CardContent>
               {safeLessons.length === 0 ? (
                 <div className="text-center py-8">
-                  <p className="text-gray-500 mb-4">No lessons available for this topic yet.</p>
-                  {user?.role === "admin" && (
-                    <Link href={`/dashboard/manage-topics/${topicId}/lessons/create`}>
-                      <Button className="bg-orange-500 hover:bg-orange-600">
-                        <Plus className="w-4 h-4 mr-2" />
-                        Create First Lesson
-                      </Button>
-                    </Link>
+                  {user?.role === "student" ? (
+                    <div>
+                      <p className="text-gray-500 mb-2">No published lessons available for this topic yet.</p>
+                      <p className="text-sm text-gray-400">Check back soon - lessons may be in development!</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-gray-500 mb-4">No lessons available for this topic yet.</p>
+                      <Link href={`/dashboard/manage-topics/${topicId}/lessons/create`}>
+                        <Button className="bg-orange-500 hover:bg-orange-600">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Create First Lesson
+                        </Button>
+                      </Link>
+                    </div>
                   )}
                 </div>
               ) : (
