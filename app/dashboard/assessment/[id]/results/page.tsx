@@ -28,6 +28,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import { useAssessments, useAssessmentAttempts, useTopics } from "@/hooks/use-api-data-store"
+import { apiDataStore } from "@/lib/api-data-store"
 
 interface WrongAnswer {
   questionNo: number
@@ -57,15 +58,37 @@ export default function AssessmentResultsPage({ params }: { params: Promise<{ id
 
   const [wrongAnswers, setWrongAnswers] = useState<WrongAnswer[]>([])
   const [isCalculated, setIsCalculated] = useState(false)
+  const [assessmentWithAnswers, setAssessmentWithAnswers] = useState<any>(null)
 
   // Memoize data to prevent infinite re-renders
   const topicId = useMemo(() => Number.parseInt(resolvedParams.id), [resolvedParams.id])
   const topic = useMemo(() => getTopicById(topicId), [topicId, getTopicById])
   const assessment = useMemo(() => getAssessmentByTopicId(topicId), [topicId, getAssessmentByTopicId])
 
+  // Load assessment with correct answers
+  useEffect(() => {
+    if (assessment?.id && !assessmentWithAnswers) {
+      loadAssessmentWithAnswers()
+    }
+  }, [assessment?.id, assessmentWithAnswers])
+
+  const loadAssessmentWithAnswers = async () => {
+    if (!assessment?.id) return
+    
+    try {
+      const assessmentData = await apiDataStore.getAssessmentWithAnswers(assessment.id)
+      console.log('🔍 Results: Assessment with answers:', assessmentData)
+      setAssessmentWithAnswers(assessmentData)
+    } catch (error) {
+      console.error('Error loading assessment with answers:', error)
+      // Fallback to regular assessment data
+      setAssessmentWithAnswers(assessment)
+    }
+  }
+
   // Calculate wrong answers once when we have the necessary data
   useEffect(() => {
-    if (user?.id && assessment?.id && assessment?.questions && !isCalculated) {
+    if (user?.id && assessmentWithAnswers?.id && assessmentWithAnswers?.questions && !isCalculated) {
       const userAttempts = getUserAssessmentAttempts(user.id)
       console.log('🔍 Results: All user attempts:', userAttempts.length)
       userAttempts.forEach((attempt, i) => {
@@ -79,7 +102,7 @@ export default function AssessmentResultsPage({ params }: { params: Promise<{ id
         })
       })
       
-      const assessmentAttempts = userAttempts.filter(attempt => attempt.assessmentId === assessment.id)
+      const assessmentAttempts = userAttempts.filter(attempt => attempt.assessmentId === assessmentWithAnswers.id)
       console.log('🔍 Results: Assessment attempts for this assessment:', assessmentAttempts.length)
       assessmentAttempts.forEach((attempt, i) => {
         console.log(`🔍 Results: Filtered attempt ${i}:`, {
@@ -99,7 +122,7 @@ export default function AssessmentResultsPage({ params }: { params: Promise<{ id
         // Calculate wrong answers
         const wrongAnswersData: WrongAnswer[] = []
         
-        assessment.questions.forEach((question: any, index: number) => {
+        assessmentWithAnswers.questions.forEach((question: any, index: number) => {
           const userAnswer = latestAttempt.answers[index]
           const isCorrect = userAnswer === question.correctAnswer || 
                           (question.type === "true-false" && userAnswer?.toString() === question.correctAnswer?.toString())
@@ -145,7 +168,7 @@ export default function AssessmentResultsPage({ params }: { params: Promise<{ id
         setIsCalculated(true)
       }
     }
-  }, [user?.id, assessment?.id, assessment?.questions?.length, isCalculated])
+  }, [user?.id, assessmentWithAnswers?.id, assessmentWithAnswers?.questions?.length, isCalculated, getUserAssessmentAttempts])
 
   const passed = score >= 70
   const timeSpentFormatted = `${Math.floor(timeSpent / 3600)}:${Math.floor((timeSpent % 3600) / 60)

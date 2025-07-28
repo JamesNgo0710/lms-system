@@ -800,6 +800,34 @@ class ApiDataStore {
     }
   }
 
+  async getAssessmentWithAnswers(assessmentId: number): Promise<Assessment | null> {
+    try {
+      const backend = await this.getBackendConfig()
+      
+      // Use mock data if backend not connected
+      if (!backend.isConnected) {
+        // For mock data, we need to return assessment with correct answers
+        // This is a simplified version for testing
+        return null
+      }
+
+      const response = await this.makeApiRequest(`/api/assessments/${assessmentId}/with-answers`)
+      
+      if (response.status === 404) {
+        return null
+      }
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch assessment with answers: ${response.status}`)
+      }
+      
+      return await response.json()
+    } catch (error) {
+      console.error('Error fetching assessment with answers:', error)
+      return null
+    }
+  }
+
   async submitAssessment(assessmentId: number, answers: (string | number)[], timeSpent: number): Promise<AssessmentAttempt | null> {
     try {
       const response = await this.makeApiRequest(`/api/assessments/${assessmentId}/submit`, { method: 'POST',body: JSON.stringify({ answers, time_spent: timeSpent }),
