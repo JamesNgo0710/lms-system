@@ -89,7 +89,7 @@ export default function TopicsPage() {
         // Get user completions
         const completions = await apiDataStore.getUserLessonCompletions(userId)
         const topicCompletions = completions.filter(completion => 
-          completion?.topic_id === Number(topic.id)
+          Number(completion?.topicId) === Number(topic.id) && completion?.isCompleted
         )
         
         const total = publishedLessons.length

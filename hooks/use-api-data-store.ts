@@ -368,9 +368,7 @@ export function useLessonCompletions() {
     
     setLoading(true)
     const data = await apiDataStore.getUserLessonCompletions(session.user.id)
-    console.log('🔄 loadCompletions: Raw data from API:', data)
     setCompletions(data)
-    console.log('🔄 loadCompletions: Completions set to:', data)
     setLoading(false)
   }
 
@@ -379,27 +377,19 @@ export function useLessonCompletions() {
   }
 
   const markLessonComplete = async (lessonId: number, timeSpent?: number) => {
-    console.log('🔄 Hook: markLessonComplete called:', { lessonId, timeSpent })
     const success = await apiDataStore.markLessonComplete(lessonId, timeSpent)
-    console.log('📡 Hook: API result:', success)
     
     if (success) {
-      console.log('🔄 Hook: Refreshing completions...')
       await loadCompletions() // Refresh the completions
-      console.log('✅ Hook: Completions refreshed')
     }
     return success
   }
 
   const markLessonIncomplete = async (lessonId: number) => {
-    console.log('🔄 Hook: markLessonIncomplete called:', { lessonId })
     const success = await apiDataStore.markLessonIncomplete(lessonId)
-    console.log('📡 Hook: API result:', success)
     
     if (success) {
-      console.log('🔄 Hook: Refreshing completions...')
       await loadCompletions() // Refresh the completions
-      console.log('✅ Hook: Completions refreshed')
     }
     return success
   }
@@ -439,22 +429,15 @@ export function useLessonCompletions() {
   }
 
   const isLessonCompleted = (userId: string, lessonId: number) => {
-    console.log(`🔍 INPUT: userId="${userId}" (${typeof userId}), lessonId=${lessonId} (${typeof lessonId})`)
-    
     const isCompleted = completions.some(completion => {
-      console.log(`🔍 RECORD: userId="${completion.userId}" (${typeof completion.userId}), lessonId=${completion.lessonId} (${typeof completion.lessonId}), isCompleted=${completion.isCompleted}`)
-      
       // Fix type comparison: convert both to string for comparison
       const userMatch = String(completion.userId) === String(userId)
       const lessonMatch = Number(completion.lessonId) === Number(lessonId)
       const isComplete = Boolean(completion.isCompleted)
       
-      console.log(`🔍 MATCH: user=${userMatch}, lesson=${lessonMatch}, complete=${isComplete}`)
-      
       return userMatch && lessonMatch && isComplete
     })
     
-    console.log(`🔍 RESULT: ${isCompleted}`)
     return isCompleted
   }
 

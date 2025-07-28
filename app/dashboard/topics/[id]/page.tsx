@@ -134,7 +134,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
       // Get user completions
       const completions = await apiDataStore.getUserLessonCompletions(userId)
       const topicCompletions = completions.filter(completion => 
-        completion?.topic_id === topicId
+        Number(completion?.topicId) === Number(topicId) && completion?.isCompleted
       )
       
       const total = lessonsData.length
@@ -518,7 +518,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                     <Separator />
                   </>
                 )}
-                {topic.hasAssessment && assessment ? (
+                {assessment ? (
                   user?.role === "student" ? (
                     progress.completed !== progress.total ? (
                       <div className="space-y-2">
