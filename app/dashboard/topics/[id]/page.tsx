@@ -615,23 +615,42 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                             }
                           </Link>
                         </Button>
-                        {assessmentStatus.hasAttempted && assessmentStatus.lastAttemptId && returnTo !== 'manage' && (
-                          <div className="space-y-1">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              className="w-full" 
-                              asChild
-                            >
-                              <Link href={`/dashboard/assessment/${assessment.id}/results?score=${assessmentStatus.bestScore}&timeSpent=0&correct=0&total=${assessment.total_questions || 0}`}>
-                                Review Assessment
-                              </Link>
-                            </Button>
-                            <p className="text-xs text-center text-green-600 dark:text-green-400">
-                              Best Score: {assessmentStatus.bestScore}%
-                            </p>
-                          </div>
-                        )}
+                        {(() => {
+                          // Enhanced debugging for assessment review section
+                          const showReview = assessmentStatus.hasAttempted && assessmentStatus.lastAttemptId && returnTo !== 'manage'
+                          
+                          console.log('🔍 REVIEW SECTION DEBUG:', {
+                            assessmentId: assessment?.id,
+                            hasAttempted: assessmentStatus.hasAttempted,
+                            lastAttemptId: assessmentStatus.lastAttemptId,
+                            bestScore: assessmentStatus.bestScore,
+                            returnTo,
+                            showReview,
+                            assessment: assessment ? {
+                              id: assessment.id,
+                              total_questions: assessment.total_questions,
+                              totalQuestions: assessment.totalQuestions
+                            } : null
+                          })
+                          
+                          return showReview && (
+                            <div className="space-y-1">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-full" 
+                                asChild
+                              >
+                                <Link href={`/dashboard/assessment/${assessment.id}/results?score=${assessmentStatus.bestScore}&timeSpent=0&correct=0&total=${assessment.total_questions || assessment.totalQuestions || 0}`}>
+                                  Review Assessment
+                                </Link>
+                              </Button>
+                              <p className="text-xs text-center text-green-600 dark:text-green-400">
+                                Best Score: {assessmentStatus.bestScore}%
+                              </p>
+                            </div>
+                          )
+                        })()}
                       </div>
                     )
                   ) : (

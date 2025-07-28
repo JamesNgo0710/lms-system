@@ -411,11 +411,15 @@ export function StudentDashboard() {
                             Score: {scorePercentage}% ({activity.correctAnswers}/{activity.totalQuestions}) • {activity.date.toLocaleDateString()}
                             {activity.timeSpent && ` • ${Math.round(activity.timeSpent / 60)} min`}
                           </p>
-                          {!cooldownCheck.canTake && cooldownCheck.timeRemaining && (
+                          {!cooldownCheck.canTake && cooldownCheck.endTime && (
                             <div className="mt-1">
                               <CooldownTimer 
-                                endTime={new Date(Date.now() + (cooldownCheck.timeRemaining * 60 * 1000))}
+                                endTime={cooldownCheck.endTime}
                                 className="text-xs"
+                                onComplete={() => {
+                                  // Optional: Refresh the assessment attempts when cooldown completes
+                                  console.log('Assessment cooldown completed for assessment:', activity.assessmentId)
+                                }}
                               />
                             </div>
                           )}

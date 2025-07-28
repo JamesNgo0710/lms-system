@@ -550,23 +550,25 @@ export function useAssessmentAttempts() {
   const canTakeAssessment = (userId: string, assessmentId: number) => {
     // Find the assessment from attempts data - we don't have direct access to assessments here
     const userAssessmentAttempts = attempts.filter(a => Number(a.assessmentId) === Number(assessmentId) && String(a.userId) === String(userId))
-    if (userAssessmentAttempts.length === 0) return { canTake: true, message: "" }
+    if (userAssessmentAttempts.length === 0) return { canTake: true, message: "", endTime: null }
     
     // Get the most recent attempt
     const lastAttempt = userAssessmentAttempts.sort((a, b) => 
       new Date(b.completedAt).getTime() - new Date(a.completedAt).getTime()
     )[0]
     
-    // For now, allow retaking after 1 hour
+    // For now, allow retaking after 1 hour - calculate fixed end time
     const lastAttemptTime = new Date(lastAttempt.completedAt)
+    const cooldownEndTime = new Date(lastAttemptTime.getTime() + (1 * 60 * 60 * 1000)) // 1 hour after last attempt
     const now = new Date()
-    const hoursSinceLastAttempt = (now.getTime() - lastAttemptTime.getTime()) / (1000 * 60 * 60)
-    const canTake = hoursSinceLastAttempt >= 1
+    const canTake = now >= cooldownEndTime
+    const minutesRemaining = canTake ? 0 : Math.ceil((cooldownEndTime.getTime() - now.getTime()) / (1000 * 60))
     
     return {
       canTake,
-      message: canTake ? "" : `You can retake this assessment in ${Math.ceil(1 - hoursSinceLastAttempt)} hour(s)`,
-      timeRemaining: canTake ? 0 : Math.ceil(1 - hoursSinceLastAttempt) * 60 // in minutes
+      message: canTake ? "" : `You can retake this assessment in ${Math.ceil(minutesRemaining / 60)} hour(s)`,
+      timeRemaining: minutesRemaining,
+      endTime: cooldownEndTime // Add fixed end time for timer
     }
   }
 
