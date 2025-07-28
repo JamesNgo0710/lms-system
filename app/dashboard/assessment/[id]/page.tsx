@@ -10,6 +10,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { useTopics, useAssessments, useLessonCompletions, useAssessmentAttempts } from "@/hooks/use-api-data-store"
+import { apiDataStore } from "@/lib/api-data-store"
 
 export default function TakeAssessmentPage({ params }: { params: Promise<{ id: string }> }) {
   const { data: session } = useSession()
@@ -24,6 +25,7 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
   const [timeLeft, setTimeLeft] = useState(3600) // Default 1 hour
   const [isCompleted, setIsCompleted] = useState(false)
   const [isHydrated, setIsHydrated] = useState(false)
+  const [topicProgress, setTopicProgress] = useState({ completed: 0, total: 0, percentage: 0 })
   const router = useRouter()
 
   const resolvedParams = use(params)
@@ -36,8 +38,37 @@ export default function TakeAssessmentPage({ params }: { params: Promise<{ id: s
     setIsHydrated(true)
   }, [])
 
+  // Load progress data for students  
+  useEffect(() => {
+    if (isHydrated && user?.role === "student" && user.id) {
+      loadProgressData(user.id)
+    }
+  }, [isHydrated, user, topicId])
+
+  const loadProgressData = async (userId: string) => {
+    try {
+      // Get lessons for this topic
+      const lessons = await apiDataStore.getLessonsByTopic(topicId)
+      const publishedLessons = lessons.filter(lesson => lesson?.status === 'Published')
+      
+      // Get user completions
+      const completions = await apiDataStore.getUserLessonCompletions(userId)
+      const topicCompletions = completions.filter(completion => 
+        Number(completion?.topicId) === Number(topicId) && completion?.isCompleted
+      )
+      
+      const total = publishedLessons.length
+      const completed = topicCompletions.length
+      const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
+      
+      setTopicProgress({ completed, total, percentage })
+    } catch (error) {
+      console.error('Error loading progress:', error)
+      setTopicProgress({ completed: 0, total: 0, percentage: 0 })
+    }
+  }
+
   // Check if all lessons are completed for students
-  const topicProgress = user && isHydrated ? getTopicProgress(user.id, topicId) : { completed: 0, total: 0, percentage: 0 }
   const allLessonsCompleted = topicProgress.completed === topicProgress.total && topicProgress.total > 0
 
   // Check cooldown for assessments
