@@ -168,11 +168,11 @@ export function useLessons() {
   // Use getLessonsByTopicId instead which returns normalized data
 
   const getLessonsByTopicId = (topicId: number) => {
-    console.log('🔍 getLessonsByTopicId called with topicId:', topicId)
-    console.log('🔍 Current lessons count:', lessons.length)
+    // console.log('🔍 getLessonsByTopicId called with topicId:', topicId)
+    // console.log('🔍 Current lessons count:', lessons.length)
     
     const filtered = lessons.filter(lesson => lesson.topicId === topicId)
-    console.log('🔍 Filtered lessons count:', filtered.length)
+    // console.log('🔍 Filtered lessons count:', filtered.length)
     
     return filtered.map(lesson => {
       // Double-check that we return a clean object

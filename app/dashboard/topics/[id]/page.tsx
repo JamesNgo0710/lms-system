@@ -102,10 +102,10 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
     assessment = getAssessmentByTopic(topicId)
     
     // Debug: Log what we're getting for students
-    console.log('🔍 Student Topic View - Topic:', topic)
-    console.log('🔍 Student Topic View - Lessons:', lessons)
-    console.log('🔍 Student Topic View - User Role:', user?.role)
-    console.log('🔍 Student Topic View - Topic ID:', topicId)
+    // console.log('🔍 Student Topic View - Topic:', topic)
+    // console.log('🔍 Student Topic View - Lessons:', lessons)
+    // console.log('🔍 Student Topic View - User Role:', user?.role)
+    // console.log('🔍 Student Topic View - Topic ID:', topicId)
   } catch (error) {
     console.error('🚨 Error loading topic/lessons:', error)
     topic = null
@@ -302,9 +302,9 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
     .filter(lesson => lesson !== null) : []
 
   // Debug: Log lesson filtering results
-  console.log('🔍 Student Topic View - Raw lessons count:', lessons.length)
-  console.log('🔍 Student Topic View - Safe lessons count:', safeLessons.length)
-  console.log('🔍 Student Topic View - Safe lessons:', safeLessons)
+  // console.log('🔍 Student Topic View - Raw lessons count:', lessons.length)
+  // console.log('🔍 Student Topic View - Safe lessons count:', safeLessons.length)
+  // console.log('🔍 Student Topic View - Safe lessons:', safeLessons)
 
   return (
     <div className="space-y-6">

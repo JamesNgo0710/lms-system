@@ -317,7 +317,26 @@ class ApiDataStore {
         return await mockDataService.getLessons()
       }
 
-      const response = await this.makeApiRequest('/api/lessons')
+      // Try admin/teacher endpoint first, fallback to student method if 403
+      let response = await this.makeApiRequest('/api/lessons')
+      
+      if (response.status === 403) {
+        // Student access - aggregate lessons from all topics
+        console.log('🔄 Student detected - aggregating lessons from topics')
+        const topics = await this.getTopics()
+        const allLessons: Lesson[] = []
+        
+        for (const topic of topics) {
+          try {
+            const topicLessons = await this.getLessonsByTopic(topic.id)
+            allLessons.push(...topicLessons)
+          } catch (error) {
+            console.error(`Failed to fetch lessons for topic ${topic.id}:`, error)
+          }
+        }
+        
+        return allLessons
+      }
       
       if (!response.ok) {
         throw new Error(`Failed to fetch lessons: ${response.status}`)
@@ -577,7 +596,31 @@ class ApiDataStore {
         return await mockDataService.getAssessments()
       }
 
-      const response = await this.makeApiRequest(`/api/assessments`)
+      // Try admin/teacher endpoint first, fallback to student method if 403
+      let response = await this.makeApiRequest(`/api/assessments`)
+      
+      if (response.status === 403) {
+        // Student access - aggregate assessments from all topics
+        console.log('🔄 Student detected - aggregating assessments from topics')
+        const topics = await this.getTopics()
+        const allAssessments: Assessment[] = []
+        
+        for (const topic of topics) {
+          try {
+            const assessment = await this.getAssessmentByTopic(topic.id)
+            if (assessment) {
+              allAssessments.push(assessment)
+            }
+          } catch (error) {
+            // Skip 404s for topics without assessments
+            if (!error.message?.includes('404')) {
+              console.error(`Failed to fetch assessment for topic ${topic.id}:`, error)
+            }
+          }
+        }
+        
+        return allAssessments
+      }
       
       if (!response.ok) {
         throw new Error(`Failed to fetch assessments: ${response.status}`)
