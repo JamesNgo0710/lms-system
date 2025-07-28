@@ -173,13 +173,22 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
         return
       }
 
+      // Convert questions to snake_case format for Laravel backend
+      const backendQuestions = validQuestions.map(q => ({
+        type: q.type,
+        question: q.question,
+        options: q.options,
+        correct_answer: q.correctAnswer,  // Convert camelCase to snake_case
+        order: q.id
+      }))
+
       let result
       
       if (existingAssessment) {
         // Update existing assessment with proper snake_case field names for Laravel backend
         result = await updateAssessment(existingAssessment.id, {
-          questions: validQuestions,
-          total_questions: validQuestions.length,
+          questions: backendQuestions,
+          total_questions: backendQuestions.length,
           time_limit: timeLimit,
           cooldown_period: cooldownPeriod,
         })
@@ -189,8 +198,8 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
           topic_id: topicId,
           title: `${topicTitle} Assessment`,
           description: `Assessment for ${topicTitle}`,
-          questions: validQuestions,
-          total_questions: validQuestions.length,
+          questions: backendQuestions,
+          total_questions: backendQuestions.length,
           time_limit: timeLimit,
           retake_period: "24 hours",
           cooldown_period: cooldownPeriod,
@@ -199,7 +208,7 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
         
         // Debug: Log the payload being sent
         console.log('🚀 Creating assessment with payload:', JSON.stringify(assessmentPayload, null, 2))
-        console.log('📝 Valid questions:', validQuestions)
+        console.log('📝 Backend questions format:', backendQuestions)
         
         result = await createAssessment(assessmentPayload)
       }
