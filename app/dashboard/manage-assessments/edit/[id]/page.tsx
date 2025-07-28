@@ -176,23 +176,24 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
       let result
       
       if (existingAssessment) {
-        // Update existing assessment
+        // Update existing assessment with proper snake_case field names for Laravel backend
         result = await updateAssessment(existingAssessment.id, {
           questions: validQuestions,
-          totalQuestions: validQuestions.length,
-          timeLimit: timeLimit,
-          cooldownPeriod: cooldownPeriod,
+          total_questions: validQuestions.length,
+          time_limit: timeLimit,
+          cooldown_period: cooldownPeriod,
         })
       } else {
-        // Create new assessment
+        // Create new assessment with proper snake_case field names for Laravel backend
         result = await createAssessment({
           topic_id: topicId,
           title: `${topicTitle} Assessment`,
           description: `Assessment for ${topicTitle}`,
           questions: validQuestions,
-          totalQuestions: validQuestions.length,
-          timeLimit: timeLimit,
-          cooldownPeriod: cooldownPeriod,
+          total_questions: validQuestions.length,
+          time_limit: timeLimit,
+          retake_period: "24 hours",
+          cooldown_period: cooldownPeriod,
           status: 'Draft'
         })
       }
