@@ -611,6 +611,13 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                           </div>
                         )
                       } else if (!cooldownInfo.canTake) {
+                        console.log('🔍 COOLDOWN SECTION - Checking if should show review:', {
+                          hasAttempted: assessmentStatus.hasAttempted,
+                          lastAttemptId: assessmentStatus.lastAttemptId,
+                          bestScore: assessmentStatus.bestScore,
+                          returnTo
+                        })
+                        
                         return (
                           <div className="space-y-2">
                             <Button className="w-full" disabled>
@@ -619,6 +626,25 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                             <p className="text-xs text-center text-red-600 dark:text-red-400">
                               {cooldownInfo.message}
                             </p>
+                            
+                            {/* Show review section even during cooldown if user has attempted */}
+                            {assessmentStatus.hasAttempted && assessmentStatus.lastAttemptId && returnTo !== 'manage' && (
+                              <div className="space-y-1 mt-2">
+                                <Button 
+                                  variant="outline" 
+                                  size="sm" 
+                                  className="w-full" 
+                                  asChild
+                                >
+                                  <Link href={`/dashboard/assessment/${assessment.id}/results?score=${assessmentStatus.bestScore}&timeSpent=0&correct=0&total=${assessment.total_questions || assessment.totalQuestions || 0}`}>
+                                    Review Assessment
+                                  </Link>
+                                </Button>
+                                <p className="text-xs text-center text-green-600 dark:text-green-400">
+                                  Best Score: {assessmentStatus.bestScore}%
+                                </p>
+                              </div>
+                            )}
                           </div>
                         )
                       } else {
