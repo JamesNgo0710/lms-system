@@ -10,102 +10,152 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Progress } from "@/components/ui/progress"
 import { BookOpen, Users, Star, Search, CheckCircle, Map } from "lucide-react"
 import Link from "next/link"
-import { useTopics, useLessonCompletions, useLessons } from "@/hooks/use-api-data-store"
 import { LearningJourneyMap } from "@/components/learning-journey-map"
+import { apiDataStore } from "@/lib/api-data-store"
 
 export default function TopicsPage() {
-  // console.log('🔍 TopicsPage component starting...')
-  
   const { data: session } = useSession()
   const user = session?.user
   
-  // Safe hook loading with error handling
-  let topics, topicsLoading, getTopicProgress, getLessonsByTopicId, getUserLessonCompletions
-  try {
-    const topicsHook = useTopics()
-    topics = topicsHook.topics
-    topicsLoading = topicsHook.loading
-    
-    const completionsHook = useLessonCompletions()
-    getTopicProgress = completionsHook.getTopicProgress
-    getUserLessonCompletions = completionsHook.getUserLessonCompletions
-    
-    const lessonsHook = useLessons()
-    getLessonsByTopicId = lessonsHook.getLessonsByTopicId
-  } catch (error) {
-    // Provide safe defaults if hooks fail
-    topics = []
-    topicsLoading = false
-    getTopicProgress = () => ({ completed: 0, total: 0, percentage: 0 })
-    getUserLessonCompletions = () => []
-    getLessonsByTopicId = () => []
-  }
-
+  // Simple state - no complex hooks
+  const [topics, setTopics] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("all")
   const [difficultyFilter, setDifficultyFilter] = useState("all")
   const [isHydrated, setIsHydrated] = useState(false)
   const [viewMode, setViewMode] = useState<"journey" | "grid">("grid")
+  const [progressData, setProgressData] = useState<Record<string, any>>({})
 
   // Handle hydration
   useEffect(() => {
     setIsHydrated(true)
   }, [])
 
-  // Add comprehensive error checks
-  if (!isHydrated) {
-    return <div>Loading...</div>
+  // Load topics directly without complex hooks
+  useEffect(() => {
+    if (session?.user) {
+      loadTopicsData()
+    }
+  }, [session?.user])
+
+  const loadTopicsData = async () => {
+    try {
+      setLoading(true)
+      
+      // Get topics directly from API
+      const topicsData = await apiDataStore.getTopics()
+      
+      // Normalize and clean topic data
+      const cleanTopics = topicsData
+        .filter(topic => topic && typeof topic === 'object' && topic.id)
+        .map(topic => ({
+          id: String(topic.id || ''),
+          title: String(topic.title || 'Untitled Topic'),
+          description: String(topic.description || 'Comprehensive learning material covering all essential concepts.'),
+          category: String(topic.category || 'General'),
+          difficulty: String(topic.difficulty || 'Beginner'),
+          status: String(topic.status || 'Draft'),
+          image: String(topic.image || '/placeholder.svg?height=200&width=300'),
+          lessons: Number(topic.lessons || 0),
+          students: Number(topic.students || 0),
+          hasAssessment: Boolean(topic.hasAssessment || false)
+        }))
+
+      setTopics(cleanTopics)
+      
+      // Load progress data for students
+      if (user?.role === "student" && user.id) {
+        await loadProgressData(cleanTopics, user.id)
+      }
+      
+    } catch (error) {
+      console.error('Error loading topics:', error)
+      setTopics([])
+    } finally {
+      setLoading(false)
+    }
   }
 
-  if (!Array.isArray(topics)) {
-    // console.error('Topics is not an array:', topics)
-    return <div>Error loading topics. Please refresh the page.</div>
+  const loadProgressData = async (topicsData: any[], userId: string) => {
+    const progressMap: Record<string, any> = {}
+    
+    for (const topic of topicsData) {
+      try {
+        // Get lessons for this topic
+        const lessons = await apiDataStore.getLessonsByTopic(Number(topic.id))
+        const publishedLessons = lessons.filter(lesson => lesson?.status === 'Published')
+        
+        // Get user completions
+        const completions = await apiDataStore.getUserLessonCompletions(userId)
+        const topicCompletions = completions.filter(completion => 
+          completion?.topic_id === Number(topic.id)
+        )
+        
+        const total = publishedLessons.length
+        const completed = topicCompletions.length
+        const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
+        
+        progressMap[topic.id] = {
+          completed,
+          total,
+          percentage,
+          isCompleted: percentage === 100
+        }
+      } catch (error) {
+        // Set default progress if error
+        progressMap[topic.id] = {
+          completed: 0,
+          total: 0,
+          percentage: 0,
+          isCompleted: false
+        }
+      }
+    }
+    
+    setProgressData(progressMap)
   }
 
-  // SAFE: Extract primitive values for categories
-  let categories: string[] = []
-  try {
-    categories = Array.from(new Set(
-      topics
-        .filter(topic => topic && typeof topic === 'object' && topic.category)
-        .map(topic => String(topic.category || ''))
-        .filter(cat => cat.length > 0)
-    ))
-  } catch (error) {
-    categories = []
+  // Handle loading state
+  if (!isHydrated || loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Loading topics...</h2>
+        </div>
+      </div>
+    )
   }
+
+  // Get categories for filters
+  const categories = Array.from(new Set(
+    topics
+      .filter(topic => topic.category)
+      .map(topic => topic.category)
+  ))
   
   const difficulties = ["Beginner", "Intermediate", "Advanced"]
 
-  // SAFE: Filter topics with bulletproof checks
-  let filteredTopics: any[] = []
-  if (Array.isArray(topics)) {
-    filteredTopics = topics.filter(topic => {
-      if (!topic || typeof topic !== 'object' || !topic.id) return false
-      
-      const topicTitle = String(topic.title || '')
-      const topicDescription = String(topic.description || '')
-      const topicCategory = String(topic.category || '')
-      const topicDifficulty = String(topic.difficulty || 'Beginner')
-      
-      const searchLower = searchTerm.toLowerCase()
-      const matchesSearch = 
-        topicTitle.toLowerCase().includes(searchLower) ||
-        topicDescription.toLowerCase().includes(searchLower)
-      const matchesCategory = categoryFilter === "all" || topicCategory === categoryFilter
-      const matchesDifficulty = difficultyFilter === "all" || topicDifficulty === difficultyFilter
-      
-      return matchesSearch && matchesCategory && matchesDifficulty
-    })
-  }
+  // Filter topics
+  const filteredTopics = topics.filter(topic => {
+    const searchLower = searchTerm.toLowerCase()
+    const matchesSearch = 
+      topic.title.toLowerCase().includes(searchLower) ||
+      topic.description.toLowerCase().includes(searchLower)
+    const matchesCategory = categoryFilter === "all" || topic.category === categoryFilter
+    const matchesDifficulty = difficultyFilter === "all" || topic.difficulty === difficultyFilter
+    
+    return matchesSearch && matchesCategory && matchesDifficulty
+  })
 
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Learning Topics</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Learning Topics</h1>
+          <p className="text-gray-600 dark:text-gray-400">
             {viewMode === "journey" 
               ? "Follow your personalized learning path"
               : "Explore our comprehensive learning materials"
@@ -137,7 +187,7 @@ export default function TopicsPage() {
             </Button>
           </div>
           <Badge variant="outline" className="text-sm">
-            {Array.isArray(filteredTopics) ? filteredTopics.length : 0} Topics Available
+            {filteredTopics.length} Topics Available
           </Badge>
         </div>
       </div>
@@ -194,99 +244,54 @@ export default function TopicsPage() {
       ) : (
         <Card>
           <CardContent className="p-6">
-            {!Array.isArray(filteredTopics) ? (
-              <div className="text-center py-8">
-                <p className="text-red-500">Error: Topics data is not properly loaded</p>
-              </div>
-            ) : filteredTopics.length === 0 ? (
+            {filteredTopics.length === 0 ? (
               <div className="text-center py-8">
                 <BookOpen className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No topics found</h3>
-                <p className="text-gray-600">
+                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">No topics found</h3>
+                <p className="text-gray-600 dark:text-gray-400">
                   {searchTerm ? "Try adjusting your search terms or filters." : "No topics available at the moment."}
                 </p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-                {filteredTopics.map((topic, index) => {
-                  // Safely extract only primitive values to prevent React error #31
-                  const topicId = String(topic?.id || '')
-                  const topicTitle = String(topic?.title || 'Untitled Topic')
-                  const topicDescription = String(topic?.description || 'Comprehensive learning material covering all essential concepts and practical applications.')
-                  const topicCategory = String(topic?.category || 'General')
-                  const topicDifficulty = String(topic?.difficulty || 'Beginner')
-                  const topicStatus = String(topic?.status || 'Draft')
-                  const topicImage = String(topic?.image || '/placeholder.svg?height=200&width=300')
-                  const topicLessons = Number(topic?.lessons || 0)
-                  const topicStudents = Number(topic?.students || 0)
-                  
-                  if (!topicId) return null
-                  
-                  // SAFE: Calculate progress properly using both lessons and completions data
-                  let progressPercentage = 0
-                  let progressCompleted = 0
-                  let progressTotal = 0
-                  let isCompleted = false
-                  
-                  if (user?.id && user.role === "student" && topicId) {
-                    try {
-                      // Get lessons for this topic
-                      const topicLessons = getLessonsByTopicId(Number(topicId)) || []
-                      // Only count published lessons for students
-                      const publishedLessons = topicLessons.filter(lesson => 
-                        lesson && lesson.status === 'Published'
-                      )
-                      
-                      // Get user's completions for this topic
-                      const userCompletions = getUserLessonCompletions(user.id) || []
-                      const topicCompletions = userCompletions.filter(completion => 
-                        completion && completion.topic_id === Number(topicId)
-                      )
-                      
-                      // Calculate progress
-                      progressTotal = publishedLessons.length
-                      progressCompleted = topicCompletions.length
-                      progressPercentage = progressTotal > 0 ? Math.round((progressCompleted / progressTotal) * 100) : 0
-                      isCompleted = progressPercentage === 100
-                      
-                    } catch (error) {
-                      // Safe defaults if progress calculation fails
-                      progressPercentage = 0
-                      progressCompleted = 0
-                      progressTotal = 0
-                      isCompleted = false
-                    }
+                {filteredTopics.map((topic) => {
+                  // Get progress for this topic
+                  const progress = progressData[topic.id] || {
+                    completed: 0,
+                    total: 0,
+                    percentage: 0,
+                    isCompleted: false
                   }
                   
                   return (
-                    <Link key={topicId} href={`/dashboard/topics/${topicId}`} className="block">
+                    <Link key={topic.id} href={`/dashboard/topics/${topic.id}`} className="block">
                       <Card className="overflow-hidden hover:shadow-lg transition-shadow group cursor-pointer h-full">
                         <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">
                           <img
-                            src={topicImage}
-                            alt={topicTitle}
+                            src={topic.image}
+                            alt={topic.title}
                             className="w-full h-full object-cover opacity-80"
                           />
                           <div className="absolute inset-0 bg-black/20" />
                           <div className="absolute top-4 left-4 right-4 flex items-start justify-between">
                             <div className="flex flex-col space-y-2">
                               <Badge variant="secondary" className="bg-white/20 text-white w-fit">
-                                {topicCategory}
+                                {topic.category}
                               </Badge>
                               <Badge
                                 variant="secondary"
                                 className={`w-fit ${
-                                  topicDifficulty === "Beginner"
+                                  topic.difficulty === "Beginner"
                                     ? "bg-green-500/80 text-white"
-                                    : topicDifficulty === "Intermediate"
+                                    : topic.difficulty === "Intermediate"
                                       ? "bg-yellow-500/80 text-white"
                                       : "bg-red-500/80 text-white"
                                 }`}
                               >
-                                {topicDifficulty}
+                                {topic.difficulty}
                               </Badge>
                             </div>
-                            {user?.role === "student" && isCompleted && (
+                            {user?.role === "student" && progress.isCompleted && (
                               <Badge className="bg-green-500">
                                 <CheckCircle className="w-3 h-3 mr-1" />
                                 Completed
@@ -295,17 +300,17 @@ export default function TopicsPage() {
                           </div>
                           <div className="absolute bottom-4 left-4 right-4">
                             <h3 className="text-white font-bold text-xl mb-2 group-hover:text-orange-200 transition-colors">
-                              {topicTitle}
+                              {topic.title}
                             </h3>
                             <div className="flex items-center justify-between text-white/80 text-sm">
                               <div className="flex items-center space-x-4">
                                 <div className="flex items-center space-x-1">
                                   <BookOpen className="w-4 h-4" />
-                                  <span>{topicLessons} lessons</span>
+                                  <span>{topic.lessons} lessons</span>
                                 </div>
                                 <div className="flex items-center space-x-1">
                                   <Users className="w-4 h-4" />
-                                  <span>{topicStudents}</span>
+                                  <span>{topic.students}</span>
                                 </div>
                               </div>
                               <div className="flex items-center space-x-1">
@@ -317,30 +322,29 @@ export default function TopicsPage() {
                         </div>
 
                         <CardContent className="p-6">
-                          <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-                            {topicDescription}
+                          <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
+                            {topic.description}
                           </p>
 
-                          {/* Progress for students - SAFE: Only primitive values */}
+                          {/* Progress for students */}
                           {user?.role === "student" && (
                             <div className="mb-4">
                               <div className="flex items-center justify-between text-sm mb-2">
-                                <span className="text-gray-600">Progress</span>
-                                <span className="font-medium text-orange-600">{progressPercentage}%</span>
+                                <span className="text-gray-600 dark:text-gray-400">Progress</span>
+                                <span className="font-medium text-orange-600">{progress.percentage}%</span>
                               </div>
-                              <Progress value={progressPercentage} className="h-2" />
-                              <p className="text-xs text-gray-500 mt-1">
-                                {progressCompleted} of {progressTotal} lessons completed
+                              <Progress value={progress.percentage} className="h-2" />
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {progress.completed} of {progress.total} lessons completed
                               </p>
                             </div>
                           )}
 
                           <div className="flex items-center justify-between">
                             <div className="flex-1">
-                              {/* Course metadata removed to prevent object issues */}
                               {user?.role !== "student" && (
-                                <Badge variant={topicStatus === "Published" ? "default" : "secondary"} className="text-xs">
-                                  {topicStatus}
+                                <Badge variant={topic.status === "Published" ? "default" : "secondary"} className="text-xs">
+                                  {topic.status}
                                 </Badge>
                               )}
                             </div>
@@ -348,16 +352,16 @@ export default function TopicsPage() {
                               <Button
                                 size="sm"
                                 className={
-                                  user?.role === "student" && isCompleted
+                                  user?.role === "student" && progress.isCompleted
                                     ? "bg-green-500 hover:bg-green-600"
                                     : "bg-orange-500 hover:bg-orange-600"
                                 }
                                 onClick={(e) => {
                                   e.preventDefault()
-                                  window.location.href = `/dashboard/topics/${topicId}`
+                                  window.location.href = `/dashboard/topics/${topic.id}`
                                 }}
                               >
-                                {user?.role === "student" && isCompleted ? "Review" : "Start Learning"}
+                                {user?.role === "student" && progress.isCompleted ? "Review" : "Start Learning"}
                               </Button>
                             </div>
                           </div>

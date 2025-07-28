@@ -11,64 +11,23 @@ import { Progress } from "@/components/ui/progress"
 import { Separator } from "@/components/ui/separator"
 import { ChevronLeft, Star, Play, Edit, Trash2, Plus, CheckCircle, Clock, Eye } from "lucide-react"
 import Link from "next/link"
-import { useTopics, useLessons, useLessonCompletions, useAssessments, useAssessmentAttempts } from "@/hooks/use-api-data-store"
 import { useToast } from "@/hooks/use-toast"
+import { apiDataStore } from "@/lib/api-data-store"
 
 export default function TopicDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  // console.log('🔍 TopicDetailPage component starting...')
-  
   const { data: session } = useSession()
   const user = session?.user
   const searchParams = useSearchParams()
   const { toast } = useToast()
   const [isHydrated, setIsHydrated] = useState(false)
-
-  // Safe hook loading with error handling
-  let getTopicById, getLessonsByTopicId, deleteLesson, topicsLoading, lessonsLoading
-  let isLessonCompleted, getTopicProgress
-  let getAssessmentByTopic, canTakeAssessment
-  let refreshLessons
   
-  try {
-    const topicsHook = useTopics()
-    getTopicById = topicsHook.getTopicById
-    topicsLoading = topicsHook.loading
-    
-    const lessonsHook = useLessons()
-    getLessonsByTopicId = lessonsHook.getLessonsByTopicId
-    deleteLesson = lessonsHook.deleteLesson
-    lessonsLoading = lessonsHook.loading
-    refreshLessons = lessonsHook.refresh
-    
-    const completionsHook = useLessonCompletions()
-    isLessonCompleted = completionsHook.isLessonCompleted
-    getTopicProgress = completionsHook.getTopicProgress
-    
-    const assessmentsHook = useAssessments()
-    getAssessmentByTopic = assessmentsHook.getAssessmentByTopic
-    
-    const attemptsHook = useAssessmentAttempts()
-    canTakeAssessment = attemptsHook.canTakeAssessment
-  } catch (error) {
-    // Provide safe defaults if hooks fail
-    getTopicById = () => null
-    getLessonsByTopicId = () => []
-    deleteLesson = async () => false
-    topicsLoading = false
-    lessonsLoading = false
-    refreshLessons = () => {}
-    isLessonCompleted = () => false
-    getTopicProgress = () => ({ completed: 0, total: 0, percentage: 0 })
-    getAssessmentByTopic = () => null
-    canTakeAssessment = () => ({ canTake: true, message: "" })
-  }
-
-  // Force refresh lessons when page loads to get latest data
-  useEffect(() => {
-    if (refreshLessons) {
-      refreshLessons()
-    }
-  }, [refreshLessons])
+  // Simple state - no complex hooks
+  const [topic, setTopic] = useState<any>(null)
+  const [lessons, setLessons] = useState<any[]>([])
+  const [assessment, setAssessment] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [progress, setProgress] = useState({ completed: 0, total: 0, percentage: 0 })
+  const [cooldownInfo, setCooldownInfo] = useState({ canTake: true, message: "" })
 
   const resolvedParams = use(params)
   const topicId = Number.parseInt(resolvedParams.id)
@@ -91,54 +50,124 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
     setIsHydrated(true)
   }, [])
 
-  // Safe topic and lessons loading
-  let topic = null
-  let lessons: any[] = []
-  let assessment = null
-  
-  try {
-    topic = getTopicById(topicId)
-    lessons = getLessonsByTopicId(topicId) || []
-    assessment = getAssessmentByTopic(topicId)
-    
-    // Debug: Log what we're getting for students
-    // console.log('🔍 Student Topic View - Topic:', topic)
-    // console.log('🔍 Student Topic View - Lessons:', lessons)
-    // console.log('🔍 Student Topic View - User Role:', user?.role)
-    // console.log('🔍 Student Topic View - Topic ID:', topicId)
-  } catch (error) {
-    console.error('🚨 Error loading topic/lessons:', error)
-    topic = null
-    lessons = []
-    assessment = null
-  }
+  // Load data directly without complex hooks
+  useEffect(() => {
+    if (isHydrated && topicId) {
+      loadTopicData()
+    }
+  }, [isHydrated, topicId])
 
-  // Check cooldown for assessments - SAFE: Only primitive values
-  let cooldownCanTake = true
-  let cooldownMessage = ""
-  
-  if (user && assessment && isHydrated) {
+  const loadTopicData = async () => {
     try {
-      const cooldownCheck = canTakeAssessment(user.id, assessment.id)
-      if (cooldownCheck && typeof cooldownCheck === 'object') {
-        cooldownCanTake = Boolean(cooldownCheck.canTake)
-        cooldownMessage = String(cooldownCheck.message || "")
+      setLoading(true)
+      
+      // Load topic, lessons, and assessment in parallel
+      const [topicData, lessonsData, assessmentData] = await Promise.all([
+        apiDataStore.getTopic(topicId),
+        apiDataStore.getLessonsByTopic(topicId),
+        apiDataStore.getAssessmentByTopic(topicId).catch(() => null) // Handle 404s gracefully
+      ])
+      
+      // Clean and normalize topic data
+      if (topicData) {
+        const cleanTopic = {
+          id: String(topicData.id || ''),
+          title: String(topicData.title || 'Untitled Topic'),
+          description: String(topicData.description || 'Topic Overview'),
+          category: String(topicData.category || 'General'),
+          difficulty: String(topicData.difficulty || 'Beginner'),
+          status: String(topicData.status || 'Draft'),
+          students: Number(topicData.students || 0),
+          hasAssessment: Boolean(topicData.hasAssessment || false)
+        }
+        setTopic(cleanTopic)
       }
+      
+      // Clean and normalize lessons data
+      const cleanLessons = (lessonsData || [])
+        .filter(lesson => lesson && typeof lesson === 'object' && lesson.id)
+        .map((lesson, index) => ({
+          id: String(lesson.id || ''),
+          topicId: Number(lesson.topicId || topicId),
+          title: String(lesson.title || 'Untitled Lesson'),
+          description: String(lesson.description || 'No description available'),
+          duration: String(lesson.duration || '15 min'),
+          difficulty: String(lesson.difficulty || 'Beginner'),
+          status: String(lesson.status || 'Draft'),
+          image: String(lesson.image || '/placeholder.svg?height=200&width=300'),
+          prerequisites: Array.isArray(lesson.prerequisites) ? lesson.prerequisites : [],
+          index: index + 1
+        }))
+        .filter(lesson => {
+          // Students only see published lessons
+          if (user?.role === 'student' && lesson.status !== 'Published') {
+            return false
+          }
+          return true
+        })
+      
+      setLessons(cleanLessons)
+      setAssessment(assessmentData)
+      
+      // Load progress and completion data for students
+      if (user?.role === "student" && user.id) {
+        await loadProgressData(cleanLessons, user.id)
+        
+        // Check assessment cooldown
+        if (assessmentData && user.id) {
+          await checkAssessmentCooldown(assessmentData, user.id)
+        }
+      }
+      
     } catch (error) {
-      cooldownCanTake = true
-      cooldownMessage = ""
+      console.error('Error loading topic data:', error)
+      setTopic(null)
+      setLessons([])
+      setAssessment(null)
+    } finally {
+      setLoading(false)
     }
   }
 
-  // Safe lesson deletion
+  const loadProgressData = async (lessonsData: any[], userId: string) => {
+    try {
+      // Get user completions
+      const completions = await apiDataStore.getUserLessonCompletions(userId)
+      const topicCompletions = completions.filter(completion => 
+        completion?.topic_id === topicId
+      )
+      
+      const total = lessonsData.length
+      const completed = topicCompletions.length
+      const percentage = total > 0 ? Math.round((completed / total) * 100) : 0
+      
+      setProgress({ completed, total, percentage })
+    } catch (error) {
+      console.error('Error loading progress:', error)
+      setProgress({ completed: 0, total: 0, percentage: 0 })
+    }
+  }
+
+  const checkAssessmentCooldown = async (assessmentData: any, userId: string) => {
+    try {
+      // This would call the assessment attempts API to check cooldown
+      // For now, we'll assume no cooldown
+      setCooldownInfo({ canTake: true, message: "" })
+    } catch (error) {
+      setCooldownInfo({ canTake: true, message: "" })
+    }
+  }
+
   const handleDeleteLesson = async (lessonId: number) => {
     try {
-      const success = await deleteLesson(lessonId)
+      const success = await apiDataStore.deleteLesson(lessonId)
       if (success) {
         toast({
           title: "Success",
           description: "Lesson deleted successfully",
         })
+        // Reload lessons
+        await loadTopicData()
       } else {
         toast({
           title: "Error",
@@ -155,15 +184,12 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
     }
   }
 
-  // Safe duration calculation with primitive values only
   const calculateTotalDuration = () => {
     if (!Array.isArray(lessons) || lessons.length === 0) return "0 min"
     
     let totalMinutes = 0
     lessons.forEach(lesson => {
-      if (!lesson || typeof lesson !== 'object') return
-      
-      const duration = String(lesson.duration || "0 min")
+      const duration = lesson.duration || "0 min"
       const match = duration.match(/(\d+)\s*(min|hour|hr|h)/)
       if (match) {
         const value = parseInt(match[1])
@@ -185,16 +211,12 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
     }
   }
 
-  if (!isHydrated) {
-    return <div>Loading...</div>
-  }
-
-  if (topicsLoading || lessonsLoading) {
+  if (!isHydrated || loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500 mx-auto mb-4"></div>
-          <h2 className="text-2xl font-bold text-gray-900">Loading {topicsLoading ? 'topic' : 'lessons'}...</h2>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Loading topic...</h2>
         </div>
       </div>
     )
@@ -204,8 +226,8 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Topic Not Found</h2>
-          <p className="text-gray-600 mb-4">The requested topic could not be found.</p>
+          <h2 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">Topic Not Found</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">The requested topic could not be found.</p>
           <Link href="/dashboard/topics">
             <Button>Back to Topics</Button>
           </Link>
@@ -213,98 +235,6 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
       </div>
     )
   }
-
-  // SAFE: Extract primitive values from topic
-  const topicTitle = String(topic?.title || 'Untitled Topic')
-  const topicDescription = String(topic?.description || 'Topic Overview')
-  const topicCategory = String(topic?.category || 'General')
-  const topicDifficulty = String(topic?.difficulty || 'Beginner')
-  const topicStudents = Number(topic?.students || 0)
-  const topicHasAssessment = Boolean(topic?.hasAssessment || false)
-
-  // SAFE: Get progress with error handling - only primitive values
-  let progressPercentage = 0
-  let progressCompleted = 0
-  let progressTotal = 0
-  
-  if (user && isHydrated) {
-    try {
-      const progress = getTopicProgress(user.id, topicId)
-      if (progress && typeof progress === 'object') {
-        progressPercentage = Number(progress.percentage || 0)
-        progressCompleted = Number(progress.completed || 0)
-        progressTotal = Number(progress.total || 0)
-      }
-    } catch (error) {
-      progressPercentage = 0
-      progressCompleted = 0
-      progressTotal = 0
-    }
-  }
-
-  // SAFE: Filter and normalize lessons - extract primitive values only
-  const safeLessons = Array.isArray(lessons) ? lessons
-    .filter(lesson => {
-      if (!lesson || typeof lesson !== 'object' || !lesson.id) return false
-      
-      // Students should only see Published lessons, admins see all
-      if (user?.role === 'student' && lesson.status !== 'Published') {
-        return false
-      }
-      
-      return true
-    })
-    .map((lesson, index) => {
-      // Extract only primitive values to prevent React error #31
-      const lessonId = String(lesson?.id || '')
-      const lessonTitle = String(lesson?.title || 'Untitled Lesson')
-      const lessonDescription = String(lesson?.description || 'No description available')
-      const lessonDuration = String(lesson?.duration || '15 min')
-      const lessonDifficulty = String(lesson?.difficulty || 'Beginner')
-      const lessonStatus = String(lesson?.status || 'Draft')
-      const lessonImage = String(lesson?.image || '/placeholder.svg?height=200&width=300')
-      
-      // Safe prerequisite handling
-      let lessonPrerequisites: string[] = []
-      try {
-        if (Array.isArray(lesson.prerequisites)) {
-          lessonPrerequisites = lesson.prerequisites.map((prereq: any) => String(prereq)).filter(p => p.length > 0)
-        }
-      } catch (error) {
-        lessonPrerequisites = []
-      }
-      
-      if (!lessonId) return null
-      
-      // Safe completion check
-      let isCompleted = false
-      try {
-        if (user && isHydrated) {
-          isCompleted = Boolean(isLessonCompleted(user.id, Number(lessonId)))
-        }
-      } catch (error) {
-        isCompleted = false
-      }
-      
-      return {
-        id: lessonId,
-        title: lessonTitle,
-        description: lessonDescription,
-        duration: lessonDuration,
-        difficulty: lessonDifficulty,
-        status: lessonStatus,
-        image: lessonImage,
-        prerequisites: lessonPrerequisites,
-        isCompleted: isCompleted,
-        index: index + 1
-      }
-    })
-    .filter(lesson => lesson !== null) : []
-
-  // Debug: Log lesson filtering results
-  // console.log('🔍 Student Topic View - Raw lessons count:', lessons.length)
-  // console.log('🔍 Student Topic View - Safe lessons count:', safeLessons.length)
-  // console.log('🔍 Student Topic View - Safe lessons:', safeLessons)
 
   return (
     <div className="space-y-6">
@@ -316,8 +246,8 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
           </Button>
         </Link>
         <div className="flex-1">
-          <h1 className="text-3xl font-bold">{topicTitle}</h1>
-          <p className="text-gray-600">{topicCategory}</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">{topic.title}</h1>
+          <p className="text-gray-600 dark:text-gray-400">{topic.category}</p>
           {returnTo === 'manage' && (
             <Badge variant="outline" className="mt-2">
               <Eye className="w-3 h-3 mr-1" />
@@ -354,57 +284,57 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
           <Card>
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">{topicDescription}</h2>
-                <Badge variant="outline">{topicDifficulty}</Badge>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{topic.description}</h2>
+                <Badge variant="outline">{topic.difficulty}</Badge>
               </div>
-              <p className="text-gray-600 mb-4">
-                {topicDescription === 'Topic Overview' 
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                {topic.description === 'Topic Overview' 
                   ? "Lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore dolore magna aliquat enim ad minim consectetur."
-                  : topicDescription
+                  : topic.description
                 }
               </p>
-              <p className="text-gray-600 mb-6">
+              <p className="text-gray-600 dark:text-gray-400 mb-6">
                 This comprehensive course covers all the essential concepts and practical applications you need to
                 master this topic.
               </p>
 
-              {/* Progress for students - SAFE: Only primitive values */}
-              {user?.role === "student" && isHydrated && (
-                <div className="mb-6 p-4 bg-orange-50 rounded-lg border border-orange-200">
+              {/* Progress for students */}
+              {user?.role === "student" && (
+                <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-semibold text-orange-800">Your Progress</h3>
-                    <span className="text-orange-600 font-bold">{progressPercentage}%</span>
+                    <h3 className="font-semibold text-orange-800 dark:text-orange-200">Your Progress</h3>
+                    <span className="text-orange-600 dark:text-orange-400 font-bold">{progress.percentage}%</span>
                   </div>
-                  <Progress value={progressPercentage} className="h-3 mb-2" />
-                  <p className="text-sm text-orange-700">
-                    {progressCompleted} of {progressTotal} lessons completed
+                  <Progress value={progress.percentage} className="h-3 mb-2" />
+                  <p className="text-sm text-orange-700 dark:text-orange-300">
+                    {progress.completed} of {progress.total} lessons completed
                   </p>
                 </div>
               )}
 
               {/* Resource Links */}
               <div className="space-y-2">
-                <p className="font-medium">
-                  YouTube: <span className="text-blue-600">https://www.youtube.com/watch?v=example</span>
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  YouTube: <span className="text-blue-600 dark:text-blue-400">https://www.youtube.com/watch?v=example</span>
                 </p>
-                <p className="font-medium">
-                  Discord: <span className="text-blue-600">https://discord.gg/nft-community</span>
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  Discord: <span className="text-blue-600 dark:text-blue-400">https://discord.gg/nft-community</span>
                 </p>
-                <p className="font-medium">
-                  Twitter: <span className="text-blue-600">https://twitter.com/nftcommunity</span>
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  Twitter: <span className="text-blue-600 dark:text-blue-400">https://twitter.com/nftcommunity</span>
                 </p>
-                <p className="font-medium">
-                  Instagram: <span className="text-blue-600">https://www.instagram.com/nftcommunity</span>
+                <p className="font-medium text-gray-900 dark:text-gray-100">
+                  Instagram: <span className="text-blue-600 dark:text-blue-400">https://www.instagram.com/nftcommunity</span>
                 </p>
               </div>
             </CardContent>
           </Card>
 
-          {/* Lessons Section - SAFE: Only primitive values */}
+          {/* Lessons Section */}
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>Lessons ({safeLessons.length})</CardTitle>
+                <CardTitle className="text-gray-900 dark:text-gray-100">Lessons ({lessons.length})</CardTitle>
                 {user?.role === "admin" && (
                   <Link href={`/dashboard/manage-topics/${topicId}/lessons/create`}>
                     <Button size="sm" className="bg-orange-500 hover:bg-orange-600">
@@ -416,16 +346,16 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
               </div>
             </CardHeader>
             <CardContent>
-              {safeLessons.length === 0 ? (
+              {lessons.length === 0 ? (
                 <div className="text-center py-8">
                   {user?.role === "student" ? (
                     <div>
-                      <p className="text-gray-500 mb-2">No published lessons available for this topic yet.</p>
-                      <p className="text-sm text-gray-400">Check back soon - lessons may be in development!</p>
+                      <p className="text-gray-500 dark:text-gray-400 mb-2">No published lessons available for this topic yet.</p>
+                      <p className="text-sm text-gray-400 dark:text-gray-500">Check back soon - lessons may be in development!</p>
                     </div>
                   ) : (
                     <div>
-                      <p className="text-gray-500 mb-4">No lessons available for this topic yet.</p>
+                      <p className="text-gray-500 dark:text-gray-400 mb-4">No lessons available for this topic yet.</p>
                       <Link href={`/dashboard/manage-topics/${topicId}/lessons/create`}>
                         <Button className="bg-orange-500 hover:bg-orange-600">
                           <Plus className="w-4 h-4 mr-2" />
@@ -437,7 +367,7 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {safeLessons.map((lesson) => (
+                  {lessons.map((lesson) => (
                     <Card key={lesson.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                       <div className="aspect-video bg-gradient-to-br from-orange-400 to-orange-600 relative">
                         <img
@@ -447,23 +377,13 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                         />
                         <div className="absolute inset-0 bg-black/20" />
                         <div className="absolute inset-0 flex items-center justify-center">
-                          {isHydrated && lesson.isCompleted ? (
-                            <CheckCircle className="w-12 h-12 text-white opacity-80" />
-                          ) : (
-                            <Play className="w-12 h-12 text-white opacity-80" />
-                          )}
+                          <Play className="w-12 h-12 text-white opacity-80" />
                         </div>
                         <div className="absolute top-4 left-4">
                           <div className="flex items-center space-x-2">
                             <div className="bg-white/20 text-white px-2 py-1 rounded text-sm font-medium">
                               Lesson {lesson.index}
                             </div>
-                            {isHydrated && lesson.isCompleted && (
-                              <Badge className="bg-green-500">
-                                <CheckCircle className="w-3 h-3 mr-1" />
-                                Completed
-                              </Badge>
-                            )}
                           </div>
                         </div>
                         <div className="absolute bottom-4 left-4 right-4">
@@ -481,11 +401,11 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                       </div>
 
                       <CardContent className="p-4">
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{lesson.description}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-2">{lesson.description}</p>
 
                         {lesson.prerequisites.length > 0 && (
                           <div className="mb-3">
-                            <p className="text-xs font-medium text-gray-500 mb-1">Prerequisites:</p>
+                            <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Prerequisites:</p>
                             <div className="flex flex-wrap gap-1">
                               {lesson.prerequisites.slice(0, 2).map((prereq, index) => (
                                 <Badge key={index} variant="outline" className="text-xs">
@@ -538,13 +458,9 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
                             <Link href={`/dashboard/topics/${topicId}/lessons/${lesson.id}${returnTo ? `?returnTo=${returnTo}&topicId=${manageTopicId || topicId}` : ''}`}>
                               <Button
                                 size="sm"
-                                className={
-                                  isHydrated && lesson.isCompleted
-                                    ? "bg-green-500 hover:bg-green-600"
-                                    : "bg-orange-500 hover:bg-orange-600"
-                                }
+                                className="bg-orange-500 hover:bg-orange-600"
                               >
-                                {isHydrated && lesson.isCompleted ? "Review Lesson" : "Start Lesson"}
+                                Start Lesson
                               </Button>
                             </Link>
                           )}
@@ -561,65 +477,65 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
           </Card>
         </div>
 
-        {/* Sidebar - SAFE: Only primitive values */}
+        {/* Sidebar */}
         <div className="space-y-6">
           {/* Topic Info */}
           <Card>
             <CardContent className="p-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Duration</span>
-                  <span className="font-medium">{calculateTotalDuration()}</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Duration</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{calculateTotalDuration()}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Students</span>
-                  <span className="font-medium">{topicStudents}</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Students</span>
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{topic.students}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Rating</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Rating</span>
                   <div className="flex items-center space-x-1">
                     <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    <span className="font-medium">4.8</span>
+                    <span className="font-medium text-gray-900 dark:text-gray-100">4.8</span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Category</span>
-                  <Badge variant="outline">{topicCategory}</Badge>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Category</span>
+                  <Badge variant="outline">{topic.category}</Badge>
                 </div>
                 <Separator />
-                {user?.role === "student" && isHydrated && (
+                {user?.role === "student" && (
                   <>
                     <div className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
-                        <span>Progress</span>
-                        <span className="font-medium">{progressPercentage}%</span>
+                        <span className="text-gray-600 dark:text-gray-400">Progress</span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{progress.percentage}%</span>
                       </div>
-                      <Progress value={progressPercentage} className="h-2" />
-                      <p className="text-xs text-gray-500">
-                        {progressCompleted} of {progressTotal} lessons completed
+                      <Progress value={progress.percentage} className="h-2" />
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {progress.completed} of {progress.total} lessons completed
                       </p>
                     </div>
                     <Separator />
                   </>
                 )}
-                {topicHasAssessment ? (
-                  user?.role === "student" && isHydrated ? (
-                    progressCompleted !== progressTotal ? (
+                {topic.hasAssessment && assessment ? (
+                  user?.role === "student" ? (
+                    progress.completed !== progress.total ? (
                       <div className="space-y-2">
                         <Button className="w-full" disabled>
                           Complete All Lessons First
                         </Button>
-                        <p className="text-xs text-center text-orange-600">
-                          {progressTotal - progressCompleted} lesson(s) remaining
+                        <p className="text-xs text-center text-orange-600 dark:text-orange-400">
+                          {progress.total - progress.completed} lesson(s) remaining
                         </p>
                       </div>
-                    ) : !cooldownCanTake ? (
+                    ) : !cooldownInfo.canTake ? (
                       <div className="space-y-2">
                         <Button className="w-full" disabled>
                           Assessment Cooldown Active
                         </Button>
-                        <p className="text-xs text-center text-red-600">
-                          {cooldownMessage}
+                        <p className="text-xs text-center text-red-600 dark:text-red-400">
+                          {cooldownInfo.message}
                         </p>
                       </div>
                     ) : (
@@ -653,42 +569,42 @@ export default function TopicDetailPage({ params }: { params: Promise<{ id: stri
             </CardContent>
           </Card>
 
-          {/* Topic Stats - SAFE: Only primitive values */}
+          {/* Topic Stats */}
           <Card>
             <CardHeader>
-              <CardTitle>Topic Statistics</CardTitle>
+              <CardTitle className="text-gray-900 dark:text-gray-100">Topic Statistics</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Total Lessons</span>
-                  <span className="font-semibold">{safeLessons.length}</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Total Lessons</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{lessons.length}</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Published Lessons</span>
-                  <span className="font-semibold">{safeLessons.filter(l => l.status === "Published").length}</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Published Lessons</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">{lessons.filter(l => l.status === "Published").length}</span>
                 </div>
-                {user?.role === "student" && isHydrated && (
+                {user?.role === "student" && (
                   <>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Completed Lessons</span>
-                      <span className="font-semibold text-green-600">{progressCompleted}</span>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Completed Lessons</span>
+                      <span className="font-semibold text-green-600 dark:text-green-400">{progress.completed}</span>
                     </div>
                     <div className="flex items-center justify-between">
-                      <span className="text-sm">Remaining Lessons</span>
-                      <span className="font-semibold text-orange-600">
-                        {progressTotal - progressCompleted}
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Remaining Lessons</span>
+                      <span className="font-semibold text-orange-600 dark:text-orange-400">
+                        {progress.total - progress.completed}
                       </span>
                     </div>
                   </>
                 )}
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Average Completion</span>
-                  <span className="font-semibold">78%</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Average Completion</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">78%</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm">Student Rating</span>
-                  <span className="font-semibold">4.8/5</span>
+                  <span className="text-sm text-gray-600 dark:text-gray-400">Student Rating</span>
+                  <span className="font-semibold text-gray-900 dark:text-gray-100">4.8/5</span>
                 </div>
               </div>
             </CardContent>
