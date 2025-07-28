@@ -14,9 +14,22 @@ import { useTopics, useAssessments } from "@/hooks/use-api-data-store"
 
 export default function ManageAssessmentsPage() {
   const { topics } = useTopics()
-  const { assessments, addAssessment, deleteAssessment, getRecentAssessmentHistory } = useAssessments()
+  const { assessments, addAssessment, deleteAssessment, getRecentAssessmentHistory, refresh } = useAssessments()
   const [searchTerm, setSearchTerm] = useState("")
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
+
+  // Debug: Log assessments to see what we're getting
+  useEffect(() => {
+    console.log('🔍 Manage Assessments - Current assessments:', assessments)
+    console.log('🔍 Manage Assessments - Topics:', topics)
+  }, [assessments, topics])
+
+  // Force refresh assessments when page loads to get latest data
+  useEffect(() => {
+    if (refresh) {
+      refresh()
+    }
+  }, [refresh])
 
   const { toast } = useToast()
 
@@ -59,9 +72,11 @@ export default function ManageAssessmentsPage() {
     })
   }
 
-  // Check if topic has assessment
+  // Check if topic has assessment - handle both camelCase and snake_case
   const topicHasAssessment = (topicId: number) => {
-    return assessments.some((assessment) => assessment.topicId === topicId)
+    return assessments.some((assessment) => 
+      assessment.topicId === topicId || assessment.topic_id === topicId
+    )
   }
 
   return (
