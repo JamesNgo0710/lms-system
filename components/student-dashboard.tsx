@@ -36,9 +36,9 @@ export function StudentDashboard() {
   }
 
   // Calculate real student data
-  const userCompletions = completions.filter(c => c.userId === user.id)
-  const userViews = views.filter(v => v.userId === user.id)
-  const userAttempts = attempts.filter(a => a.userId === user.id)
+  const userCompletions = completions.filter(c => String(c.userId) === String(user.id))
+  const userViews = views.filter(v => String(v.userId) === String(user.id))
+  const userAttempts = attempts.filter(a => String(a.userId) === String(user.id))
 
   // Calculate completed topics
   const completedTopics = topics.filter(topic => {

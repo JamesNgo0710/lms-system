@@ -1015,7 +1015,6 @@ class ApiDataStore {
       }
       
       const rawAttempts = await response.json()
-      console.log('🔥 ASSESSMENT ATTEMPTS: Raw data from API count:', rawAttempts.length)
       
       // NUCLEAR SOLUTION: Normalize assessment attempt data to prevent snake_case
       const normalizedAttempts = rawAttempts.map((attempt: any) => ({
@@ -1030,8 +1029,6 @@ class ApiDataStore {
         completedAt: attempt.completed_at || attempt.completedAt,
         answers: attempt.answers || [],
       }))
-      
-      console.log('🔥 ASSESSMENT ATTEMPTS: Normalized count:', normalizedAttempts.length)
       return normalizedAttempts
     } catch (error) {
       console.error('Error fetching assessment attempts:', error)

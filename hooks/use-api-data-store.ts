@@ -519,12 +519,12 @@ export function useAssessmentAttempts() {
   }
 
   const getUserAssessmentAttempts = (userId: string) => {
-    return attempts.filter(attempt => attempt.user_id === userId)
+    return attempts.filter(attempt => String(attempt.userId) === String(userId))
   }
 
   const getTopicAssessmentAttempts = (userId: string, topicId: number) => {
     return attempts.filter(attempt => 
-      attempt.user_id === userId && attempt.topic_id === topicId
+      String(attempt.userId) === String(userId) && Number(attempt.topicId) === Number(topicId)
     )
   }
 
@@ -549,7 +549,7 @@ export function useAssessmentAttempts() {
 
   const canTakeAssessment = (userId: string, assessmentId: number) => {
     // Find the assessment from attempts data - we don't have direct access to assessments here
-    const userAssessmentAttempts = attempts.filter(a => a.assessmentId === assessmentId && a.userId === userId)
+    const userAssessmentAttempts = attempts.filter(a => Number(a.assessmentId) === Number(assessmentId) && String(a.userId) === String(userId))
     if (userAssessmentAttempts.length === 0) return { canTake: true, message: "" }
     
     // Get the most recent attempt
