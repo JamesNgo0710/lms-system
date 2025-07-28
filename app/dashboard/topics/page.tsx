@@ -57,8 +57,8 @@ export default function TopicsPage() {
           difficulty: String(topic.difficulty || 'Beginner'),
           status: String(topic.status || 'Draft'),
           image: String(topic.image || '/placeholder.svg?height=200&width=300'),
-          lessons: Number(topic.lessons || 0),
-          students: Number(topic.students || 0),
+          lessons: isNaN(Number(topic.lessons)) ? 0 : Number(topic.lessons || 0),
+          students: isNaN(Number(topic.students)) ? 0 : Number(topic.students || 0),
           hasAssessment: Boolean(topic.hasAssessment || false)
         }))
 
@@ -312,11 +312,11 @@ export default function TopicsPage() {
                               <div className="flex items-center space-x-4">
                                 <div className="flex items-center space-x-1">
                                   <BookOpen className="w-4 h-4" />
-                                  <span>{topic.lessons} lessons</span>
+                                  <span>{isNaN(Number(topic.lessons)) ? 0 : topic.lessons} lessons</span>
                                 </div>
                                 <div className="flex items-center space-x-1">
                                   <Users className="w-4 h-4" />
-                                  <span>{topic.students}</span>
+                                  <span>{isNaN(Number(topic.students)) ? 0 : topic.students}</span>
                                 </div>
                               </div>
                               <div className="flex items-center space-x-1">

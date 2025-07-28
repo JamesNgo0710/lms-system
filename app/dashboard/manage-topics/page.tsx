@@ -617,8 +617,8 @@ export default function ManageTopicsPage() {
                 const topicStatus = String(topic?.status || 'Draft')
                 const topicDifficulty = String(topic?.difficulty || 'Beginner')
                 const topicDescription = String(topic?.description || 'No description available')
-                const topicStudents = Number(topic?.students || 0)
-                const topicLessons = Number(topic?.lessons || 0)
+                const topicStudents = isNaN(Number(topic?.students)) ? 0 : Number(topic?.students || 0)
+                const topicLessons = isNaN(Number(topic?.lessons)) ? 0 : Number(topic?.lessons || 0)
                 const topicImage = String(topic?.image || '/placeholder.svg?height=200&width=300')
                 
                 if (!topicId) return null
